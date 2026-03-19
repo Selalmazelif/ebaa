@@ -1,0 +1,111 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+background:#f3f4f6;
+}
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:25px 60px;
+}
+
+.logo{
+color:#e11d2e;
+font-size:28px;
+font-weight:bold;
+}
+
+.qr{
+display:flex;
+align-items:center;
+gap:10px;
+color:#555;
+}
+
+.container{
+display:flex;
+justify-content:center;
+margin-top:50px;
+}
+
+.login-box{
+background:white;
+width:650px;
+padding:60px 50px 50px 50px;
+border-radius:12px;
+box-shadow:0 6px 20px rgba(0,0,0,0.08);
+position:relative;
+}
+
+.login-box h2{
+margin-bottom:25px;
+font-size:26px;
+}
+
+.role-tab{
+position:absolute;
+top:-18px;
+left:40px;
+background:#e5e7eb;
+padding:10px 25px;
+border-radius:12px;
+font-weight:bold;
+}
+
+.input-group{
+margin-bottom:20px;
+}
+
+.input-group label{
+display:block;
+font-size:14px;
+margin-bottom:6px;
+}
+
+.input-group input{
+width:100%;
+padding:14px;
+border-radius:25px;
+border:1px solid #ddd;
+}
+
+.links{
+margin-top:10px;
+display:flex;
+flex-direction:column;
+align-items:flex-end;
+gap:6px;
+font-size:14px;
+}
+
+.links a{
+text-decoration:none;
+color:#2563eb;
+}
+
+.login-btn{
+margin-top:20px;
+background:#e11d2e;
+color:white;
+border:none;
+padding:12px 35px;
+border-radius:25px;
+cursor:pointer;
+align-self:flex-end;
+}
+
+.options{
+margin-top:40px;
+display:flex;
+justify-content:center;
+gap:80px;
+color:#2563eb;
+font-size:16px;
+}

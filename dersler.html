@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Dersler</title>
+<link rel="stylesheet" href="dersler.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<h2>Öğrenci</h2>
+
+<ul>
+<li><a href="ogrenci-panel.html">Ana Sayfa</a></li>
+<li><a href="dersler.html">Dersler</a></li>
+<li><a href="sinavlar.html">Sınavlar</a></li>
+</ul>
+
+</div>
+
+<div class="main">
+
+    <h1>Dersler</h1>
+
+<div class="grid">
+
+<div class="card">
+<img src="img/turkce.jpg">
+<p>Türkçe</p>
+</div>
+
+<div class="card">
+<img src="img/matematik.jpg">
+<p>Matematik</p>
+</div>
+
+<div class="card">
+<img src="img/fen.jpg">
+<p>Fen Bilimleri</p>
+</div>
+
+<div class="card">
+<img src="img/tarih.jpg">
+<p>Tarih</p>
+</div>
+
+<div class="card tum">
+Tüm Dersler
+</div>
+
+</div>
+
+<h1>Ders İçerikleri</h1>
+
+
+<ul id="dersListe"></ul>
+
+</div>
+
+<script>
+
+let dersler = JSON.parse(localStorage.getItem("dersler")) || []
+
+let liste = document.getElementById("dersListe")
+
+dersler.forEach(d=>{
+
+liste.innerHTML += "<li>"+d.ad+" - "+d.dosya+"</li>"
+
+})
+
+</script>
+
+</body>
+</html>

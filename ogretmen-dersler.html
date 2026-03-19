@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ders Yönetimi</title>
+<link rel="stylesheet" href="ogretmen-panel.css">
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<h2>Öğretmen</h2>
+
+<ul>
+<li><a href="ogretmen-panel.html">Ana Sayfa</a></li>
+<li><a href="ogretmen-dersler.html">Ders Yönetimi</a></li>
+<li><a href="ogretmen-ogrenciler.html">Öğrenciler</a></li>
+<li><a href="sinav-olustur.html">Sınav Oluştur</a></li>
+</ul>
+
+</div>
+
+<div class="main">
+
+<h1>Ders Dosyası Yükle</h1>
+
+<input id="dersadi" placeholder="Ders adı">
+
+<br><br>
+
+<input type="file" id="dosya">
+
+<br><br>
+
+<button onclick="yukle()">Dosya Yükle</button>
+
+<h2>Yüklenen Dersler</h2>
+
+<ul id="liste"></ul>
+
+</div>
+
+<script>
+
+let dersler = JSON.parse(localStorage.getItem("dersler")) || []
+
+function yukle(){
+
+let dersadi = document.getElementById("dersadi").value
+let dosya = document.getElementById("dosya").files[0]
+
+let ders = {
+ad: dersadi,
+dosya: dosya.name
+}
+
+dersler.push(ders)
+
+localStorage.setItem("dersler", JSON.stringify(dersler))
+
+goster()
+
+}
+
+function goster(){
+
+let liste = document.getElementById("liste")
+liste.innerHTML=""
+
+dersler.forEach(d=>{
+
+liste.innerHTML += "<li>"+d.ad+" - "+d.dosya+"</li>"
+
+})
+
+}
+
+goster()
+
+</script>
+
+</body>
+</html>
