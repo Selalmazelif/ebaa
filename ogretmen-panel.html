@@ -4,26 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Öğretmen Paneli</title>
-    <link rel="stylesheet" href="ogretmen-panel.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="panel.css">
 </head>
 
 <body>
 
     <div class="sidebar">
 
-        <h2>Öğretmen</h2>
+        <div class="logo">EBA</div>
+
+        <div class="profile">
+            <div class="profile-box"></div>
+            <p id="profile-name">Öğretmen</p>
+            <p id="profile-role" style="font-size:12px; color:#f0d4e2; margin-top:2px;">Rol: Öğretmen</p>
+            <p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
+            <input id="profilePicInput" type="file" accept="image/*" />
+            <button id="changeProfilePicBtn">Fotoğrafı Kaydet</button>
+            <button id="logoutBtn">Çıkış</button>
+        </div>
 
         <ul>
 
-            <li><a href="ogretmen-panel.html">Ana Sayfa</a></li>
+            <li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
 
-            <li><a href="ogretmen-dersler.html">Derslerim</a></li>
+            <li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Derslerim</a></li>
 
-            <li><a href="ogretmen-ogrenciler.html">Öğrenciler</a></li>
+            <li><a href="ogretmen-ogrenciler.html"><i class="fa-solid fa-users"></i> Öğrenciler</a></li>
 
-            <li><a href="sinav-olustur.html">Sınav Oluştur</a></li>
+            <li><a href="sinav-olustur.html"><i class="fa-solid fa-pen"></i> Sınav Oluştur</a></li>
 
-            <li><a href="chat.html">Mesajlar</a></li>
+            <li><a href="chat.html"><i class="fa-solid fa-comments"></i> Mesajlar</a></li>
 
         </ul>
 
@@ -31,25 +42,197 @@
 
     <div class="main">
 
-        <h1>Öğretmen Paneli</h1>
+        <div class="topbar">
 
-        <div class="card-grid">
-
-            <div class="card">
-                Ders Yönetimi
+            <div class="search">
+                <i class="fa fa-search"></i>
+                <input placeholder="Ara">
             </div>
 
-            <div class="card">
-                <a href="ogretmen-ogrenciler.html">Öğrenciler</a>
-            </div>
+            <div class="icons">
 
-            <div class="card">
-                <a href="sinav-olustur.html">Sınav Oluştur</a>
+                <i class="fa fa-bell"></i>
+
+                <a href="chat.html">
+                <i class="fa fa-envelope"></i>
+                </a>
+
             </div>
 
         </div>
 
+        <div class="banner">
+
+            <div>
+                <h2>Öğretmen Paneli</h2>
+                <p>Derslerinizi ve öğrencilerinizi yönetin</p>
+            </div>
+
+            <button><a href="ogretmen-dersler.html">Derslere Git</a></button>
+
+        </div>
+
+        <div class="cards">
+
+            <div class="card">
+                <a href="ogretmen-dersler.html">
+                    <i class="fa-solid fa-book"></i>
+                    <h3>Derslerim</h3>
+                </a>
+            </div>
+
+            <div class="card">
+                <a href="ogretmen-ogrenciler.html">
+                    <i class="fa-solid fa-users"></i>
+                    <h3>Öğrenciler</h3>
+                </a>
+            </div>
+
+            <div class="card">
+                <a href="sinav-olustur.html">
+                    <i class="fa-solid fa-pen"></i>
+                    <h3>Sınav Oluştur</h3>
+                </a>
+            </div>
+
+            <div class="card">
+                <a href="chat.html">
+                    <i class="fa-solid fa-comments"></i>
+                    <h3>Mesajlar</h3>
+                </a>
+            </div>
+            <div class="card">
+                <a href="#" onclick="showPasswordResetRequests()">
+                    <i class="fa-solid fa-key"></i>
+                    <h3>Şifre İstekleri</h3>
+                </a>
+            </div>
+            <div class="card">
+                <a href="#" id="resetStorageBtn">
+                    <i class="fa-solid fa-trash"></i>
+                    <h3>Verileri Sıfırla</h3>
+                </a>
+            </div>
+        </div>
+
+        <div id="resetRequests" style="display:none; margin-top:20px;">
+            <h3>Şifre Sıfırlama İstekleri</h3>
+            <div id="requestsList"></div>
+        </div>
+
     </div>
+
+    <script src="auth-utils.js"></script>
+    <script>
+      const user = requireAuth();
+      if (user) {
+        if (user.role !== 'ogretmen') {
+          logout();
+          return;
+        }
+
+        const nameEl = document.getElementById('profile-name');
+        const roleEl = document.getElementById('profile-role');
+        const schoolEl = document.getElementById('profile-school');
+        if (nameEl) nameEl.textContent = user.name;
+        if (roleEl) roleEl.textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
+        if (schoolEl) schoolEl.textContent = user.school;
+        if (user.profilePic) {
+          const profileBox = document.querySelector('.profile-box');
+          profileBox.innerHTML = `<img src="${user.profilePic}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+        }
+
+        const profilePicInput = document.getElementById('profilePicInput');
+        const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
+        if (changeProfilePicBtn) {
+          changeProfilePicBtn.addEventListener('click', () => {
+            if (!profilePicInput || !profilePicInput.files || !profilePicInput.files[0]) {
+              alert('Lütfen bir profil fotoğrafı seçin.');
+              return;
+            }
+            const file = profilePicInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const photoData = e.target.result;
+              const users = JSON.parse(localStorage.getItem('users') || '[]');
+              const index = users.findIndex(u => u.id === user.id || u.tc === user.tc);
+              if (index !== -1) {
+                users[index].profilePic = photoData;
+                localStorage.setItem('users', JSON.stringify(users));
+                user.profilePic = photoData;
+                // Güvenlik: sessionStorage'a kaydet (tab-specific)
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                localStorage.removeItem('currentUser'); // Eski veriyi sil
+                const profileBox = document.querySelector('.profile-box');
+                profileBox.innerHTML = `<img src="${photoData}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+                alert('Profil fotoğrafı güncellendi.');
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+      }
+
+      function showPasswordResetRequests() {
+        const requestsDiv = document.getElementById('resetRequests');
+        const requestsList = document.getElementById('requestsList');
+
+        const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+        const myRequests = requests.filter(r => r.ogretmenTcs.includes(user.tc) && r.status === "pending");
+
+        if (myRequests.length === 0) {
+          requestsList.innerHTML = "<p>Gelen istek yok.</p>";
+        } else {
+          requestsList.innerHTML = myRequests.map(req => `
+            <div style="border:1px solid #ddd; padding:10px; margin:10px 0; border-radius:8px;">
+              <p><strong>Öğrenci:</strong> ${req.studentName} (${req.class}. sınıf)</p>
+              <p><strong>Okul:</strong> ${req.school}</p>
+              <p><strong>Tarih:</strong> ${new Date(req.createdAt).toLocaleString('tr-TR')}</p>
+              <button onclick="approveRequest('${req.id}')" style="background:#4CAF50; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Onayla</button>
+              <button onclick="rejectRequest('${req.id}')" style="background:#f44336; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Reddet</button>
+            </div>
+          `).join('');
+        }
+
+        requestsDiv.style.display = 'block';
+      }
+
+      function approveRequest(requestId) {
+        const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+        const request = requests.find(r => r.id === requestId);
+        if (request) {
+          request.status = "approved";
+          localStorage.setItem("passwordRequests", JSON.stringify(requests));
+          alert("İstek onaylandı! Öğrenci şifresini değiştirebilir.");
+          showPasswordResetRequests();
+        }
+      }
+
+      function rejectRequest(requestId) {
+        const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+        const request = requests.find(r => r.id === requestId);
+        if (request) {
+          request.status = "rejected";
+          localStorage.setItem("passwordRequests", JSON.stringify(requests));
+          alert("İstek reddedildi.");
+          showPasswordResetRequests();
+        }
+      }
+
+      const resetStorageBtn = document.getElementById('resetStorageBtn');
+      if (resetStorageBtn) {
+        resetStorageBtn.addEventListener('click', () => {
+          if (confirm('Tüm verileri silmek istediğinizden emin misiniz?')) {
+            localStorage.clear();
+            alert('Tüm veriler silindi!');
+            window.location.href = 'index.html';
+          }
+        });
+      }
+    </script>
 
 </body>
 

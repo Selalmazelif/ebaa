@@ -21,27 +21,91 @@
 
             <h2>MEBBİS ile Giriş</h2>
 
-            <div class="input-group">
-                <label>Kullanıcı Adı</label>
-                <input type="number">
-            </div>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>Kullanıcı Adı</label>
+                    <input type="text" id="tc" placeholder="Kullanıcı Adı">
+                </div>
 
-            <div class="input-group">
-                <label>Şifre</label>
-                <input type="password">
-            </div>
+                <div class="input-group">
+                    <label>Şifre</label>
+                    <input type="password" id="password" placeholder="Şifre">
+                </div>
 
-            <div class="links">
-                <a href="#">Şifremi unuttum</a>
-                <a href="register.html">Öğretmen hesabı oluştur</a>
-            </div>
+                <div class="links">
+                    <a href="#">Şifremi unuttum</a>
+                    <a href="register.html">Öğretmen hesabı oluştur</a>
+                </div>
 
-            <button class="login-btn">Giriş</button>
+                <button class="login-btn" type="submit">Giriş</button>
+            </form>
 
-    </div>
+        </div>
 </div>
 
-<script src="login.js"></script>
+<script>
+const loginForm = document.getElementById("loginForm");
+
+// Güvenlik: sessionStorage kullan (tab-specific, URL kopyalama saldırısı engelle)
+if (sessionStorage.getItem("currentUser")) {
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+    const tabId = sessionStorage.getItem("tabId");
+    if (currentUser.role === "ogretmen" && currentUser.tabId === tabId) {
+        window.location.href = "ogretmen-panel.html";
+    } else {
+        sessionStorage.removeItem("currentUser");
+        sessionStorage.removeItem("tabId");
+    }
+}
+
+if (loginForm) {
+    loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        let tc = document.getElementById("tc").value.trim();
+        let password = document.getElementById("password").value;
+
+        if (!tc || !password) {
+            alert("Lütfen tüm alanları doldurun.");
+            return;
+        }
+
+        let users = JSON.parse(localStorage.getItem("users")) || [];
+        let user = users.find(u => u.tc === tc && u.password === password);
+
+        if (user) {
+            if (user.role !== "ogretmen") {
+                let wrongRoleMsg = "❌ Siz öğretmen değilsiniz!\n\n";
+                wrongRoleMsg += "Lütfen uygun giriş sayfasını kullanın:\n\n";
+                if (user.role === "ogrenci") {
+                    wrongRoleMsg += "👨‍🎓 Öğrenci Login: öğrenci-login.html";
+                } else if (user.role === "veli") {
+                    wrongRoleMsg += "👨‍👩‍👧 Veli Login: veli-login.html";
+                }
+                alert(wrongRoleMsg);
+                return;
+            }
+            
+            // Güvenlik: Her tab'e unique ID ver
+            const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const secureUser = {
+                ...user,
+                tabId: tabId,
+                loginTime: Date.now()
+            };
+            
+            sessionStorage.setItem("tabId", tabId);
+            sessionStorage.setItem("currentUser", JSON.stringify(secureUser));
+            localStorage.removeItem("currentUser"); // Eski veriyi sil
+            
+            alert("✅ Giriş başarılı!");
+            window.location.href = "ogretmen-panel.html";
+        } else {
+            alert("❌ Kullanıcı adı veya şifre yanlış");
+        }
+    });
+}
+</script>
 </body>
 
 </html>

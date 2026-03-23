@@ -167,3 +167,32 @@ object-fit:cover;
 .lesson p{
 padding:10px;
 }
+
+/* PROFILE PHOTO & BUTTONS */
+
+.profile input[type="file"]{
+width:100%;
+margin-top:8px;
+padding:6px;
+border:1px solid #ddd;
+border-radius:6px;
+font-size:12px;
+}
+
+.profile button{
+width:100%;
+margin-top:8px;
+padding:8px 10px;
+background:#fff;
+color:#8a1550;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:700;
+font-size:13px;
+transition:0.3s;
+}
+
+.profile button:hover{
+background:#f0d4e2;
+}

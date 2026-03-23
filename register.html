@@ -33,11 +33,41 @@
             </div>
 
             <div class="input-group">
+                <label>Okul</label>
+                <input type="text" id="school" placeholder="Örn: X Lisesi" required>
+            </div>
+
+            <div class="input-group">
                 <label>Rol</label>
-                <select id="role">
+                <select id="role" onchange="toggleClassField()">
                     <option value="ogrenci">Öğrenci</option>
                     <option value="ogretmen">Öğretmen</option>
                     <option value="veli">Veli</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Profil Fotoğrafı (opsiyonel)</label>
+                <input type="file" id="profilePic" accept="image/*">
+            </div>
+
+            <div class="input-group" id="studentClassGroup" style="display:none;">
+                <label>Sınıf</label>
+                <select id="studentClass">
+                    <option value="9">9. Sınıf</option>
+                    <option value="10">10. Sınıf</option>
+                    <option value="11">11. Sınıf</option>
+                    <option value="12">12. Sınıf</option>
+                </select>
+            </div>
+
+            <div class="input-group" id="teacherClassesGroup" style="display:none;">
+                <label>Yetkili Sınıflar (Ctrl ile çoklu seçin)</label>
+                <select id="teacherClasses" multiple>
+                    <option value="9">9. Sınıf</option>
+                    <option value="10">10. Sınıf</option>
+                    <option value="11">11. Sınıf</option>
+                    <option value="12">12. Sınıf</option>
                 </select>
             </div>
 
@@ -47,16 +77,88 @@
 </div>
 
 <script>
+// Güvenlik: Input validation fonksiyonları
+function validateTC(tc) {
+  // TC 11 haneli, sayısal olmalı
+  return /^\d{11}$/.test(tc);
+}
+
+function validatePassword(password) {
+  // Min 8 char, en az 1 büyük harf, 1 küçük harf, 1 rakam gerektir
+  return password.length >= 8 && 
+         /[A-Z]/.test(password) && 
+         /[a-z]/.test(password) && 
+         /[0-9]/.test(password);
+}
+
+function validateName(name) {
+  // Min 3 char, sadece harf ve boşluk
+  return name.length >= 3 && /^[a-zA-ZçÇğĞıİöÖşŞüÜ\s]+$/.test(name);
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+function toggleClassField() {
+    const role = document.getElementById("role").value;
+    const studentGroup = document.getElementById("studentClassGroup");
+    const teacherGroup = document.getElementById("teacherClassesGroup");
+    if (role === "ogrenci") {
+        studentGroup.style.display = "block";
+        teacherGroup.style.display = "none";
+    } else if (role === "ogretmen") {
+        studentGroup.style.display = "none";
+        teacherGroup.style.display = "block";
+    } else {
+        studentGroup.style.display = "none";
+        teacherGroup.style.display = "none";
+    }
+}
+
 document.getElementById("registerForm").addEventListener("submit", function(e){
     e.preventDefault();
 
-    let name = document.getElementById("name").value;
-    let tc = document.getElementById("tc").value;
+    let name = document.getElementById("name").value.trim();
+    let tc = document.getElementById("tc").value.trim();
     let password = document.getElementById("password").value;
+    let school = document.getElementById("school").value.trim();
     let role = document.getElementById("role").value;
 
-    if(!name || !tc || !password){
+    // Güvenlik: Input validation
+    if(!name || !tc || !password || !school){
         alert("Tüm alanları doldurun!");
+        return;
+    }
+
+    // TC validasyonu
+    if (!validateTC(tc)) {
+        alert("TC Kimlik No 11 haneli ve sayısal olmalıdır!");
+        return;
+    }
+
+    // Ad-soyad validasyonu
+    if (!validateName(name)) {
+        alert("Ad-soyad en az 3 karakter olmalı ve sadece harf içermelidir!");
+        return;
+    }
+
+    // Şifre validasyonu
+    if (!validatePassword(password)) {
+        alert("Şifre en az 8 karakter, 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir!");
+        return;
+    }
+
+    // School validasyonu
+    if (school.length < 3 || school.length > 100) {
+        alert("Okul adı 3 ile 100 karakter arasında olmalıdır!");
         return;
     }
 
@@ -68,15 +170,53 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
         return;
     }
 
-    users.push({
-        name:name,
-        tc:tc,
-        password:password,
-        role:role
-    });
+    // Güvenlik: XSS koruması - HTML escaping
+    let user = {
+        id: Date.now().toString(),
+        name: escapeHtml(name),
+        tc: tc,
+        password: password,  // Client-side demo. Prod'da hash olmalı!
+        role: role,
+        school: escapeHtml(school),
+        createdAt: new Date().toISOString()
+    };
 
+    if (role === "ogrenci") {
+        user.class = document.getElementById("studentClass").value;
+    } else if (role === "ogretmen") {
+        const selected = Array.from(document.getElementById("teacherClasses").selectedOptions).map(opt => opt.value);
+        user.authorizedClasses = selected;
+    }
+
+    const photoInput = document.getElementById('profilePic');
+    if (photoInput && photoInput.files && photoInput.files[0]) {
+        const file = photoInput.files[0];
+        // Güvenlik: Dosya boyutunu kontrol et (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Dosya boyutu 2MB'dan büyük olamaz!");
+            return;
+        }
+        // Güvenlik: Dosya tipini kontrol et
+        if (!file.type.startsWith('image/')) {
+            alert("Sadece görüntü dosyaları kabul edilir!");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            user.profilePic = e.target.result;
+            users.push(user);
+            localStorage.setItem("users", JSON.stringify(users));
+            alert("Kayıt başarılı");
+            if(role === "ogrenci") window.location.href = "öğrenci-login.html";
+            else if(role === "ogretmen") window.location.href = "öğretmen-login.html";
+            else if(role === "veli") window.location.href = "veli-login.html";
+        };
+        reader.readAsDataURL(file);
+        return;
+    }
+
+    users.push(user);
     localStorage.setItem("users", JSON.stringify(users));
-
     alert("Kayıt başarılı");
 
     // ROLE GÖRE YÖNLENDİRME
@@ -89,7 +229,6 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
     else if(role === "veli"){
         window.location.href = "veli-login.html";
     }
-
 });
 </script>
 

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Güle Güle - EBA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #8a1550, #d4a5c7);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+        }
+        .goodbye-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="goodbye-container">
+        <div class="logo">EBA</div>
+        <h1>Güle Güle!</h1>
+        <p>Güvenli bir şekilde çıkış yaptınız.</p>
+        <p>Yeniden giriş yapmak için lütfen ana sayfaya dönün.</p>
+        <button onclick="goToHome()" style="background:#8a1550; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; margin-top:20px;">Ana Sayfaya Dön</button>
+    </div>
+
+    <script>
+        // Güvenlik: Çıkış sırasında tüm oturum verilerini temizle
+        function clearSession() {
+            // sessionStorage (tab-specific) temizle
+            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('tabId');
+            sessionStorage.clear();
+            
+            // localStorage (legacy) temizle
+            localStorage.removeItem('currentUser');
+        }
+        
+        clearSession();
+        
+        // 3 saniye sonra index.html'e yönlendir
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+
+        function goToHome() {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

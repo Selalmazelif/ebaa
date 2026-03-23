@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Şifre Sıfırla</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">EBA</div>
+</header>
+
+<div class="container">
+    <div class="login-box">
+        <div class="role-tab">Şifre Sıfırlama</div>
+        <h2>Şifre Sıfırlama İsteği</h2>
+
+        <form id="resetForm">
+            <div class="input-group">
+                <label>TC Kimlik No</label>
+                <input type="text" id="tc" placeholder="11 haneli TC" required>
+            </div>
+
+            <button class="login-btn" type="submit">İstek Gönder</button>
+        </form>
+
+        <div id="message" style="margin-top:20px; text-align:center;"></div>
+    </div>
+</div>
+
+<script>
+const resetForm = document.getElementById("resetForm");
+const messageDiv = document.getElementById("message");
+
+resetForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const tc = document.getElementById("tc").value.trim();
+    if (!tc) {
+        messageDiv.innerHTML = "<p style='color:red;'>TC giriniz!</p>";
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find(u => u.tc === tc && u.role === "ogrenci");
+
+    if (!user) {
+        messageDiv.innerHTML = "<p style='color:red;'>Bu TC ile öğrenci bulunamadı!</p>";
+        return;
+    }
+
+    // Veli ve öğretmenleri bul
+    const veli = users.find(u => u.role === "veli" && u.school === user.school);
+    const ogretmenler = users.filter(u => u.role === "ogretmen" && u.school === user.school && u.authorizedClasses && u.authorizedClasses.includes(user.class));
+
+    if (!veli && ogretmenler.length === 0) {
+        messageDiv.innerHTML = "<p style='color:red;'>Veliniz veya öğretmeniniz bulunamadı!</p>";
+        return;
+    }
+
+    // İstek oluştur
+    const request = {
+        id: Date.now().toString(),
+        studentTc: tc,
+        studentName: user.name,
+        school: user.school,
+        class: user.class,
+        veliTc: veli ? veli.tc : null,
+        ogretmenTcs: ogretmenler.map(o => o.tc),
+        status: "pending",
+        createdAt: new Date().toISOString()
+    };
+
+    const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+    requests.push(request);
+    localStorage.setItem("passwordRequests", JSON.stringify(requests));
+
+    messageDiv.innerHTML = "<p style='color:green;'>✅ İstek gönderildi! Veliniz ve öğretmenleriniz onay verdikten sonra şifreniz sıfırlanacak.</p>";
+    resetForm.reset();
+});
+</script>
+
+</body>
+</html>

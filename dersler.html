@@ -1,76 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
 <meta charset="UTF-8">
 <title>Dersler</title>
-<link rel="stylesheet" href="dersler.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
 </head>
 
 <body>
 
 <div class="sidebar">
 
-<h2>Öğrenci</h2>
+<div class="logo">EBA</div>
+
+<div class="profile">
+<div class="profile-box"></div>
+<p id="profile-name">Öğrenci</p>
+<p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
+<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
+</div>
 
 <ul>
-<li><a href="ogrenci-panel.html">Ana Sayfa</a></li>
-<li><a href="dersler.html">Dersler</a></li>
-<li><a href="sinavlar.html">Sınavlar</a></li>
+
+<li>
+<a href="ogrenci-panel.html">
+<i class="fa-solid fa-house"></i> Ana Sayfa
+</a>
+</li>
+
+<li>
+<a href="dersler.html">
+<i class="fa-solid fa-book"></i> Dersler
+</a>
+</li>
+
+<li>
+<a href="canli-ders.html">
+<i class="fa-solid fa-video"></i> Canlı Ders
+</a>
+</li>
+
+<li>
+<a href="sinavlar.html">
+<i class="fa-solid fa-pen"></i> Sınavlar
+</a>
+</li>
+
+<li>
+<a href="chat.html">
+<i class="fa-solid fa-comments"></i> Mesajlar
+</a>
+</li>
+
 </ul>
 
 </div>
 
 <div class="main">
 
-    <h1>Dersler</h1>
+<div class="topbar">
 
-<div class="grid">
-
-<div class="card">
-<img src="img/turkce.jpg">
-<p>Türkçe</p>
+<div class="search">
+<i class="fa fa-search"></i>
+<input placeholder="Ara">
 </div>
 
-<div class="card">
-<img src="img/matematik.jpg">
-<p>Matematik</p>
-</div>
+<div class="icons">
 
-<div class="card">
-<img src="img/fen.jpg">
-<p>Fen Bilimleri</p>
-</div>
+<i class="fa fa-bell"></i>
 
-<div class="card">
-<img src="img/tarih.jpg">
-<p>Tarih</p>
-</div>
+<a href="chat.html">
+<i class="fa fa-envelope"></i>
+</a>
 
-<div class="card tum">
-Tüm Dersler
 </div>
 
 </div>
 
-<h1>Ders İçerikleri</h1>
+<div class="banner">
 
-
-<ul id="dersListe"></ul>
+<div>
+<h2>Dersler</h2>
+<p id="class-info">Sınıfınıza göre dersler</p>
+</div>
 
 </div>
 
+<div class="cards" id="dersler-grid">
+
+<!-- Dinamik olarak doldurulur -->
+
+</div>
+
+</div>
+
+<script src="auth-utils.js"></script>
 <script>
+const user = requireAuth();
+if (user) {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('profile-school').textContent = user.school;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
 
-let dersler = JSON.parse(localStorage.getItem("dersler")) || []
+  const derslerGrid = document.getElementById('dersler-grid');
+  const classInfo = document.getElementById('class-info');
 
-let liste = document.getElementById("dersListe")
+  const dersler = {
+    '9': [
+      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri'] },
+      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Üslü Sayılar', 'Köklü Sayılar', 'Faktöriyel'] },
+      { name: 'Fen Bilimleri', img: 'img/foto3.jpeg', topics: ['Canlılar Dünyası', 'Maddenin Halleri'] },
+      { name: 'Tarih', img: 'img/foto4.jpeg', topics: ['İlk Çağ Uygarlıkları', 'Türklerin Tarih Sahnesi'] },
+      { name: 'İngilizce', img: 'img/foto1.jpg', topics: ['Simple Present', 'Kelime Bilgisi'] }
+    ],
+    '10': [
+      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Edebi Sanatlar', 'Paragraf Anlamı'] },
+      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Doğrusal Denklemler', 'Polinomlar'] },
+      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Elektrik', 'Kuvvet'] },
+      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Atom Modelleri', 'Elementler'] },
+      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Hücre ve Organizasyon', 'Ekosistem'] },
+      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Osmanlıda Dağılma Dönemi', 'Kurtuluş Savaşı'] }
+    ],
+    '11': [
+      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Anlatım Bozuklukları', 'Paragraf Türleri'] },
+      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Denklem Sistemleri', 'Olasılık'] },
+      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Dalga', 'Optik'] },
+      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Kimyasal Enerji', 'Organik Kimya'] },
+      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Genetik', 'Fizyoloji'] },
+      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Çağdaş Türk ve Dünya Tarihi'] },
+      { name: 'Coğrafya', img: 'img/foto3.jpeg', topics: ['Küresel Isınma', 'Nüfus Coğrafyası'] }
+    ],
+    '12': [
+      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Sözcük Türleri', 'Anlatım Teknikleri'] },
+      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Türev', 'Limit', 'Permütasyon'] },
+      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Elektrik-Magnetizma', 'Modern Fizik'] },
+      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Asit-Baz', 'Kimyasal Denklem'] },
+      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Evrim', 'Bitki Fizyolojisi'] },
+      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Dünya Siyaseti', 'Soğuk Savaş'] },
+      { name: 'Coğrafya', img: 'img/foto3.jpeg', topics: ['Doğal Kaynaklar', 'Nüfus Politikaları'] },
+      { name: 'Felsefe', img: 'img/foto4.jpeg', topics: ['Etik', 'Siyaset Felsefesi'] }
+    ]
+  };
 
-dersler.forEach(d=>{
+  const userClass = user.class || '9';
+  classInfo.textContent = `${userClass}. Sınıf Dersleri`;
 
-liste.innerHTML += "<li>"+d.ad+" - "+d.dosya+"</li>"
-
-})
-
+  const classDersler = dersler[userClass] || [];
+  derslerGrid.innerHTML = classDersler.map(ders => {
+    const topicList = ders.topics ? ders.topics.map(topic => `<li>${topic}</li>`).join('') : '';
+    return `
+      <div class="card">
+        <img src="${ders.img}" alt="${ders.name}">
+        <h3>${ders.name}</h3>
+        ${topicList ? `<ul style="text-align:left; font-size:0.85rem; padding-left:16px; color:#333;">${topicList}</ul>` : ''}
+      </div>
+    `;
+  }).join('');
+}
 </script>
 
 </body>

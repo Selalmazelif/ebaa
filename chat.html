@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBA Chat Sistemi</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="chat.css">
+</head>
+
+<body>
+  <header class="chat-header">
+    <div class="chat-header-left">
+      <button class="icon-btn" id="toggleSidebar" title="Sohbet Listesini Göster/Gizle">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="chat-logo">
+        <span class="chat-logo-icon"><i class="fa-solid fa-comments"></i></span>
+        <span class="chat-logo-text">EBA Chat</span>
+      </div>
+    </div>
+
+    <div class="chat-header-right">
+      <button class="icon-btn" id="openGroupModal" title="Yeni Grup Oluştur">
+        <i class="fa-solid fa-users"></i>
+      </button>
+      <button class="icon-btn" onclick="logout()" title="Çıkış Yap">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+      <a class="icon-btn" href="#" onclick="goToPanel()" title="Paneli Aç">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </div>
+  </header>
+
+  <div class="chat-app">
+    <aside class="chat-sidebar" id="chatSidebar">
+      <div class="sidebar-search">
+        <input id="conversationSearch" placeholder="Konuşma ara..." autocomplete="off">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </div>
+
+      <div class="sidebar-segment">
+        <div class="segment-header">
+          <span>Bireysel</span>
+        </div>
+        <div class="conversation-list" id="individualList"></div>
+      </div>
+
+      <div class="sidebar-segment">
+        <div class="segment-header">
+          <span>Gruplar</span>
+        </div>
+        <div class="conversation-list" id="groupList"></div>
+      </div>
+
+      <button class="primary-btn" id="createGroupBtn">
+        <i class="fa-solid fa-plus"></i> Grup Oluştur
+      </button>
+    </aside>
+
+    <main class="chat-main">
+      <div class="chat-top" id="chatTop">
+        <div>
+          <h2 id="chatTitle">Hoşgeldiniz!</h2>
+          <p id="chatSubtitle">Bir konuşma seçerek devam edin.</p>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="empty-state">
+          <i class="fa-regular fa-message"></i>
+          <p>Sol taraftan bir konuşma seçin veya yeni bir grup oluşturun.</p>
+        </div>
+      </div>
+
+      <form class="chat-input" id="chatForm">
+        <input id="messageInput" type="text" placeholder="Mesajını yaz..." autocomplete="off" />
+        <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+    </main>
+  </div>
+
+  <div class="modal" id="groupModal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Yeni Grup Oluştur</h3>
+        <button class="icon-btn" id="closeModal" aria-label="Kapat">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label class="field">
+          <span>Grup Adı</span>
+          <input id="groupName" type="text" placeholder="Örn. 8A Matematik" />
+        </label>
+
+        <div class="field">
+          <span>Üyeler</span>
+          <div class="user-grid" id="userList">
+            <!-- Dinamik olarak doldurulur -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-btn" id="cancelGroup">İptal</button>
+        <button class="primary-btn" id="saveGroup">Oluştur</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+  <script src="auth-utils.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>

@@ -1,48 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
 <meta charset="UTF-8">
 <title>Öğrenciler</title>
-<link rel="stylesheet" href="ogretmen-panel.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
 </head>
 
 <body>
 
 <div class="sidebar">
 
-<h2>Öğretmen</h2>
+<div class="logo">EBA</div>
+
+<div class="profile">
+<div class="profile-box"></div>
+<p id="profile-name">Öğretmen</p>
+<p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
+<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
+</div>
 
 <ul>
-<li><a href="ogretmen-panel.html">Ana Sayfa</a></li>
-<li><a href="ogretmen-dersler.html">Derslerim</a></li>
-<li><a href="ogretmen-ogrenciler.html">Öğrenciler</a></li>
-<li><a href="sinav-olustur.html">Sınav Oluştur</a></li>
-<li><a href="chat.html">Mesajlar</a></li>
+
+<li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+
+<li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Derslerim</a></li>
+
+<li><a href="ogretmen-ogrenciler.html"><i class="fa-solid fa-users"></i> Öğrenciler</a></li>
+
+<li><a href="sinav-olustur.html"><i class="fa-solid fa-pen"></i> Sınav Oluştur</a></li>
+
+<li><a href="chat.html"><i class="fa-solid fa-comments"></i> Mesajlar</a></li>
+
 </ul>
 
 </div>
 
 <div class="main">
 
-<h1>Öğrenciler</h1>
+<div class="topbar">
 
-<div class="card-grid">
-
-<div class="card">
-Ahmet Yılmaz
+<div class="search">
+<i class="fa fa-search"></i>
+<input placeholder="Ara">
 </div>
 
-<div class="card">
-Ayşe Demir
-</div>
+<div class="icons">
 
-<div class="card">
-Mehmet Kaya
-</div>
+<i class="fa fa-bell"></i>
 
-</div>
+<a href="chat.html">
+<i class="fa fa-envelope"></i>
+</a>
 
 </div>
+
+</div>
+
+<div class="banner">
+
+<div>
+<h2>Öğrenciler</h2>
+<p>Kendi okulunuzdaki öğrencilerinizi yönetin</p>
+</div>
+
+</div>
+
+<div class="cards" id="ogrenciler-grid">
+
+<!-- Dinamik olarak doldurulur -->
+
+</div>
+
+</div>
+
+<script src="auth-utils.js"></script>
+<script>
+const user = requireAuth();
+if (user) {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('profile-school').textContent = user.school;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  const ogrencilerGrid = document.getElementById('ogrenciler-grid');
+
+  const users = JSON.parse(localStorage.getItem('users') || '[]');
+  const students = users.filter(u => u.role === 'ogrenci' && u.school === user.school && user.authorizedClasses.includes(u.class));
+
+  ogrencilerGrid.innerHTML = students.map(student => `
+    <div class="card">
+      <h3>${student.name}</h3>
+      <p>${student.class}. Sınıf</p>
+    </div>
+  `).join('');
+}
+</script>
 
 </body>
 </html>
