@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Veli Kayıt</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">EBA</div>
+</header>
+
+<div class="container">
+    <div class="login-box">
+        <div class="role-tab">Veli Kayıt</div>
+        <h2>Veli Hesabı Oluştur</h2>
+
+        <form id="veliRegisterForm">
+            <div class="input-group">
+                <label>Ad Soyad</label>
+                <input type="text" id="name" placeholder="Ad Soyad">
+            </div>
+
+            <div class="input-group">
+                <label>TC Kimlik No</label>
+                <input type="text" id="tc" placeholder="11 haneli TC">
+            </div>
+
+            <div class="input-group">
+                <label>Şifre</label>
+                <input type="password" id="password" placeholder="Şifre">
+            </div>
+
+            <div class="input-group">
+                <label>Okul</label>
+                <input type="text" id="school" placeholder="Okul adı" required>
+            </div>
+
+            <div class="input-group">
+                <label>Çocuğun TC Kimlik No</label>
+                <input type="text" id="childTc" placeholder="Çocuğun TC Kimlik No">
+            </div>
+
+            <div class="input-group">
+                <label>Çocuğun İsmi</label>
+                <input type="text" id="childName" placeholder="Öğrencinin Adı Soyadı">
+            </div>
+
+            <div class="input-group">
+                <label>İlişki</label>
+                <select id="relationship">
+                    <option value="anne">Anne</option>
+                    <option value="baba">Baba</option>
+                    <option value="diger">Diğer</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Profil Fotoğrafı (opsiyonel)</label>
+                <input type="file" id="profilePic" accept="image/*">
+            </div>
+
+            <button class="login-btn" type="submit">Kayıt Ol</button>
+        </form>
+
+        <p style="margin-top: 15px; text-align: center;">
+            Hesabınız var mı? <a href="veli-login.html">Giriş Yap</a>
+        </p>
+    </div>
+</div>
+
+<script>
+function validateTC(tc) {
+  return /^\d{11}$/.test(tc);
+}
+
+function validatePassword(password) {
+  return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password);
+}
+
+function validateName(name) {
+  return name.length >= 3 && /^[a-zA-ZçÇğĞıİöÖşŞüÜ\s]+$/.test(name);
+}
+
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+const form = document.getElementById('veliRegisterForm');
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value.trim();
+    const tc = document.getElementById('tc').value.trim();
+    const password = document.getElementById('password').value;
+    const school = document.getElementById('school').value.trim();
+    const childTc = document.getElementById('childTc').value.trim();
+    const childName = document.getElementById('childName').value.trim();
+    const relationship = document.getElementById('relationship').value;
+
+    if(!name || !tc || !password || !school){
+        alert('Lütfen gerekli alanları doldurun');
+        return;
+    }
+
+    if (!validateTC(tc)) {
+        alert('TC Kimlik No 11 haneli ve sayısal olmalıdır!');
+        return;
+    }
+
+    if (!validateName(name)) {
+        alert('Ad-soyad en az 3 karakter olmalı ve sadece harf içermelidir!');
+        return;
+    }
+
+    if (!validatePassword(password)) {
+        alert('Şifre en az 8 karakter, 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir!');
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    if (users.some(user => user.tc === tc)) {
+        alert('Bu TC zaten kayıtlı!');
+        return;
+    }
+
+    const user = {
+        id: Date.now().toString(),
+        name: escapeHtml(name),
+        tc: tc,
+        password: password,
+        role: 'veli',
+        school: escapeHtml(school),
+        childTc: childTc,
+        childName: escapeHtml(childName),
+        relationship: relationship,
+        createdAt: new Date().toISOString()
+    };
+
+    const photoInput = document.getElementById('profilePic');
+    if (photoInput && photoInput.files && photoInput.files[0]) {
+        const file = photoInput.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Dosya boyutu 2MB'dan büyük olamaz!");
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            alert('Sadece görüntü dosyaları kabul edilir!');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            user.profilePic = e.target.result;
+            users.push(user);
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('Veli kaydı başarılı!');
+            window.location.href = 'veli-login.html';
+        };
+        reader.readAsDataURL(file);
+        return;
+    }
+
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('Veli kaydı başarılı!');
+    window.location.href = 'veli-login.html';
+});
+</script>
+
+</body>
+</html>

@@ -98,7 +98,7 @@ if (loginForm) {
             sessionStorage.setItem("tabId", tabId);
             sessionStorage.setItem("currentUser", JSON.stringify(secureUser));
             localStorage.removeItem("currentUser"); // Eski veriyi sil
-            
+
             alert("✅ Giriş başarılı!");
             window.location.href = "ogrenci-panel.html";
         } else {

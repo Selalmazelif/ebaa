@@ -1,308 +1,317 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-<meta charset="UTF-8">
-<title>Öğrenci Paneli</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
+<head>
+  <meta charset="UTF-8">
+  <title>Öğrenci Paneli</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
+  <!-- SIDEBAR -->
 
-<div class="sidebar">
+  <div class="sidebar">
 
-<div class="logo">EBA</div>
+    <div class="logo">EBA</div>
 
-<div class="profile">
-<div class="profile-box"></div>
-<p id="profile-name">Öğrenci</p>
-<p id="profile-role" style="font-size:12px; color:#e6d4e0; margin-top:2px;">Rol: Öğrenci</p>
-<p id="profile-school" style="font-size:13px; color:#e6d4e0; margin-top:4px;">–</p>
-<input id="profilePicInput" type="file" accept="image/*" />
-<button id="changeProfilePicBtn">Fotoğrafı Kaydet</button>
-<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
-</div>
+    <div class="profile">
+      <div class="profile-box"></div>
+      <p id="profile-name"></p>
+      <p id="profile-role" style="font-size:12px; color:#e6d4e0; margin-top:2px;">Rol: Öğrenci</p>
+      <p id="profile-school" style="font-size:13px; color:#e6d4e0; margin-top:4px;">–</p>
+      <input id="profilePicInput" type="file" accept="image/*" />
+      <button id="changeProfilePicBtn">Fotoğrafı Kaydet</button>
+      <button id="logoutBtn"
+        style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
+    </div>
 
-<ul>
+    <ul>
 
-<li>
-<a href="ogrenci-panel.html">
-<i class="fa-solid fa-house"></i> Ana Sayfa
-</a>
-</li>
+      <li>
+        <a href="ogrenci-panel.html">
+          <i class="fa-solid fa-house"></i> Ana Sayfa
+        </a>
+      </li>
 
-<li>
-<a href="dersler.html">
-<i class="fa-solid fa-book"></i> Dersler
-</a>
-</li>
+      <li>
+        <a href="dersler.html">
+          <i class="fa-solid fa-book"></i> Dersler
+        </a>
+      </li>
 
-<li>
-<a href="canli-ders.html">
-<i class="fa-solid fa-video"></i> Canlı Ders
-</a>
-</li>
+      <li>
+        <a href="canli-ders.html">
+          <i class="fa-solid fa-video"></i> Canlı Ders
+        </a>
+      </li>
 
-<li>
-<a href="kitaplar.html">
-<i class="fa-solid fa-file"></i> Kitaplar
-</a>
-</li>
+      <li>
+        <a href="kitaplar.html">
+          <i class="fa-solid fa-file"></i> Kitaplar
+        </a>
+      </li>
 
-<li>
-<a href="sinavlar.html">
-<i class="fa-solid fa-pen"></i> Sınavlar
-</a>
-</li>
+      <li>
+        <a href="sinavlar.html">
+          <i class="fa-solid fa-pen"></i> Sınavlar
+        </a>
+      </li>
 
-</ul>
+    </ul>
 
-</div>
+  </div>
 
-<!-- MAIN -->
+  <!-- MAIN -->
 
-<div class="main">
+  <div class="main">
 
-<!-- TOPBAR -->
+    <!-- TOPBAR -->
 
-<div class="topbar">
+    <div class="topbar">
 
-<div class="search">
-<i class="fa fa-search"></i>
-<input placeholder="Ara">
-</div>
+      <div class="search">
+        <i class="fa fa-search"></i>
+        <input placeholder="Ara">
+      </div>
 
-<div class="icons">
+      <div class="icons">
 
-<i class="fa fa-bell"></i>
+        <i class="fa fa-bell"></i>
 
-<a href="chat.html">
-<i class="fa fa-envelope"></i>
-</a>
+        <a href="chat.html">
+          <i class="fa fa-envelope"></i>
+        </a>
 
-</div>
+      </div>
 
-</div>
+    </div>
 
-<!-- BANNER -->
+    <!-- BANNER -->
 
-<div class="banner">
+    <div class="banner">
 
-<div>
-<h2>Bugün Ne Öğrenmek İstersin?</h2>
-<p>Derslerine hızlıca ulaş</p>
-</div>
+      <div>
+        <h2>Bugün Ne Öğrenmek İstersin?</h2>
+        <p>Derslerine hızlıca ulaş</p>
+      </div>
 
-<button><a href="dersler.html">Derslere Git</a></button>
+      <button><a href="dersler.html">Derslere Git</a></button>
 
-</div>
+    </div>
 
-<!-- CARDS -->
+    <!-- CARDS -->
 
-<div class="cards">
+    <div class="cards">
 
-<div class="card">
-<a href="dersler.html">
-<i class="fa-solid fa-book"></i>
-<h3>Dersler</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="dersler.html">
+          <i class="fa-solid fa-book"></i>
+          <h3>Dersler</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="canli-ders.html">
-<i class="fa-solid fa-video"></i>
-<h3>Canlı Ders</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="canli-ders.html">
+          <i class="fa-solid fa-video"></i>
+          <h3>Canlı Ders</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="kitaplar.html">
-<i class="fa-solid fa-file"></i>
-<h3>Kitaplar</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="kitaplar.html">
+          <i class="fa-solid fa-file"></i>
+          <h3>Kitaplar</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="sinavlar.html">
-<i class="fa-solid fa-pen"></i>
-<h3>Sınavlar</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="sinavlar.html">
+          <i class="fa-solid fa-pen"></i>
+          <h3>Sınavlar</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="chat.html">
-<i class="fa-solid fa-comments"></i>
-<h3>Mesajlar</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="chat.html">
+          <i class="fa-solid fa-comments"></i>
+          <h3>Mesajlar</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="#" onclick="showPasswordChange()">
-<i class="fa-solid fa-key"></i>
-<h3>Şifre Değiştir</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="#" onclick="showPasswordChange()">
+          <i class="fa-solid fa-key"></i>
+          <h3>Şifre Değiştir</h3>
+        </a>
+      </div>
 
-<div class="card">
-<a href="#" id="resetStorageBtn">
-<i class="fa-solid fa-trash"></i>
-<h3>Verileri Sıfırla</h3>
-</a>
-</div>
+      <div class="card">
+        <a href="#" id="resetStorageBtn">
+          <i class="fa-solid fa-trash"></i>
+          <h3>Verileri Sıfırla</h3>
+        </a>
+      </div>
 
-</div>
+    </div>
 
-<div id="passwordChange" style="display:none; margin-top:20px;">
-<h3>Şifre Değiştir</h3>
-<div id="passwordForm">
-    <input type="text" id="confirmTc" placeholder="TC Kimlik No (doğrulama için)" style="padding:8px; margin:5px;">
-    <input type="password" id="newPassword" placeholder="Yeni şifre" style="padding:8px; margin:5px;">
-    <button onclick="changePassword()" style="background:#8a1550; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Değiştir</button>
-</div>
-<div id="passwordMessage" style="margin-top:10px;"></div>
-</div>
+    <div id="passwordChange" style="display:none; margin-top:20px;">
+      <h3>Şifre Değiştir</h3>
+      <div id="passwordForm">
+        <input type="text" id="confirmTc" placeholder="TC Kimlik No (doğrulama için)" style="padding:8px; margin:5px;">
+        <input type="password" id="newPassword" placeholder="Yeni şifre" style="padding:8px; margin:5px;">
+        <button onclick="changePassword()"
+          style="background:#8a1550; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Değiştir</button>
+      </div>
+      <div id="passwordMessage" style="margin-top:10px;"></div>
+    </div>
 
-</div>
+  </div>
 
-<script src="auth-utils.js"></script>
-<script>
-  const user = requireAuth();
-  if (user) {
-    if (user.role !== 'ogrenci') {
-      logout();
-      return;
-    }
+  <script src="auth-utils.js"></script>
+  <script>
+    function initStudentPanel() {
+      const user = requireAuth();
+      if (!user) return;
 
-    document.getElementById('profile-name').textContent = user.name;
-    document.getElementById('profile-role').textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
-    document.getElementById('profile-school').textContent = user.school;
-    if (user.profilePic) {
-      const profileBox = document.querySelector('.profile-box');
-      profileBox.innerHTML = `<img src="${user.profilePic}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
-    }
+      if (user.role !== 'ogrenci') {
+        logout();
+        return;
+      }
 
-    const profilePicInput = document.getElementById('profilePicInput');
-    const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
-    if (changeProfilePicBtn) {
-      changeProfilePicBtn.addEventListener('click', () => {
-        if (!profilePicInput || !profilePicInput.files || !profilePicInput.files[0]) {
-          alert('Lütfen bir profil fotoğrafı seçin.');
-          return;
-        }
-        const file = profilePicInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const photoData = e.target.result;
-          const users = JSON.parse(localStorage.getItem('users') || '[]');
-          const index = users.findIndex(u => u.id === user.id || u.tc === user.tc);
-          if (index !== -1) {
-            users[index].profilePic = photoData;
-            localStorage.setItem('users', JSON.stringify(users));
-            user.profilePic = photoData;
-            // Güvenlik: sessionStorage'a kaydet (tab-specific)
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
-            localStorage.removeItem('currentUser'); // Eski veriyi sil
-            const profileBox = document.querySelector('.profile-box');
-            profileBox.innerHTML = `<img src="${photoData}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
-            alert('Profil fotoğrafı güncellendi.');
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-role').textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
+      document.getElementById('profile-school').textContent = user.school;
+      if (user.profilePic) {
+        const profileBox = document.querySelector('.profile-box');
+        profileBox.innerHTML = `<img src="${user.profilePic}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+      }
+
+      const profilePicInput = document.getElementById('profilePicInput');
+      const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
+      if (changeProfilePicBtn) {
+        changeProfilePicBtn.addEventListener('click', () => {
+          if (!profilePicInput || !profilePicInput.files || !profilePicInput.files[0]) {
+            alert('Lütfen bir profil fotoğrafı seçin.');
+            return;
           }
-        };
-        reader.readAsDataURL(file);
+          const file = profilePicInput.files[0];
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const photoData = e.target.result;
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const index = users.findIndex(u => u.id === user.id || u.tc === user.tc);
+            if (index !== -1) {
+              users[index].profilePic = photoData;
+              localStorage.setItem('users', JSON.stringify(users));
+              user.profilePic = photoData;
+              // Güvenlik: sessionStorage'a kaydet (tab-specific)
+              sessionStorage.setItem('currentUser', JSON.stringify(user));
+              localStorage.removeItem('currentUser'); // Eski veriyi sil
+              const profileBox = document.querySelector('.profile-box');
+              profileBox.innerHTML = `<img src="${photoData}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+              alert('Profil fotoğrafı güncellendi.');
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('click', logout);
+    }
+
+    function showPasswordChange() {
+      const passwordChangeDiv = document.getElementById('passwordChange');
+      const passwordForm = document.getElementById('passwordForm');
+      const passwordMessage = document.getElementById('passwordMessage');
+
+      // Check if there's an approved password change request
+      const requests = JSON.parse(localStorage.getItem('passwordRequests') || '[]');
+      const approvedRequest = requests.find(r => r.studentTc === user.tc && r.status === 'approved');
+
+      if (approvedRequest) {
+        passwordForm.style.display = 'block';
+        passwordMessage.textContent = 'Şifre değiştirme isteğiniz onaylandı. TC kimlik numaranızı ve yeni şifrenizi girin.';
+        passwordMessage.style.color = 'green';
+      } else {
+        passwordForm.style.display = 'none';
+        passwordMessage.textContent = 'Şifre değiştirmek için önce veli/öğretmen onayına ihtiyacınız var. Şifre sıfırlama sayfasından istek gönderin.';
+        passwordMessage.style.color = 'red';
+      }
+
+      passwordChangeDiv.style.display = 'block';
+    }
+
+    function changePassword() {
+      const confirmTc = document.getElementById('confirmTc').value.trim();
+      const newPassword = document.getElementById('newPassword').value;
+      const passwordMessage = document.getElementById('passwordMessage');
+
+      if (!confirmTc || !newPassword) {
+        passwordMessage.textContent = 'Lütfen TC ve yeni şifre girin.';
+        passwordMessage.style.color = 'red';
+        return;
+      }
+
+      if (confirmTc !== user.tc) {
+        passwordMessage.textContent = 'TC kimlik numarası yanlış.';
+        passwordMessage.style.color = 'red';
+        return;
+      }
+
+      // Check if there's an approved request
+      const requests = JSON.parse(localStorage.getItem('passwordRequests') || '[]');
+      const approvedRequest = requests.find(r => r.studentTc === user.tc && r.status === 'approved');
+
+      if (!approvedRequest) {
+        passwordMessage.textContent = 'Onaylanmış şifre değiştirme isteğiniz yok.';
+        passwordMessage.style.color = 'red';
+        return;
+      }
+
+      // Update user password
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const userIndex = users.findIndex(u => u.id ? u.id === user.id : u.tc === user.tc);
+
+      if (userIndex !== -1) {
+        users[userIndex].password = newPassword;
+        localStorage.setItem('users', JSON.stringify(users));
+
+        // Remove the approved request
+        const updatedRequests = requests.filter(r => !(r.studentTc === user.tc && r.status === 'approved'));
+        localStorage.setItem('passwordRequests', JSON.stringify(updatedRequests));
+
+        passwordMessage.textContent = 'Şifre başarıyla değiştirildi! Çıkış yapılıyor...';
+        passwordMessage.style.color = 'green';
+
+        // Logout and redirect to goodbye page
+        setTimeout(() => {
+          localStorage.removeItem('currentUser');
+          window.location.href = 'goodbye.html';
+        }, 2000);
+      } else {
+        passwordMessage.textContent = 'Kullanıcı bulunamadı.';
+        passwordMessage.style.color = 'red';
+      }
+    }
+
+    const resetStorageBtn = document.getElementById('resetStorageBtn');
+    if (resetStorageBtn) {
+      resetStorageBtn.addEventListener('click', () => {
+        if (confirm('Tüm verileri silmek istediğinizden emin misiniz?')) {
+          localStorage.clear();
+          alert('Tüm veriler silindi!');
+          window.location.href = 'index.html';
+        }
       });
     }
+  
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) logoutBtn.addEventListener('click', logout);
-  }
-
-  function showPasswordChange() {
-    const passwordChangeDiv = document.getElementById('passwordChange');
-    const passwordForm = document.getElementById('passwordForm');
-    const passwordMessage = document.getElementById('passwordMessage');
-    
-    // Check if there's an approved password change request
-    const requests = JSON.parse(localStorage.getItem('passwordRequests') || '[]');
-    const approvedRequest = requests.find(r => r.studentTc === user.tc && r.status === 'approved');
-    
-    if (approvedRequest) {
-      passwordForm.style.display = 'block';
-      passwordMessage.textContent = 'Şifre değiştirme isteğiniz onaylandı. TC kimlik numaranızı ve yeni şifrenizi girin.';
-      passwordMessage.style.color = 'green';
-    } else {
-      passwordForm.style.display = 'none';
-      passwordMessage.textContent = 'Şifre değiştirmek için önce veli/öğretmen onayına ihtiyacınız var. Şifre sıfırlama sayfasından istek gönderin.';
-      passwordMessage.style.color = 'red';
-    }
-    
-    passwordChangeDiv.style.display = 'block';
-  }
-
-  function changePassword() {
-    const confirmTc = document.getElementById('confirmTc').value.trim();
-    const newPassword = document.getElementById('newPassword').value;
-    const passwordMessage = document.getElementById('passwordMessage');
-    
-    if (!confirmTc || !newPassword) {
-      passwordMessage.textContent = 'Lütfen TC ve yeni şifre girin.';
-      passwordMessage.style.color = 'red';
-      return;
-    }
-    
-    if (confirmTc !== user.tc) {
-      passwordMessage.textContent = 'TC kimlik numarası yanlış.';
-      passwordMessage.style.color = 'red';
-      return;
-    }
-    
-    // Check if there's an approved request
-    const requests = JSON.parse(localStorage.getItem('passwordRequests') || '[]');
-    const approvedRequest = requests.find(r => r.studentTc === user.tc && r.status === 'approved');
-    
-    if (!approvedRequest) {
-      passwordMessage.textContent = 'Onaylanmış şifre değiştirme isteğiniz yok.';
-      passwordMessage.style.color = 'red';
-      return;
-    }
-    
-    // Update user password
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userIndex = users.findIndex(u => u.id ? u.id === user.id : u.tc === user.tc);
-    
-    if (userIndex !== -1) {
-      users[userIndex].password = newPassword;
-      localStorage.setItem('users', JSON.stringify(users));
-      
-      // Remove the approved request
-      const updatedRequests = requests.filter(r => !(r.studentTc === user.tc && r.status === 'approved'));
-      localStorage.setItem('passwordRequests', JSON.stringify(updatedRequests));
-      
-      passwordMessage.textContent = 'Şifre başarıyla değiştirildi! Çıkış yapılıyor...';
-      passwordMessage.style.color = 'green';
-      
-      // Logout and redirect to goodbye page
-      setTimeout(() => {
-        localStorage.removeItem('currentUser');
-        window.location.href = 'goodbye.html';
-      }, 2000);
-    } else {
-      passwordMessage.textContent = 'Kullanıcı bulunamadı.';
-      passwordMessage.style.color = 'red';
-    }
-  }
-
-  const resetStorageBtn = document.getElementById('resetStorageBtn');
-  if (resetStorageBtn) {
-    resetStorageBtn.addEventListener('click', () => {
-      if (confirm('Tüm verileri silmek istediğinizden emin misiniz?')) {
-        localStorage.clear();
-        alert('Tüm veriler silindi!');
-        window.location.href = 'index.html';
-      }
-    });
-  }
-</script>
+  initStudentPanel();
+  </script>
 </body>
+
 </html>

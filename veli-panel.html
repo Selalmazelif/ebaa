@@ -95,8 +95,9 @@
 
 <script src="auth-utils.js"></script>
 <script>
-  const user = requireAuth();
-  if (user) {
+  function initParentPanel() {
+    const user = requireAuth();
+    if (!user) return;
     if (user.role !== 'veli') {
       logout();
       return;
@@ -203,6 +204,8 @@
       }
     });
   }
+
+  initParentPanel();
 </script>
 
 </body>

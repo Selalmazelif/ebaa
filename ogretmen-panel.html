@@ -124,8 +124,9 @@
 
     <script src="auth-utils.js"></script>
     <script>
-      const user = requireAuth();
-      if (user) {
+      function initTeacherPanel() {
+        const user = requireAuth();
+        if (!user) return;
         if (user.role !== 'ogretmen') {
           logout();
           return;
@@ -175,6 +176,8 @@
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
       }
+
+      initTeacherPanel();
 
       function showPasswordResetRequests() {
         const requestsDiv = document.getElementById('resetRequests');
