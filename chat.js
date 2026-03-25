@@ -59,6 +59,14 @@ function createDummyData() {
     lastTime: '',
     messages: [],
   }));
+
+  // Load groups from localstorage
+  const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
+  const myGroups = allGroups.filter(g => g.members.includes(user.id || user.tc));
+  
+  myGroups.forEach(g => {
+    state.conversations.unshift(g);
+  });
 }
 
 function renderConversationItem(conversation) {
@@ -264,6 +272,11 @@ function createGroup() {
     alert('En az bir üye seçmelisiniz.');
     return;
   }
+  
+  const user = getCurrentUser();
+  if(user) {
+      selectedUsers.push(user.id || user.tc); // add creator to group
+  }
 
   const newGroup = {
     id: randomId(),
@@ -276,6 +289,10 @@ function createGroup() {
       { from: 'me', text: 'Grup oluşturuldu. Herkese merhaba!', time: formatTime() },
     ],
   };
+  
+  const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
+  allGroups.push(newGroup);
+  localStorage.setItem('chatGroups', JSON.stringify(allGroups));
 
   state.conversations.unshift(newGroup);
   renderConversationLists(elements.conversationSearch.value);

@@ -13,17 +13,27 @@
         <div class="logo">EBA</div>
 
         <div class="profile">
-            <div class="profile-box"></div>
+            <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()" title="Fotoğrafı Değiştir">
+              <div class="profile-box" id="profile-box-container">
+                  <div style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid #f0d4e2; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                      <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+                      <img src="" alt="Profil Fotoğrafı" id="profile-img-display" style="display:none; width:100%; height:100%; object-fit:cover;" />
+                  </div>
+              </div>
+              <div class="edit-overlay">
+                  <i class="fa fa-camera"></i>
+              </div>
+              <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+            </div>
             <p id="profile-name">Veli</p>
             <p id="profile-role" style="font-size:12px; color:#f0d4e2; margin-top:2px;">Rol: Veli</p>
             <p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
-            <input id="profilePicInput" type="file" accept="image/*" />
-            <button id="changeProfilePicBtn">Fotoğrafı Kaydet</button>
-            <button id="logoutBtn">Çıkış</button>
+            <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+            <button id="logoutBtn" style="margin-top:15px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
         </div>
 
         <ul>
-            <li><a href="ogrenci-panel.html">Ana Sayfa</a></li>
+            <li><a href="veli-panel.html">Ana Sayfa</a></li>
             <li><a href="dersler.html">Dersler</a></li>
             <li><a href="sinavlar.html">Sınavlar</a></li>
             <li><a href="chat.html">Mesajlar</a></li>
@@ -61,6 +71,18 @@
                 </a>
             </div>
             <div class="card">
+                <a href="#" onclick="showSchedule()">
+                    <i class="fa-solid fa-calendar-alt"></i>
+                    <h3>Ders Programı</h3>
+                </a>
+            </div>
+            <div class="card">
+                <a href="#" onclick="showHomework()">
+                    <i class="fa-solid fa-tasks"></i>
+                    <h3>Ödev Durumu</h3>
+                </a>
+            </div>
+            <div class="card">
                 <a href="sinavlar.html">
                     <i class="fa-solid fa-pen"></i>
                     <h3>Sınavlar</h3>
@@ -74,8 +96,14 @@
             </div>
             <div class="card">
                 <a href="#" onclick="showPasswordResetRequests()">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <h3>Öğrenci Şifre İstekleri</h3>
+                </a>
+            </div>
+            <div class="card">
+                <a href="#" onclick="showParentPasswordChange()">
                     <i class="fa-solid fa-key"></i>
-                    <h3>Şifre İstekleri</h3>
+                    <h3>Şifre Değiştir</h3>
                 </a>
             </div>
             <div class="card">
@@ -84,6 +112,55 @@
                     <h3>Verileri Sıfırla</h3>
                 </a>
             </div>
+        </div>
+
+        <div id="scheduleView" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Haftalık Ders Programı</h3>
+                <button onclick="document.getElementById('scheduleView').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <tr style="background:#f1f1f1;"><th style="padding:10px; border:1px solid #ddd;">Gün</th><th style="padding:10px; border:1px solid #ddd;">Dersler</th></tr>
+                <tr><td style="padding:10px; border:1px solid #ddd;">Pazartesi</td><td style="padding:10px; border:1px solid #ddd;">Matematik, Matematik, Türkçe, Fizik</td></tr>
+                <tr><td style="padding:10px; border:1px solid #ddd;">Salı</td><td style="padding:10px; border:1px solid #ddd;">Kimya, Biyoloji, Tarih, Coğrafya</td></tr>
+                <tr><td style="padding:10px; border:1px solid #ddd;">Çarşamba</td><td style="padding:10px; border:1px solid #ddd;">Türkçe, Türkçe, İngilizce, Beden Eğitimi</td></tr>
+                <tr><td style="padding:10px; border:1px solid #ddd;">Perşembe</td><td style="padding:10px; border:1px solid #ddd;">Fizik, Kimya, Matematik, Din Kültürü</td></tr>
+                <tr><td style="padding:10px; border:1px solid #ddd;">Cuma</td><td style="padding:10px; border:1px solid #ddd;">Biyoloji, Müzik, Görsel Sanatlar, İngilizce</td></tr>
+            </table>
+        </div>
+
+        <div id="homeworkView" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Öğrenci Ödev Durumu</h3>
+                <button onclick="document.getElementById('homeworkView').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
+            </div>
+            <ul style="list-style:none; padding:0;">
+                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                    <span><i class="fa fa-book" style="color:#2c6aa0; width:20px;"></i> Matematik - Olasılık Testi</span> 
+                    <span style="color:#4caf50; font-weight:bold;"><i class="fa fa-check"></i> Yaptı</span>
+                </li>
+                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                    <span><i class="fa fa-book" style="color:#e33a6a; width:20px;"></i> Türkçe - Makale Özeti</span> 
+                    <span style="color:#f44336; font-weight:bold;"><i class="fa fa-times"></i> Yapmadı</span>
+                </li>
+                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                    <span><i class="fa fa-book" style="color:#ff9800; width:20px;"></i> Fizik - Proje Sunumu</span> 
+                    <span style="color:#4caf50; font-weight:bold;"><i class="fa fa-check"></i> Yaptı</span>
+                </li>
+            </ul>
+        </div>
+
+        <div id="parentPasswordChange" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Şifremi Değiştir</h3>
+                <button onclick="document.getElementById('parentPasswordChange').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
+            </div>
+            <div id="parentPasswordForm">
+                <input type="password" id="parentCurrentPassword" placeholder="Mevcut şifreniz" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
+                <input type="password" id="parentNewPassword" placeholder="Yeni şifreniz" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
+                <button onclick="changeParentPassword()" style="background:#8a1550; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Değiştir</button>
+            </div>
+            <div id="parentPasswordMessage" style="margin-top:10px;"></div>
         </div>
 
         <div id="resetRequests" style="display:none; margin-top:20px;">
@@ -110,18 +187,19 @@
     if (roleEl) roleEl.textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
     if (schoolEl) schoolEl.textContent = user.school;
     if (user.profilePic) {
-      const profileBox = document.querySelector('.profile-box');
-      profileBox.innerHTML = `<img src="${user.profilePic}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+      const defaultIcon = document.getElementById('default-avatar-icon');
+      const profileImg = document.getElementById('profile-img-display');
+      if (defaultIcon && profileImg) {
+          defaultIcon.style.display = 'none';
+          profileImg.src = user.profilePic;
+          profileImg.style.display = 'block';
+      }
     }
 
     const profilePicInput = document.getElementById('profilePicInput');
-    const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
-    if (changeProfilePicBtn) {
-      changeProfilePicBtn.addEventListener('click', () => {
-        if (!profilePicInput || !profilePicInput.files || !profilePicInput.files[0]) {
-          alert('Lütfen bir profil fotoğrafı seçin.');
-          return;
-        }
+    if (profilePicInput) {
+      profilePicInput.addEventListener('change', () => {
+        if (!profilePicInput.files || !profilePicInput.files[0]) return;
         const file = profilePicInput.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -132,12 +210,15 @@
             users[index].profilePic = photoData;
             localStorage.setItem('users', JSON.stringify(users));
             user.profilePic = photoData;
-            // Güvenlik: sessionStorage'a kaydet (tab-specific)
             sessionStorage.setItem('currentUser', JSON.stringify(user));
-            localStorage.removeItem('currentUser'); // Eski veriyi sil
-            const profileBox = document.querySelector('.profile-box');
-            profileBox.innerHTML = `<img src="${photoData}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
-            alert('Profil fotoğrafı güncellendi.');
+            
+            const defaultIcon = document.getElementById('default-avatar-icon');
+            const profileImg = document.getElementById('profile-img-display');
+            if (defaultIcon && profileImg) {
+                defaultIcon.style.display = 'none';
+                profileImg.src = photoData;
+                profileImg.style.display = 'block';
+            }
           }
         };
         reader.readAsDataURL(file);
@@ -148,12 +229,76 @@
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
   }
 
+  function showSchedule() {
+      const u = getCurrentUser();
+      document.getElementById('resetRequests').style.display = 'none';
+      document.getElementById('homeworkView').style.display = 'none';
+      document.getElementById('parentPasswordChange').style.display = 'none';
+      document.getElementById('scheduleView').style.display = 'block';
+  }
+
+  function showHomework() {
+      document.getElementById('resetRequests').style.display = 'none';
+      document.getElementById('scheduleView').style.display = 'none';
+      document.getElementById('parentPasswordChange').style.display = 'none';
+      document.getElementById('homeworkView').style.display = 'block';
+  }
+
+  function showParentPasswordChange() {
+      document.getElementById('resetRequests').style.display = 'none';
+      document.getElementById('scheduleView').style.display = 'none';
+      document.getElementById('homeworkView').style.display = 'none';
+      document.getElementById('parentPasswordChange').style.display = 'block';
+  }
+
+  function changeParentPassword() {
+      const currentPwd = document.getElementById('parentCurrentPassword').value;
+      const newPwd = document.getElementById('parentNewPassword').value;
+      const msg = document.getElementById('parentPasswordMessage');
+      
+      const user = getCurrentUser();
+      
+      if (!currentPwd || !newPwd) {
+          msg.textContent = 'Lütfen tüm alanları doldurun.';
+          msg.style.color = 'red';
+          return;
+      }
+      
+      if (currentPwd !== user.password) {
+          msg.textContent = 'Mevcut şifreniz hatalı.';
+          msg.style.color = 'red';
+          return;
+      }
+      
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const index = users.findIndex(u => u.tc === user.tc);
+      if (index !== -1) {
+          users[index].password = newPwd;
+          localStorage.setItem('users', JSON.stringify(users));
+          user.password = newPwd;
+          sessionStorage.setItem('currentUser', JSON.stringify(user));
+          
+          msg.textContent = 'Şifreniz başarıyla değiştirildi.';
+          msg.style.color = 'green';
+          document.getElementById('parentCurrentPassword').value = '';
+          document.getElementById('parentNewPassword').value = '';
+      }
+  }
+
   function showPasswordResetRequests() {
+    document.getElementById('scheduleView').style.display = 'none';
+    document.getElementById('homeworkView').style.display = 'none';
+    document.getElementById('parentPasswordChange').style.display = 'none';
+
     const requestsDiv = document.getElementById('resetRequests');
     const requestsList = document.getElementById('requestsList');
+    
+    // Fallback user since this runs globally sometimes
+    const currentUser = getCurrentUser();
+    if(!currentUser) return;
 
     const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
-    const myRequests = requests.filter(r => r.veliTc === user.tc && r.status === "pending");
+    const myRequests = requests.filter(r => r.veliTc === currentUser.tc && r.status === "pending");
 
     if (myRequests.length === 0) {
       requestsList.innerHTML = "<p>Gelen istek yok.</p>";

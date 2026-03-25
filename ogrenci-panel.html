@@ -18,14 +18,25 @@
     <div class="logo">EBA</div>
 
     <div class="profile">
-      <div class="profile-box"></div>
+      <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()" title="Fotoğrafı Değiştir">
+        <div class="profile-box" id="profile-box-container">
+            <div style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid #f0d4e2; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+                <img src="" alt="Profil Fotoğrafı" id="profile-img-display" style="display:none; width:100%; height:100%; object-fit:cover;" />
+            </div>
+        </div>
+        <div class="edit-overlay">
+            <i class="fa fa-camera"></i>
+        </div>
+        <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+      </div>
       <p id="profile-name"></p>
       <p id="profile-role" style="font-size:12px; color:#e6d4e0; margin-top:2px;">Rol: Öğrenci</p>
       <p id="profile-school" style="font-size:13px; color:#e6d4e0; margin-top:4px;">–</p>
-      <input id="profilePicInput" type="file" accept="image/*" />
-      <button id="changeProfilePicBtn">Fotoğrafı Kaydet</button>
+      <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+      
       <button id="logoutBtn"
-        style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
+        style="margin-top:15px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
     </div>
 
     <ul>
@@ -135,6 +146,13 @@
       </div>
 
       <div class="card">
+        <a href="bulmaca.html">
+          <i class="fa-solid fa-gamepad"></i>
+          <h3>Eğitici Oyunlar</h3>
+        </a>
+      </div>
+
+      <div class="card">
         <a href="chat.html">
           <i class="fa-solid fa-comments"></i>
           <h3>Mesajlar</h3>
@@ -185,18 +203,19 @@
       document.getElementById('profile-role').textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
       document.getElementById('profile-school').textContent = user.school;
       if (user.profilePic) {
-        const profileBox = document.querySelector('.profile-box');
-        profileBox.innerHTML = `<img src="${user.profilePic}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
+        const defaultIcon = document.getElementById('default-avatar-icon');
+        const profileImg = document.getElementById('profile-img-display');
+        if (defaultIcon && profileImg) {
+            defaultIcon.style.display = 'none';
+            profileImg.src = user.profilePic;
+            profileImg.style.display = 'block';
+        }
       }
 
       const profilePicInput = document.getElementById('profilePicInput');
-      const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
-      if (changeProfilePicBtn) {
-        changeProfilePicBtn.addEventListener('click', () => {
-          if (!profilePicInput || !profilePicInput.files || !profilePicInput.files[0]) {
-            alert('Lütfen bir profil fotoğrafı seçin.');
-            return;
-          }
+      if (profilePicInput) {
+        profilePicInput.addEventListener('change', () => {
+          if (!profilePicInput.files || !profilePicInput.files[0]) return;
           const file = profilePicInput.files[0];
           const reader = new FileReader();
           reader.onload = function (e) {
@@ -207,12 +226,15 @@
               users[index].profilePic = photoData;
               localStorage.setItem('users', JSON.stringify(users));
               user.profilePic = photoData;
-              // Güvenlik: sessionStorage'a kaydet (tab-specific)
               sessionStorage.setItem('currentUser', JSON.stringify(user));
-              localStorage.removeItem('currentUser'); // Eski veriyi sil
-              const profileBox = document.querySelector('.profile-box');
-              profileBox.innerHTML = `<img src="${photoData}" alt="Profil Fotoğrafı" style="width:70px; height:70px; border-radius:50%; object-fit:cover;" />`;
-              alert('Profil fotoğrafı güncellendi.');
+              
+              const defaultIcon = document.getElementById('default-avatar-icon');
+              const profileImg = document.getElementById('profile-img-display');
+              if (defaultIcon && profileImg) {
+                  defaultIcon.style.display = 'none';
+                  profileImg.src = photoData;
+                  profileImg.style.display = 'block';
+              }
             }
           };
           reader.readAsDataURL(file);

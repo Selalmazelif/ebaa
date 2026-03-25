@@ -138,11 +138,20 @@ if (user) {
   classInfo.textContent = `${userClass}. Sınıf Sınavları`;
 
   const classSinavlar = sinavlar[userClass] || [];
-  sinavlarGrid.innerHTML = classSinavlar.map(sinav => `
-    <div class="card" style="background: ${sinav.color};">
-      <h3>${sinav.name}</h3>
-    </div>
-  `).join('');
+  sinavlarGrid.innerHTML = classSinavlar.map(sinav => {
+    let link = "#";
+    if (sinav.name === 'Tarama Testleri') {
+        link = "tarama-testi.html";
+    }
+    return `
+      <a href="${link}" style="text-decoration:none; color:inherit; display:block;" class="card-link">
+        <div class="card" style="background: ${sinav.color}; color:white; min-height:120px; display:flex; flex-direction:column; justify-content:center;">
+          <h3>${sinav.name}</h3>
+          <p style="font-size:12px; margin-top:10px; opacity:0.8;">Sınava Git <i class="fa fa-arrow-right" style="font-size:10px; margin-left:4px;"></i></p>
+        </div>
+      </a>
+    `;
+  }).join('');
 }
 </script>
 

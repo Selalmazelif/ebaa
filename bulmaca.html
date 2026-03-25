@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eğitici Oyunlar & Bulmaca - EBA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f1f8ff; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .header { background: #8a1550; color: white; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 24px; font-weight: bold; text-decoration: none; color: white; }
+        .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; flex-grow: 1; width: 100%; }
+        h1 { color: #8a1550; font-size: 28px; margin-bottom: 20px; }
+        .game-area { margin-top: 30px; }
+        .question-box { background: #f9f9f9; border: 2px dashed #8a1550; border-radius: 12px; padding: 25px; font-size: 20px; font-weight: 500; color: #333; margin-bottom: 20px; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .option-btn { background: #fff; border: 2px solid #ddd; padding: 15px; border-radius: 12px; font-size: 16px; cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; font-weight: 500; color: #444; }
+        .option-btn:hover { background: #f0f0f0; border-color: #ccc; transform: scale(1.02); }
+        .option-btn.correct { background: #4caf50; color: white; border-color: #4caf50; }
+        .option-btn.wrong { background: #f44336; color: white; border-color: #f44336; }
+        .score-board { font-size: 18px; font-weight: 600; color: #8a1550; margin-bottom: 20px; text-align: right; }
+        .action-btn { background: #8a1550; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; display: none; margin: 20px auto; font-family: 'Poppins'; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="ogrenci-panel.html" class="logo"><i class="fa-solid fa-arrow-left"></i> EBA Öğrenci</a>
+        <div>Eğitici Oyunlar</div>
+    </div>
+
+    <div class="container">
+        <h1><i class="fa-solid fa-puzzle-piece" style="color:#ff9800;"></i> Bilgini Test Et!</h1>
+        <div class="score-board">Skor: <span id="scoreVal">0</span> / 5</div>
+        
+        <div class="game-area" id="gameArea">
+            <div class="question-box" id="questionBox">Soru yükleniyor...</div>
+            <div class="options" id="optionsBox">
+                <!-- Options injected by JS -->
+            </div>
+            <button class="action-btn" id="nextBtn" onclick="nextQuestion()">Sonraki Soru <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+
+        <div id="resultArea" style="display:none; margin-top:30px;">
+            <h2>Oyun Bitti! 🏆</h2>
+            <p id="finalScoreText" style="font-size: 20px; margin: 20px 0;"></p>
+            <button class="action-btn" style="display:inline-block; background:#4caf50;" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <script src="auth-utils.js"></script>
+    <script>
+        // Ensure student is logged in
+        if (!requireAuth() || getCurrentUser().role !== 'ogrenci') {
+            window.location.href = 'index.html';
+        }
+
+        const allQuestions = [
+            { q: "Türkçe: Hangisi bir noktalama işareti değildir?", opts: ["Soru İşareti", "Virgül", "Harf", "Nokta"], ans: 2 },
+            { q: "Matematik: 12 x 8 işleminin sonucu kaçtır?", opts: ["86", "96", "106", "116"], ans: 1 },
+            { q: "Fen Bilimleri: Işığı kendi üreten cisimlere ne denir?", opts: ["Işık Kaynağı", "Parlak Cisim", "Yıldız", "Gölge"], ans: 0 },
+            { q: "Sosyal Bilgiler: Yön bulmak için hangisi kullanılmaz?", opts: ["Pusula", "Kutup Yıldızı", "Termometre", "Güneşin konumu"], ans: 2 },
+            { q: "Genel Kültür: Türkiye'nin başkenti neresidir?", opts: ["İstanbul", "İzmir", "Ankara", "Antalya"], ans: 2 },
+            { q: "Matematik: Çevresi 20 cm olan bir karenin bir kenarı kaç cm'dir?", opts: ["2", "4", "5", "10"], ans: 2 },
+            { q: "Fen Bilimleri: Hangisi maddenin hallerinden biri değildir?", opts: ["Katı", "Sıvı", "Enerji", "Gaz"], ans: 2 },
+            { q: "Türkçe: Eş anlamlı kelimeler hangisinde bir aradadır?", opts: ["Siyah - Kara", "Büyük - Küçük", "Ağlamak - Gülmek", "Aşağı - Yukarı"], ans: 0 },
+            { q: "Sosyal Bilgiler: Ülkemizin en kalabalık şehri neresidir?", opts: ["Ankara", "İzmir", "Bursa", "İstanbul"], ans: 3 },
+            { q: "Fen Bilimleri: Dünya'nın uydusu hangisidir?", opts: ["Güneş", "Jüpiter", "Ay", "Mars"], ans: 2 },
+            { q: "Matematik: 50 sayısının yarısının 10 fazlası kaçtır?", opts: ["25", "30", "35", "40"], ans: 2 },
+            { q: "Türkçe: 'Gece' kelimesinin zıt anlamlısı nedir?", opts: ["Sabah", "Gündüz", "Akşam", "Karanlık"], ans: 1 },
+            { q: "Tarih: Cumhuriyet hangi yıl ilan edilmiştir?", opts: ["1919", "1920", "1923", "1938"], ans: 2 },
+            { q: "Müzik: İstiklal Marşı'mızın şairi kimdir?", opts: ["Mehmet Akif Ersoy", "Namık Kemal", "Atilla İlhan", "Ömer Seyfettin"], ans: 0 },
+            { q: "Bilişim: Aşağıdakilerden hangisi bir işletim sistemidir?", opts: ["Klavye", "Monitör", "Windows", "Fare"], ans: 2 }
+        ];
+
+        // 15 sorudan sadece 5 rastgele soru seç
+        const questions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+        let currentQIndex = 0;
+        let score = 0;
+        let answered = false;
+
+        const qBox = document.getElementById('questionBox');
+        const optsBox = document.getElementById('optionsBox');
+        const nextBtn = document.getElementById('nextBtn');
+        const scoreVal = document.getElementById('scoreVal');
+
+        function loadQuestion() {
+            if (currentQIndex >= questions.length) {
+                endGame();
+                return;
+            }
+            answered = false;
+            nextBtn.style.display = 'none';
+            const qData = questions[currentQIndex];
+            qBox.textContent = qData.q;
+            optsBox.innerHTML = '';
+
+            qData.opts.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = optText;
+                btn.onclick = () => selectOption(index, btn);
+                optsBox.appendChild(btn);
+            });
+        }
+
+        function selectOption(index, btn) {
+            if (answered) return;
+            answered = true;
+            nextBtn.style.display = 'block';
+
+            const qData = questions[currentQIndex];
+            const allBtns = optsBox.children;
+
+            if (index === qData.ans) {
+                btn.classList.add('correct');
+                score++;
+                scoreVal.textContent = score;
+                // addNotification(getCurrentUser().tc, "Bulmacada doğru cevap verdin, tebrikler!");
+            } else {
+                btn.classList.add('wrong');
+                allBtns[qData.ans].classList.add('correct'); // reveal correct one
+            }
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            loadQuestion();
+        }
+
+        function endGame() {
+            document.getElementById('gameArea').style.display = 'none';
+            const resArea = document.getElementById('resultArea');
+            resArea.style.display = 'block';
+            document.getElementById('finalScoreText').textContent = `Toplam Skorun: ${score} / ${questions.length}`;
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>

@@ -22,13 +22,30 @@
                 <input type="text" id="tc" placeholder="11 haneli TC" required>
             </div>
 
-            <button class="login-btn" type="submit">İstek Gönder</button>
+            <button class="login-btn" type="submit">Veli/Öğretmen İsteği Gönder</button>
+            <button class="login-btn" type="button" onclick="checkStatus()" style="margin-top:10px; background:#555;">Onay Durumu Sorgula / Şifre Al</button>
+            
+            <div id="phoneRecoverySection" style="margin:20px 0; border-top:1px solid #eee; padding-top:20px; display:none;">
+                <p style="font-size:14px; color:#666; margin-bottom:10px;">Veya Kayıtlı Telefonunuzla Şifre Alın:</p>
+                <div class="input-group">
+                    <label>Kayıtlı Telefon No</label>
+                    <input type="tel" id="recoveryPhone" placeholder="05xx xxx xx xx">
+                </div>
+                <button class="login-btn" type="button" onclick="recoverByPhone()" style="background:#2c6aa0;">Telefona Şifre Gönder</button>
+            </div>
         </form>
+
+        <div id="newPasswordSection" style="display:none; margin-top:20px; text-align:left;">
+             <label style="font-weight:bold; font-size:14px; color:#555;">Yeni Şifrenizi Belirleyin:</label>
+             <input type="password" id="newPasswordInput" placeholder="Yeni şifreniz" style="width:100%; padding:12px; margin-top:8px; margin-bottom:10px; border-radius:8px; border:1px solid #ccc; font-family:'Poppins', sans-serif;">
+             <button class="login-btn" onclick="saveNewPassword()" style="background:#4CAF50;">Şifreyi Kaydet ve Giriş Yap</button>
+        </div>
 
         <div id="message" style="margin-top:20px; text-align:center;"></div>
     </div>
 </div>
 
+<script src="auth-utils.js"></script>
 <script>
 const resetForm = document.getElementById("resetForm");
 const messageDiv = document.getElementById("message");
@@ -43,10 +60,21 @@ resetForm.addEventListener("submit", function(e) {
     }
 
     const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find(u => u.tc === tc && u.role === "ogrenci");
+    const user = users.find(u => u.tc === tc);
 
     if (!user) {
-        messageDiv.innerHTML = "<p style='color:red;'>Bu TC ile öğrenci bulunamadı!</p>";
+        messageDiv.innerHTML = "<p style='color:red;'>Bu TC ile kullanıcı bulunamadı!</p>";
+        document.getElementById("phoneRecoverySection").style.display = "none";
+        return;
+    }
+
+    if (user.role === "ogrenci") {
+        document.getElementById("phoneRecoverySection").style.display = "none";
+    } else {
+        document.getElementById("phoneRecoverySection").style.display = "block";
+        messageDiv.innerHTML = `<div style="background:#fff3e0; padding:15px; border-radius:8px; border:1px solid #ff9800; color:#e65100; margin-bottom:15px;">
+            <strong>Dikkat:</strong> Öğretmen ve Veli hesapları için manuel onay sistemi yoktur. Lütfen aşağıdaki <strong>"Telefona Şifre Gönder"</strong> butonunu kullanarak şifrenizi anında alınız.
+        </div>`;
         return;
     }
 
@@ -75,10 +103,108 @@ resetForm.addEventListener("submit", function(e) {
     const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
     requests.push(request);
     localStorage.setItem("passwordRequests", JSON.stringify(requests));
+    
+    // Bildirim Gönder: Veliye
+    if (veli) {
+        addNotification(veli.tc, `Öğrenciniz ${user.name} yeni bir şifre talep etti.`);
+    }
 
-    messageDiv.innerHTML = "<p style='color:green;'>✅ İstek gönderildi! Veliniz ve öğretmenleriniz onay verdikten sonra şifreniz sıfırlanacak.</p>";
+    // Bildirim Gönder: Öğretmenlere
+    ogretmenler.forEach(ogretmen => {
+        addNotification(ogretmen.tc, `Öğrenciniz ${user.name} yeni bir şifre talep etti.`);
+    });
+
+    messageDiv.innerHTML = "<p style='color:green;'>✅ İstek gönderildi! Veliniz ve öğretmenleriniz onay verdikten sonra durumunuzu buradan sorgulayabilirsiniz.</p>";
     resetForm.reset();
 });
+
+function checkStatus() {
+    const tc = document.getElementById("tc").value.trim();
+    if (!tc) {
+        messageDiv.innerHTML = "<p style='color:red;'>Sorgulamak için TC giriniz!</p>";
+        return;
+    }
+
+    const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+    const myRequest = requests.slice().reverse().find(r => r.studentTc === tc); // En son isteği bul
+
+    if (!myRequest) {
+        messageDiv.innerHTML = "<p style='color:red;'>Bu TC için bekleyen veya onaylanan hiçbir istek bulunamadı.</p>";
+        return;
+    }
+
+    if (myRequest.status === "pending") {
+        messageDiv.innerHTML = "<p style='color:#ff9800;'>⏳ İsteğiniz hala veli veya öğretmen onayında bekliyor.</p>";
+        document.getElementById("newPasswordSection").style.display = "none";
+    } else if (myRequest.status === "rejected") {
+        messageDiv.innerHTML = "<p style='color:red;'>❌ Şifre sıfırlama talebiniz veliniz/öğretmeniniz tarafından reddedildi.</p>";
+        document.getElementById("newPasswordSection").style.display = "none";
+    } else if (myRequest.status === "approved") {
+        messageDiv.innerHTML = "<p style='color:green;'>✅ İsteğiniz ÖĞRETMEN/VELİ tarafından ONAYLANMIŞ! Lütfen aşağıdan yeni şifrenizi belirleyin.</p>";
+        document.getElementById("newPasswordSection").style.display = "block";
+    }
+}
+
+function recoverByPhone() {
+    const tc = document.getElementById("tc").value.trim();
+    const phone = document.getElementById("recoveryPhone").value.trim();
+
+    if (!tc || !phone) {
+        messageDiv.innerHTML = "<p style='color:red;'>TC ve Telefon numaranızı giriniz!</p>";
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find(u => u.tc === tc && u.phone === phone);
+
+    if (!user) {
+        messageDiv.innerHTML = "<p style='color:red;'>TC veya Telefon numarası hatalı!</p>";
+        return;
+    }
+
+    // SMS Simülasyonu
+    messageDiv.innerHTML = `<div style="background:#e3f2fd; padding:15px; border-radius:8px; border:1px solid #2196f3; color:#0d47a1; text-align:left;">
+        <p style="font-weight:bold; margin-bottom:10px;"><i class="fa fa-envelope"></i> SMS Mesajı Gönderildi!</p>
+        <p>Sayın <strong>${user.name}</strong>, talebiniz üzerine <strong>yedek şifreniz</strong> sistemde kayıtlı olan <strong>${phone}</strong> numaralı hattınıza iletilmiştir.</p>
+        <div style="margin-top:15px; border-top:1px dashed #2196f3; padding-top:10px; font-size:12px; color:#555;">
+            <strong>Mesaj İçeriği (Simülasyon):</strong><br>
+            "EBA Sistem Yedek Şifreniz: <span style="font-weight:bold; color:#d32f2f;">${user.password}</span>. Lütfen bu şifreyi kimseyle paylaşmayınız."
+        </div>
+    </div>`;
+}
+
+function saveNewPassword() {
+    const tc = document.getElementById("tc").value.trim();
+    const newPassword = document.getElementById("newPasswordInput").value;
+
+    if (!newPassword || newPassword.length < 3) {
+        messageDiv.innerHTML = "<p style='color:red;'>Lütfen en az 3 haneli bir şifre giriniz.</p>";
+        return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const userIndex = users.findIndex(u => u.tc === tc && u.role === "ogrenci");
+
+    if (userIndex !== -1) {
+        // Şifreyi güncelle
+        users[userIndex].password = newPassword;
+        localStorage.setItem("users", JSON.stringify(users));
+
+        // İsteği onaylandıktan sonra sistemden temizle (consume)
+        const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+        const updatedRequests = requests.filter(r => !(r.studentTc === tc && r.status === "approved"));
+        localStorage.setItem("passwordRequests", JSON.stringify(updatedRequests));
+
+        messageDiv.innerHTML = "<p style='color:green;'>🎉 Şifreniz başarıyla kaydedildi! Giriş ekranına yönlendiriliyorsunuz...</p>";
+        document.getElementById("newPasswordSection").style.display = "none";
+        
+        setTimeout(() => {
+            window.location.href = "öğrenci-login.html";
+        }, 3000);
+    } else {
+         messageDiv.innerHTML = "<p style='color:red;'>Hata: Kullanıcı sistemde bulunamadı.</p>";
+    }
+}
 </script>
 
 </body>

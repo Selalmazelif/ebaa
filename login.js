@@ -60,18 +60,19 @@ function redirectByRole(user) {
     return "ogrenci-panel.html";
 }
 
-// Güvenlik: Zaten giriş yapılmış kontrolü (sessionStorage kullan - tab-specific)
-if (sessionStorage.getItem("currentUser")) {
+if (localStorage.getItem("authToken") && localStorage.getItem("currentUser")) {
     try {
-        const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
-        // Temel geçerlilik kontrolü
-        if (currentUser && currentUser.id && currentUser.tc && currentUser.role && currentUser.tabId === sessionStorage.getItem('tabId')) {
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        const token = localStorage.getItem("authToken");
+        if (currentUser && currentUser.id && currentUser.tc && currentUser.role && currentUser.token === token) {
             window.location.href = redirectByRole(currentUser);
         } else {
-            sessionStorage.removeItem("currentUser");
+            localStorage.removeItem("currentUser");
+            localStorage.removeItem("authToken");
         }
     } catch (e) {
-        sessionStorage.removeItem("currentUser");
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("authToken");
     }
 }
 
@@ -108,10 +109,8 @@ if (loginForm) {
         if (user) {
             resetLoginAttempts();
             
-            // Güvenlik: Her tab'e unique ID ver (URL kopyalama saldırısı engelle)
-            const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
-            // Güvenlik: sessionStorage kullan (tab-specific, tarayıcı kapanırsa silinir)
             const secureUser = {
                 id: user.id,
                 name: user.name,
@@ -122,14 +121,13 @@ if (loginForm) {
                 authorizedClasses: user.authorizedClasses,
                 profilePic: user.profilePic,
                 loginTime: Date.now(),
-                tabId: tabId  // Sekmeye özgü ID
+                token: token
             };
             
-            sessionStorage.setItem("tabId", tabId);
-            sessionStorage.setItem("currentUser", JSON.stringify(secureUser));
-            
-            // localStorage'dan currentUser KALDIR (artık sessionStorage kullanıyoruz)
-            localStorage.removeItem("currentUser");
+            localStorage.setItem("authToken", token);
+            localStorage.setItem("currentUser", JSON.stringify(secureUser));
+            sessionStorage.removeItem("currentUser");
+            sessionStorage.removeItem("tabId");
             
             alert("Giriş başarılı!");
             window.location.href = redirectByRole(user);

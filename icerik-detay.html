@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İçerik Detayı - EBA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+        .header { background: #8a1550; color: white; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 24px; font-weight: bold; text-decoration: none; color: white; }
+        .container { max-width: 900px; margin: 40px auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; }
+        .content-img { width: 100%; max-width: 600px; height: auto; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #8a1550; font-size: 32px; margin-bottom: 15px; }
+        p { color: #555; line-height: 1.8; font-size: 16px; margin-bottom: 30px; text-align: left; }
+        .action-btn { display: inline-block; background: #8a1550; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 25px; font-weight: 600; transition: background 0.3s; }
+        .action-btn:hover { background: #6b0c3c; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="logo"><i class="fa-solid fa-arrow-left"></i> EBA Ana Sayfa</a>
+    </div>
+
+    <div class="container" id="contentContainer">
+        <h1 id="title">Yükleniyor...</h1>
+        <img id="image" class="content-img" src="https://via.placeholder.com/600x300" alt="">
+        <p id="desc">İçerik yükleniyor, lütfen bekleyin...</p>
+        <a href="index.html" class="action-btn">Eğitime Dön</a>
+    </div>
+
+    <script>
+        const icerikler = {
+            'surat': {
+                title: 'Sürat, Zaman ve Yol Hesaplama',
+                img: '/img/foto1.jpg',
+                desc: 'Fiziksel bilimlerde sürat, zaman ve yol arasındaki matematiksel ilişki temel prensiplerden biridir. Bu dersimizde yolların uzunluklarını, geçen zamanı ve nesnelerin süratini hesaplamanın formüllerini (Yol = Sürat x Zaman) uygulamalı örneklerle öğreneceksiniz.'
+            },
+            'oyun': {
+                title: 'Farkı Bul Oyunu',
+                img: '/img/foto2.jpeg',
+                desc: 'Dikkatinizi toplayın ve iki benzer görsel arasındaki gizli farkları bulmaya çalışın! Bu eğitici zeka oyunu görsel hafızanızı, odaklanma sürenizi ve problem çözme yeteneğinizi geliştirmek için tasarlanmıştır.'
+            },
+            'hammadde': {
+                title: 'Üretici Ham Maddeyi Ürüne Dönüştürür',
+                img: '/img/foto3.jpeg',
+                desc: 'Çevremizdeki eşyalar nasıl üretiliyor? Doğadan elde edilen ham maddelerin (pamuk, demir, tahta vb.) fabrikalarda veya atölyelerde işlenerek günlük hayatta kullandığımız ürünlere nasıl dönüştürüldüğünün büyüleyici sürecini inceliyoruz.'
+            },
+            'atik': {
+                title: 'Atık Yönetimi',
+                img: '/img/foto4.jpeg',
+                desc: 'Geleceğimiz için dünyamızı korumalıyız! Geri dönüşümün önemi, evsel atıkların ayrıştırılması, geri dönüştürülebilir malzemelerin (kağıt, cam, plastik, metal) tekrar ekonomiye ve doğaya kazandırılması konularını öğreniyoruz.'
+            },
+            'madde': {
+                title: 'Maddenin Hâl Değişimi',
+                img: '/img/foto5.jpg',
+                desc: 'Katı, sıvı, gaz... Maddeler ısı aldıklarında veya ısı verdiklerinde nasıl hâl değiştirir? Erime, donma, buharlaşma, yoğuşma ve süblimleşme kavramlarını deneylerle ve doğadaki örnekleriyle keşfedin.'
+            },
+            'dinleme': {
+                title: 'Dinleme ve İzleme Kuralları',
+                img: '/img/foto6.jpeg',
+                desc: 'Etkili bir iletişimci olmanın ilk kuralı iyi bir dinleyici olmaktır. Sınıf ortamında, sosyal hayatta veya dijital içerik tüketirken doğru dinleme ve izleme kurallarını uygulayarak anlama kapasitenizi nasıl en üst düzeye çıkaracağınızı öğrenebilirsiniz.'
+            }
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+
+        const data = icerikler[id];
+
+        if (data) {
+            document.getElementById('title').textContent = data.title;
+            document.getElementById('desc').textContent = data.desc;
+            
+            const imgEl = document.getElementById('image');
+            imgEl.src = data.img;
+            imgEl.onerror = function() {
+                this.src = 'https://via.placeholder.com/600x300?text=' + encodeURIComponent(data.title);
+            };
+        } else {
+            document.getElementById('title').textContent = 'İçerik Bulunamadı';
+            document.getElementById('desc').textContent = 'Aradığınız içerik yayından kaldırılmış veya taşınmış olabilir.';
+            document.getElementById('image').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

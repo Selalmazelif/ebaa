@@ -3,36 +3,107 @@
 <head>
 <meta charset="UTF-8">
 <title>Sınav Oluştur</title>
-<link rel="stylesheet" href="ogretmen-panel.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
 </head>
 
 <body>
 
 <div class="sidebar">
 
-<h2>Öğretmen</h2>
+<div class="logo">EBA</div>
+
+<div class="profile">
+<div class="profile-box"></div>
+<p id="profile-name">Öğretmen</p>
+<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
+</div>
 
 <ul>
-<li><a href="ogretmen-panel.html">Ana Sayfa</a></li>
-<li><a href="ogretmen-dersler.html">Derslerim</a></li>
-<li><a href="ogretmen-ogrenciler.html">Öğrenciler</a></li>
-<li><a href="sinav-olustur.html">Sınav Oluştur</a></li>
-<li><a href="chat.html">Mesajlar</a></li>
+<li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+<li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Derslerim</a></li>
+<li><a href="ogretmen-ogrenciler.html"><i class="fa-solid fa-users"></i> Öğrenciler</a></li>
+<li><a href="sinav-olustur.html"><i class="fa-solid fa-pen"></i> Sınav Oluştur</a></li>
+<li><a href="chat.html"><i class="fa-solid fa-comments"></i> Mesajlar</a></li>
 </ul>
 
 </div>
 
 <div class="main">
 
-<h1>Sınav Oluştur</h1>
+  <div class="topbar">
+    <div class="search"><i class="fa fa-search"></i><input placeholder="Ara"></div>
+    <div class="icons"><i class="fa fa-bell"></i><a href="chat.html"><i class="fa fa-envelope"></i></a></div>
+  </div>
 
-<input placeholder="Soru yaz">
+  <div class="banner">
+    <div>
+      <h2>Sınav Oluştur</h2>
+      <p>Öğrencileriniz için yeni sınavlar hazırlayın</p>
+    </div>
+  </div>
 
-<br><br>
+  <div style="padding:20px;">
+    <div style="background:white; padding:30px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); max-width:600px;">
+        <label style="display:block; margin-bottom:10px; font-weight:bold;">Sınav Adı</label>
+        <input type="text" id="examTitle" placeholder="Örn: 1. Dönem 1. Yazılı" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px;">
 
-<button>Sınavı Kaydet</button>
+        <label style="display:block; margin-bottom:10px; font-weight:bold;">Sorular</label>
+        <textarea id="examQuestions" placeholder="Soruları buraya yazın..." style="width:100%; height:150px; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px; resize:vertical;"></textarea>
+
+        <label style="display:block; margin-bottom:10px; font-weight:bold;">Hangi Sınıflara (Virgülle ayırın, Örn: 9, 10)</label>
+        <input type="text" id="targetClasses" placeholder="Sınıf seviyeleri" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px;">
+
+        <button id="saveExamBtn" style="background:#8a1550; color:white; border:none; padding:12px 25px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:15px;"><i class="fa fa-save"></i> Sınavı Kaydet ve Bildir</button>
+    </div>
+  </div>
 
 </div>
+
+<script src="auth-utils.js"></script>
+<script>
+const user = requireAuth();
+if (user && user.role === 'ogretmen') {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  document.getElementById('saveExamBtn').addEventListener('click', () => {
+      const title = document.getElementById('examTitle').value.trim();
+      const q = document.getElementById('examQuestions').value.trim();
+      const classesStr = document.getElementById('targetClasses').value.trim();
+
+      if(!title || !q || !classesStr) {
+          alert('Lütfen tüm alanları doldurun!');
+          return;
+      }
+
+      const targetClasses = classesStr.split(',').map(s => s.trim());
+
+      // Sınavı kaydet (mock)
+      alert(`"${title}" başarıyla kaydedildi!`);
+
+      // Öğrencilere bildirim gönder
+      const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      let notifiedCount = 0;
+      
+      allUsers.forEach(u => {
+          if (u.role === 'ogrenci' && targetClasses.includes(u.class)) {
+              addNotification(u.tc, `Öğretmeniniz yeni bir sınav oluşturdu: ${title}`);
+              notifiedCount++;
+          }
+      });
+
+      alert(`${notifiedCount} öğrenciye bildirim gönderildi.`);
+      
+      // Temizle
+      document.getElementById('examTitle').value = '';
+      document.getElementById('examQuestions').value = '';
+      document.getElementById('targetClasses').value = '';
+  });
+} else {
+    window.location.href = 'index.html';
+}
+</script>
 
 </body>
 </html>

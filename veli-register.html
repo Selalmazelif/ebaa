@@ -31,6 +31,11 @@
                 <label>Şifre</label>
                 <input type="password" id="password" placeholder="Şifre">
             </div>
+            
+            <div class="input-group">
+                <label>Telefon Numarası</label>
+                <input type="tel" id="recoveryPhone" placeholder="05xx xxx xx xx" required>
+            </div>
 
             <div class="input-group">
                 <label>Okul</label>
@@ -99,9 +104,10 @@ form.addEventListener('submit', function(e) {
     const childTc = document.getElementById('childTc').value.trim();
     const childName = document.getElementById('childName').value.trim();
     const relationship = document.getElementById('relationship').value;
+    const phone = document.getElementById('recoveryPhone').value.trim();
 
-    if(!name || !tc || !password || !school){
-        alert('Lütfen gerekli alanları doldurun');
+    if(!name || !tc || !password || !school || !phone){
+        alert('Lütfen gerekli alanları doldurun (Telefon dahil)');
         return;
     }
 
@@ -131,6 +137,7 @@ form.addEventListener('submit', function(e) {
         name: escapeHtml(name),
         tc: tc,
         password: password,
+        phone: phone,
         role: 'veli',
         school: escapeHtml(school),
         childTc: childTc,

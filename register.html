@@ -32,6 +32,11 @@
                 <input type="password" id="password" placeholder="Şifre">
             </div>
 
+            <div class="input-group" id="phoneGroup">
+                <label>Telefon Numarası</label>
+                <input type="tel" id="phone" placeholder="05xx xxx xx xx">
+            </div>
+
             <div class="input-group">
                 <label>Okul</label>
                 <input type="text" id="school" placeholder="Örn: X Lisesi" required>
@@ -48,7 +53,21 @@
 
             <div class="input-group">
                 <label>Profil Fotoğrafı (opsiyonel)</label>
-                <input type="file" id="profilePic" accept="image/*">
+                <div class="file-upload-wrapper" style="position:relative; display:block; width:100%;">
+                  <button type="button" onclick="document.getElementById('profilePic').click()" style="width:100%; padding:10px; background:#f1f1f1; border:1px dashed #aaa; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; color:#555; position:relative;">
+                     <i class="fa fa-upload"></i> <span id="fileNameDisplay">Fotoğraf Seç</span>
+                  </button>
+                  <input type="file" id="profilePic" accept="image/*" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" onchange="document.getElementById('fileNameDisplay').textContent = this.files.length > 0 ? this.files[0].name : 'Fotoğraf Seç'">
+                </div>
+            </div>
+
+            <div class="input-group" id="studentLevelGroup" style="display:none;">
+                <label>Eğitim Kademesi</label>
+                <select id="studentLevel" onchange="updateStudentClassOptions()">
+                    <option value="ilkokul">İlkokul</option>
+                    <option value="ortaokul">Ortaokul</option>
+                    <option value="lise" selected>Lise</option>
+                </select>
             </div>
 
             <div class="input-group" id="studentClassGroup" style="display:none;">
@@ -110,16 +129,42 @@ function escapeHtml(text) {
 function toggleClassField() {
     const role = document.getElementById("role").value;
     const studentGroup = document.getElementById("studentClassGroup");
+    const studentLevelGroup = document.getElementById("studentLevelGroup");
     const teacherGroup = document.getElementById("teacherClassesGroup");
     if (role === "ogrenci") {
         studentGroup.style.display = "block";
+        studentLevelGroup.style.display = "block";
         teacherGroup.style.display = "none";
     } else if (role === "ogretmen") {
         studentGroup.style.display = "none";
+        studentLevelGroup.style.display = "none";
         teacherGroup.style.display = "block";
     } else {
         studentGroup.style.display = "none";
+        studentLevelGroup.style.display = "none";
         teacherGroup.style.display = "none";
+    }
+
+    // Öğrenci ise telefon numarasını gizle
+    const phoneGroup = document.getElementById("phoneGroup");
+    if (role === "ogrenci") {
+        phoneGroup.style.display = "none";
+    } else {
+        phoneGroup.style.display = "block";
+    }
+}
+
+function updateStudentClassOptions() {
+    const level = document.getElementById("studentLevel").value;
+    const classSelect = document.getElementById("studentClass");
+    classSelect.innerHTML = "";
+    
+    if (level === "ilkokul") {
+        [1, 2, 3, 4].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`);
+    } else if (level === "ortaokul") {
+        [5, 6, 7, 8].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`);
+    } else if (level === "lise") {
+        [9, 10, 11, 12].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`);
     }
 }
 
@@ -129,11 +174,12 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
     let name = document.getElementById("name").value.trim();
     let tc = document.getElementById("tc").value.trim();
     let password = document.getElementById("password").value;
+    let phone = document.getElementById("phone").value.trim();
     let school = document.getElementById("school").value.trim();
     let role = document.getElementById("role").value;
 
     // Güvenlik: Input validation
-    if(!name || !tc || !password || !school){
+    if(!name || !tc || !password || (role !== "ogrenci" && !phone) || !school){
         alert("Tüm alanları doldurun!");
         return;
     }
@@ -176,12 +222,14 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
         name: escapeHtml(name),
         tc: tc,
         password: password,  // Client-side demo. Prod'da hash olmalı!
+        phone: escapeHtml(phone),
         role: role,
         school: escapeHtml(school),
         createdAt: new Date().toISOString()
     };
 
     if (role === "ogrenci") {
+        user.level = document.getElementById("studentLevel").value;
         user.class = document.getElementById("studentClass").value;
     } else if (role === "ogretmen") {
         const selected = Array.from(document.getElementById("teacherClasses").selectedOptions).map(opt => opt.value);

@@ -33,7 +33,7 @@
                 </div>
 
                 <div class="links">
-                    <a href="#">Şifremi unuttum</a>
+                    <a href="sifre-sifirla.html">Şifremi unuttum</a>
                     <a href="register.html">Öğretmen hesabı oluştur</a>
                 </div>
 
@@ -46,15 +46,14 @@
 <script>
 const loginForm = document.getElementById("loginForm");
 
-// Güvenlik: sessionStorage kullan (tab-specific, URL kopyalama saldırısı engelle)
-if (sessionStorage.getItem("currentUser")) {
-    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
-    const tabId = sessionStorage.getItem("tabId");
-    if (currentUser.role === "ogretmen" && currentUser.tabId === tabId) {
+if (localStorage.getItem("authToken") && localStorage.getItem("currentUser")) {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const token = localStorage.getItem("authToken");
+    if (currentUser.role === "ogretmen" && currentUser.token === token) {
         window.location.href = "ogretmen-panel.html";
     } else {
-        sessionStorage.removeItem("currentUser");
-        sessionStorage.removeItem("tabId");
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("authToken");
     }
 }
 
@@ -85,18 +84,17 @@ if (loginForm) {
                 alert(wrongRoleMsg);
                 return;
             }
-            
-            // Güvenlik: Her tab'e unique ID ver
-            const tabId = 'tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             const secureUser = {
                 ...user,
-                tabId: tabId,
+                token: token,
                 loginTime: Date.now()
             };
             
-            sessionStorage.setItem("tabId", tabId);
-            sessionStorage.setItem("currentUser", JSON.stringify(secureUser));
-            localStorage.removeItem("currentUser"); // Eski veriyi sil
+            localStorage.setItem("authToken", token);
+            localStorage.setItem("currentUser", JSON.stringify(secureUser));
+            sessionStorage.removeItem("currentUser");
+            sessionStorage.removeItem("tabId");
             
             alert("✅ Giriş başarılı!");
             window.location.href = "ogretmen-panel.html";

@@ -147,13 +147,14 @@ if (user) {
 
   const classDersler = dersler[userClass] || [];
   derslerGrid.innerHTML = classDersler.map(ders => {
-    const topicList = ders.topics ? ders.topics.map(topic => `<li>${topic}</li>`).join('') : '';
     return `
-      <div class="card">
-        <img src="${ders.img}" alt="${ders.name}">
-        <h3>${ders.name}</h3>
-        ${topicList ? `<ul style="text-align:left; font-size:0.85rem; padding-left:16px; color:#333;">${topicList}</ul>` : ''}
-      </div>
+      <a href="ders-detay.html?ders=${encodeURIComponent(ders.name)}" class="card-link" style="text-decoration:none; color:inherit; display:block;">
+        <div class="card">
+          <img src="${ders.img}" alt="${ders.name}">
+          <h3>${ders.name}</h3>
+          <p style="font-size:12px; color:#666; margin-top:8px;">Konuları görmek için tıklayın <i class="fa fa-arrow-right" style="font-size:10px; margin-left:4px;"></i></p>
+        </div>
+      </a>
     `;
   }).join('');
 }
