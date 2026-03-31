@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Mini Quizler - EBA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+.quiz-wrapper { max-width:700px; margin:20px auto; padding:20px; }
+.quiz-category-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+.cat-card {
+  padding:20px; border-radius:12px; text-align:center; cursor:pointer;
+  color:white; font-weight:600; transition:transform 0.2s,box-shadow 0.2s;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+.cat-card:hover { transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,0.2); }
+.cat-card i { font-size:32px; display:block; margin-bottom:10px; }
+.quiz-card {
+  background:white; border-radius:16px; padding:28px; box-shadow:0 2px 16px rgba(0,0,0,0.08);
+}
+.quiz-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.quiz-progress { font-size:13px; color:#888; }
+#progressBar { width:100%; height:6px; background:#eee; border-radius:3px; margin-bottom:20px; }
+#progressFill { height:100%; background:#4A748F; border-radius:3px; transition:width 0.4s; }
+.question-text { font-size:18px; font-weight:600; color:#284B63; margin-bottom:20px; line-height:1.4; }
+.options { display:grid; gap:10px; }
+.option {
+  padding:12px 16px; border-radius:10px; border:2px solid #DDE7EC;
+  cursor:pointer; text-align:left; font-size:15px; transition:all 0.2s;
+  background:white; color:#333;
+}
+.option:hover { border-color:#4A748F; background:#EBF5FB; }
+.option.correct { background:#d4edda; border-color:#28a745; color:#155724; }
+.option.wrong { background:#f8d7da; border-color:#dc3545; color:#721c24; }
+.quiz-result { text-align:center; padding:40px; }
+.score-circle {
+  width:120px; height:120px; border-radius:50%; margin:0 auto 20px;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  font-size:32px; font-weight:800; border:8px solid #4A748F; color:#4A748F;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode .quiz-card { background: #1e2d3d !important; border-color: rgba(255,255,255,0.05) !important; }
+body.dark-mode .question-text, body.dark-mode #quizCatName, body.dark-mode .quiz-wrapper h2, body.dark-mode #resultMsg { color: #a8d4f0 !important; }
+body.dark-mode .option { background: rgba(0,0,0,0.2) !important; border-color: rgba(255,255,255,0.1) !important; color: #94afc5 !important; }
+body.dark-mode .option:hover { background: rgba(92, 142, 173, 0.15) !important; border-color: #5C8EAD !important; }
+body.dark-mode .option.correct { background: rgba(46, 204, 113, 0.2) !important; border-color: #2ecc71 !important; color: #d4edda !important; }
+body.dark-mode .option.wrong { background: rgba(231, 76, 60, 0.2) !important; border-color: #e74c3c !important; color: #f8d7da !important; }
+body.dark-mode #progressBar { background: rgba(255,255,255,0.05) !important; }
+body.dark-mode .score-circle { border-color: #5C8EAD !important; color: #7ec8e3 !important; }
+body.dark-mode #explanationBox { background: rgba(92, 142, 173, 0.1) !important; color: #a8d4f0 !important; }
+body.dark-mode .quiz-progress, body.dark-mode #resultSub { color: #7a8a9a !important; }
+</style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile">
+    <p id="profile-name" style="color:white;font-weight:600;margin:10px;"></p>
+    <button id="logoutBtn" style="margin:5px 10px;padding:5px 10px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:11px;">Çıkış</button>
+  </div>
+  <ul id="sidebar-menu"></ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div><a href="kütüphane.html" style="color:#4A748F;text-decoration:none;"><i class="fa fa-arrow-left"></i> Kütüphane</a></div>
+    <div class="icons"><i class="fa fa-bell"></i><a href="chat.html"><i class="fa fa-envelope"></i></a></div>
+  </div>
+
+  <div class="quiz-wrapper">
+    <h2 style="color:#284B63;margin-bottom:20px;">🧠 Mini Quizler</h2>
+
+    <!-- KATEGORİ SEÇİMİ -->
+    <div id="screenCategory">
+      <div class="quiz-category-grid" id="catGrid"></div>
+    </div>
+
+    <!-- QUIZ EKRANI -->
+    <div id="screenQuiz" style="display:none;">
+      <div class="quiz-card">
+        <div class="quiz-header">
+          <span id="quizCatName" style="font-weight:700;color:#284B63;"></span>
+          <span class="quiz-progress" id="quizProgress"></span>
+        </div>
+        <div id="progressBar"><div id="progressFill"></div></div>
+        <div class="question-text" id="questionText"></div>
+        <div class="options" id="optionsGrid"></div>
+        <div id="explanationBox" style="display:none;margin-top:16px;padding:12px;background:#EBF5FB;border-radius:8px;font-size:13px;color:#284B63;"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:20px;">
+          <button onclick="backToCategories()" style="padding:8px 16px;border-radius:8px;border:none;background:#eee;cursor:pointer;">← Kategoriler</button>
+          <button id="nextBtn" onclick="nextQuestion()" style="display:none;padding:8px 20px;border-radius:8px;border:none;background:#4A748F;color:white;cursor:pointer;font-weight:600;">Sonraki →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SONUÇ EKRANI -->
+    <div id="screenResult" style="display:none;">
+      <div class="quiz-card">
+        <div class="quiz-result">
+          <div class="score-circle" id="scoreCircle"></div>
+          <h3 id="resultMsg" style="color:#284B63;"></h3>
+          <p id="resultSub" style="color:#888;"></p>
+          <button onclick="backToCategories()" style="margin-top:20px;padding:10px 24px;border-radius:8px;border:none;background:#4A748F;color:white;cursor:pointer;font-weight:600;">Tekrar Oyna</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="auth-utils.js"></script>
+<script>
+const user = requireAuth();
+if(user) {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  const menu = document.getElementById('sidebar-menu');
+  menu.innerHTML = `<li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li><li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>`;
+}
+
+const categories = [
+  { id:'mat', name:'Matematik', icon:'fa-square-root-variable', color:'linear-gradient(135deg,#2196F3,#0d78c9)', questions:[
+    { q:'2³ kaçtır?', opts:['6','8','9','12'], ans:1, exp:'2³ = 2×2×2 = 8' },
+    { q:'√144 kaçtır?', opts:['11','12','13','14'], ans:1, exp:'12×12 = 144' },
+    { q:'5! (5 faktöriyel) kaçtır?', opts:['60','100','120','150'], ans:2, exp:'5! = 5×4×3×2×1 = 120' },
+    { q:'Bir üçgenin iç açıları toplamı kaç derecedir?', opts:['90','120','180','360'], ans:2 },
+    { q:'0.5 + 0.25 = ?', opts:['0.50','0.70','0.75','0.80'], ans:2 }
+  ]},
+  { id:'fen', name:'Fen Bilimleri', icon:'fa-flask', color:'linear-gradient(135deg,#4CAF50,#2e7d32)', questions:[
+    { q:'Hangi gezegen Güneş\'e en yakındır?', opts:['Venüs','Merkür','Mars','Dünya'], ans:1, exp:'Merkür, Güneş sistemininin Güneş\'e en yakın gezegenidir.' },
+    { q:'Fotosentez için zorunlu olan madde hangisidir?', opts:['Oksijen','Karbondioksit','Nitrojen','Hidrojen'], ans:1 },
+    { q:'Su\'nun kimyasal formülü hangisidir?', opts:['CO2','H2O','O2','NaCl'], ans:1 },
+    { q:'Işığın boşluktaki hızı yaklaşık kaç km/s\'dir?', opts:['150.000','200.000','300.000','400.000'], ans:2 },
+    { q:'Hangi organ kan üretir?', opts:['Kalp','Karaciğer','Kemik iliği','Akciğer'], ans:2 }
+  ]},
+  { id:'tarih', name:'Tarih', icon:'fa-landmark', color:'linear-gradient(135deg,#FF9800,#e65100)', questions:[
+    { q:'Cumhuriyet ne zaman ilan edildi?', opts:['1920','1922','1923','1924'], ans:2, exp:'29 Ekim 1923\'te Türkiye Cumhuriyeti ilan edildi.' },
+    { q:'İstanbul hangi yılda fethldildi?', opts:['1299','1402','1453','1517'], ans:2 },
+    { q:'Atatürk hangi şehirde doğmuştur?', opts:['İstanbul','Ankara','Selanik','İzmir'], ans:2 },
+    { q:'Kurtuluş Savaşı kaç yılında başldı?', opts:['1918','1919','1920','1921'], ans:1 },
+    { q:'TBMM ne zaman açıldı?', opts:['19 Mayıs 1919','23 Nisan 1920','29 Ekim 1923','30 Ağustos 1922'], ans:1 }
+  ]},
+  { id:'turkce', name:'Türkçe', icon:'fa-book-open', color:'linear-gradient(135deg,#E91E63,#880e4f)', questions:[
+    { q:'"Cümle" kelimesindeki hece sayısı kaçtır?', opts:['1','2','3','4'], ans:1 },
+    { q:'Aşağıdakilerden hangisi isim değildir?', opts:['Kalem','Güzel','Araba','Okul'], ans:1, exp:'"Güzel" sıfat, diğerleri isimdir.' },
+    { q:'"Koşmak" fiilinin mastar eki hangisidir?', opts:['-ık','-mak','-an','-ış'], ans:1 },
+    { q:'Türkçede kaç sesli harf vardır?', opts:['6','7','8','9'], ans:2 },
+    { q:'Aşağıdakilerden hangisi zarf değildir?', opts:['Hızlı','Yavaşça','Çabuk','Ev'], ans:3 }
+  ]},
+  { id:'geo', name:'Coğrafya', icon:'fa-globe', color:'linear-gradient(135deg,#009688,#00695c)', questions:[
+    { q:'Türkiye\'nin başkenti neresidir?', opts:['İstanbul','İzmir','Ankara','Bursa'], ans:2 },
+    { q:'En uzun nehrimiz hangisidir?', opts:['Fırat','Kızılırmak','Dicle','Sakarya'], ans:1, exp:'Kızılırmak, Türkiye\'nin en uzun nehridir.' },
+    { q:'Anadolu\'nun en yüksek dağı hangisidir?', opts:['Erciyes','Ağrı','Kaçkar','Uludağ'], ans:1 },
+    { q:'Manisa kaç ilçeye sahiptir?', opts:['14','15','16','17'], ans:2 },
+    { q:'Marmara Bölgesi\'nin en büyük şehri neresidir?', opts:['Bursa','Balıkesir','İstanbul','Edirne'], ans:2 }
+  ]}
+];
+
+let currentCat, currentQ, score, answered;
+
+function renderCategories() {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = categories.map(cat => `
+    <div class="cat-card" style="background:${cat.color}" onclick="startQuiz('${cat.id}')">
+      <i class="fa ${cat.icon}"></i>
+      ${cat.name}
+      <small style="display:block;margin-top:6px;opacity:0.85;font-size:11px;">${cat.questions.length} soru</small>
+    </div>
+  `).join('');
+}
+
+function startQuiz(catId) {
+  currentCat = categories.find(c=>c.id===catId);
+  currentQ = 0; score = 0; answered = false;
+  document.getElementById('screenCategory').style.display = 'none';
+  document.getElementById('screenQuiz').style.display = 'block';
+  document.getElementById('screenResult').style.display = 'none';
+  document.getElementById('quizCatName').textContent = currentCat.name;
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('explanationBox').style.display = 'none';
+  const q = currentCat.questions[currentQ];
+  const total = currentCat.questions.length;
+  document.getElementById('quizProgress').textContent = `${currentQ+1} / ${total}`;
+  document.getElementById('progressFill').style.width = `${((currentQ+1)/total)*100}%`;
+  document.getElementById('questionText').textContent = q.q;
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = q.opts.map((opt,i) => `
+    <button class="option" onclick="selectOption(${i},${q.ans})">${String.fromCharCode(65+i)}) ${opt}</button>
+  `).join('');
+}
+
+function selectOption(selected, correct) {
+  if(answered) return;
+  answered = true;
+  const buttons = document.querySelectorAll('.option');
+  buttons[selected].classList.add(selected===correct?'correct':'wrong');
+  if(selected!==correct) buttons[correct].classList.add('correct');
+  if(selected===correct) score++;
+  const q = currentCat.questions[currentQ];
+  if(q.exp) {
+    const expBox = document.getElementById('explanationBox');
+    expBox.textContent = '💡 ' + q.exp;
+    expBox.style.display = 'block';
+  }
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if(currentQ >= currentCat.questions.length) {
+    showResult();
+  } else {
+    showQuestion();
+  }
+}
+
+function showResult() {
+  document.getElementById('screenQuiz').style.display = 'none';
+  document.getElementById('screenResult').style.display = 'block';
+  const pct = Math.round(score/currentCat.questions.length*100);
+  document.getElementById('scoreCircle').innerHTML = `${score}<small style="font-size:16px;">/${currentCat.questions.length}</small>`;
+  document.getElementById('resultMsg').textContent = pct>=80?'Harika! 🎉':pct>=60?'İyi! 👍':'Tekrar Deneyin 💪';
+  document.getElementById('resultSub').textContent = `${currentCat.name} quizinden %${pct} aldınız.`;
+  // İstatistiği güncelle
+  try {
+    fetch('/api/student-stats', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ student_tc: user?.tc, type:'exam' }) });
+  } catch(e){}
+}
+
+function backToCategories() {
+  document.getElementById('screenCategory').style.display = 'block';
+  document.getElementById('screenQuiz').style.display = 'none';
+  document.getElementById('screenResult').style.display = 'none';
+}
+
+renderCategories();
+</script>
+</body>
+</html>

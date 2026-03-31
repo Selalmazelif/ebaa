@@ -1,4 +1,4 @@
-body{
+﻿body{
 margin:0;
 font-family:Arial;
 display:flex;
@@ -7,7 +7,7 @@ background:#eef2f5;
 
 .sidebar{
 width:230px;
-background:#8a1550;
+background:#4A748F;
 color:white;
 height:100vh;
 position:fixed;

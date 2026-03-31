@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+*.swp
+*.bak
+dist/
+build/
+temp/
+tmp/
+.env

@@ -1,159 +1,161 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-<meta charset="UTF-8">
-<title>Sınavlar</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
+  <meta charset="UTF-8">
+  <title>Sınavlar</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
 </head>
 
 <body>
 
-<div class="sidebar">
-
-<div class="logo">EBA</div>
-
-<div class="profile">
-<div class="profile-box"></div>
-<p id="profile-name">Öğrenci</p>
-<p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
-<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
-</div>
-
-<ul>
-
-<li>
-<a href="ogrenci-panel.html">
-<i class="fa-solid fa-house"></i> Ana Sayfa
-</a>
-</li>
-
-<li>
-<a href="dersler.html">
-<i class="fa-solid fa-book"></i> Dersler
-</a>
-</li>
-
-<li>
-<a href="canli-ders.html">
-<i class="fa-solid fa-video"></i> Canlı Ders
-</a>
-</li>
-
-<li>
-<a href="sinavlar.html">
-<i class="fa-solid fa-pen"></i> Sınavlar
-</a>
-</li>
-
-<li>
-<a href="chat.html">
-<i class="fa-solid fa-comments"></i> Mesajlar
-</a>
-</li>
-
-</ul>
-
-</div>
-
-<div class="main">
-
-<div class="topbar">
-
-<div class="search">
-<i class="fa fa-search"></i>
-<input placeholder="Ara">
-</div>
-
-<div class="icons">
-
-<i class="fa fa-bell"></i>
-
-<a href="chat.html">
-<i class="fa fa-envelope"></i>
-</a>
-
-</div>
-
-</div>
-
-<div class="banner">
-
-<div>
-<h2>Sınavlar</h2>
-<p id="class-info">Sınıfınıza göre sınavlar</p>
-</div>
-
-</div>
-
-<div class="cards" id="sinavlar-grid">
-
-<!-- Dinamik olarak doldurulur -->
-
-</div>
-
-</div>
-
-<script src="auth-utils.js"></script>
-<script>
-const user = requireAuth();
-if (user) {
-  document.getElementById('profile-name').textContent = user.name;
-  document.getElementById('profile-school').textContent = user.school;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  const sinavlarGrid = document.getElementById('sinavlar-grid');
-  const classInfo = document.getElementById('class-info');
-
-  const sinavlar = {
-    '9': [
-      { name: 'Tarama Testleri', color: '#2c6aa0' },
-      { name: 'Kazanım Kavrama Testleri', color: '#e33a6a' },
-      { name: 'Tekrar Testleri', color: '#3f8f7f' }
-    ],
-    '10': [
-      { name: 'Tarama Testleri', color: '#2c6aa0' },
-      { name: 'Kazanım Kavrama Testleri', color: '#e33a6a' },
-      { name: 'Tekrar Testleri', color: '#3f8f7f' },
-      { name: 'Ara Sınav', color: '#ff9800' }
-    ],
-    '11': [
-      { name: 'Tarama Testleri', color: '#2c6aa0' },
-      { name: 'Kazanım Kavrama Testleri', color: '#e33a6a' },
-      { name: 'Tekrar Testleri', color: '#3f8f7f' },
-      { name: 'Ara Sınav', color: '#ff9800' },
-      { name: 'YKS Hazırlık', color: '#9c27b0' }
-    ],
-    '12': [
-      { name: 'Tarama Testleri', color: '#2c6aa0' },
-      { name: 'Kazanım Kavrama Testleri', color: '#e33a6a' },
-      { name: 'Tekrar Testleri', color: '#3f8f7f' },
-      { name: 'Ara Sınav', color: '#ff9800' },
-      { name: 'YKS Hazırlık', color: '#9c27b0' },
-      { name: 'TYT Denemeleri', color: '#4caf50' }
-    ]
-  };
-
-  const userClass = user.class || '9';
-  classInfo.textContent = `${userClass}. Sınıf Sınavları`;
-
-  const classSinavlar = sinavlar[userClass] || [];
-  sinavlarGrid.innerHTML = classSinavlar.map(sinav => {
-    let link = "#";
-    if (sinav.name === 'Tarama Testleri') {
-        link = "tarama-testi.html";
-    }
-    return `
-      <a href="${link}" style="text-decoration:none; color:inherit; display:block;" class="card-link">
-        <div class="card" style="background: ${sinav.color}; color:white; min-height:120px; display:flex; flex-direction:column; justify-content:center;">
-          <h3>${sinav.name}</h3>
-          <p style="font-size:12px; margin-top:10px; opacity:0.8;">Sınava Git <i class="fa fa-arrow-right" style="font-size:10px; margin-left:4px;"></i></p>
+  <div class="sidebar">
+    <div class="logo">EBA</div>
+    <div class="profile">
+      <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; overflow:hidden; margin: 0 auto 10px;">
+          <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="Profil Fotoğrafı" id="profile-img-display"
+            style="display:none; width:100%; height:100%; object-fit:cover;" />
         </div>
-      </a>
-    `;
-  }).join('');
-}
-</script>
+        <div class="edit-overlay"><i class="fa fa-camera"></i></div>
+        <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+      </div>
+      <p id="profile-name" style="font-weight:600; font-size:16px; margin-bottom:2px;"></p>
+      <p id="profile-role" style="font-size:12px; opacity:0.8; margin-bottom:4px;">Öğrenci</p>
+      <p id="profile-school" style="font-size:12px; opacity:0.7;">–</p>
+      <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+      <button id="logoutBtn"
+        style="margin-top:15px; padding:6px 12px; background:#fff; color:#284B63; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:12px;">Çıkış</button>
+    </div>
+
+    <ul id="sidebar-menu">
+      <!-- JS ile doldurulur -->
+    </ul>
+  </div>
+
+  <div class="main">
+
+    <div class="topbar">
+      <div></div>
+      <div class="icons">
+        <i class="fa fa-bell"></i>
+        <a href="chat.html">
+          <i class="fa fa-envelope"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="banner">
+
+      <div>
+        <h2>Sınavlar</h2>
+        <p id="class-info">Sınıfınıza göre sınavlar</p>
+      </div>
+
+    </div>
+
+    <div class="cards" id="sinavlar-grid">
+
+      <!-- Dinamik olarak doldurulur -->
+
+    </div>
+
+  </div>
+
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-role').textContent = 'Rol: ' + (user.role==='ogrenci'?'Öğrenci':user.role==='ogretmen'?'Öğretmen':'Veli');
+      document.getElementById('profile-school').textContent = user.school;
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+      if (user.profilePic) {
+        document.getElementById('default-avatar-icon').style.display = 'none';
+        const profileImg = document.getElementById('profile-img-display');
+        profileImg.src = user.profilePic;
+        profileImg.style.display = 'block';
+      }
+
+      // Rol bazlı sidebar
+      const homeLink = redirectByRole(user.role);
+      const dersLink = user.role==='ogretmen'?'ogretmen-dersler.html':'dersler.html';
+      const canliLink = user.role==='ogretmen'?'ogretmen-canli-ders.html':'canli-ders.html';
+      document.getElementById('sidebar-menu').innerHTML = `
+        <li><a href="${homeLink}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+        <li><a href="${dersLink}"><i class="fa-solid fa-book"></i> Dersler</a></li>
+        <li><a href="${canliLink}"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+        <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+        <li><a href="sinavlar.html" class="active"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+        <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+        <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+      `;
+
+      const sinavlarGrid = document.getElementById('sinavlar-grid');
+      const classInfo = document.getElementById('class-info');
+
+      // Tüm kategoriler
+      const sinavKategorileri = [
+        { name: 'Tarama Testleri', color: '#2c6aa0', icon: 'fa-list-check', desc: '32 test · Ders başına konu tarama', link: 'tarama-testleri.html',
+          questions: 20, sure: '25 dk', min_sinif: '9' },
+        { name: 'Kazanım Kavrama Testleri', color: '#e33a6a', icon: 'fa-graduation-cap', desc: 'Kazanım bazlı değerlendirme testleri', link: '#',
+          questions: 20, sure: '30 dk', min_sinif: '9' },
+        { name: 'Tekrar Testleri', color: '#3f8f7f', icon: 'fa-rotate', desc: 'Önceki konuları pekiştirme testleri', link: '#',
+          questions: 25, sure: '35 dk', min_sinif: '9' },
+        { name: 'Ara Sınav', color: '#ff9800', icon: 'fa-file-pen', desc: 'Dönem ortası değerlendirme sınavları', link: '#',
+          questions: 40, sure: '60 dk', min_sinif: '10' },
+        { name: 'Deneme Sınavları', color: '#607d8b', icon: 'fa-pen-to-square', desc: 'Okul bazlı deneme sınavları', link: '#',
+          questions: 40, sure: '60 dk', min_sinif: '10' },
+        { name: 'YKS Hazırlık', color: '#9c27b0', icon: 'fa-star', desc: 'Üniversite sınav hazırlık testleri', link: '#',
+          questions: 40, sure: '60 dk', min_sinif: '11' },
+        { name: 'TYT Denemeleri', color: '#4caf50', icon: 'fa-trophy', desc: 'Temel Yeterlilik Testi denemeleri', link: '#',
+          questions: 120, sure: '135 dk', min_sinif: '12' },
+        { name: 'AYT Denemeleri', color: '#f44336', icon: 'fa-medal', desc: 'Alan Yeterlilik Testi denemeleri', link: '#',
+          questions: 80, sure: '180 dk', min_sinif: '12' },
+      ];
+
+      const userClass = (user.class || '10').replace(/[^0-9]/g,'') || '10';
+      classInfo.textContent = `${userClass}. Sınıf Sınavları`;
+
+      const filtered = sinavKategorileri.filter(s => parseInt(userClass) >= parseInt(s.min_sinif));
+      sinavlarGrid.innerHTML = filtered.map(sinav => `
+        <a href="${sinav.link}" style="text-decoration:none;color:inherit;display:block;" onclick="${sinav.link==='#'?"event.preventDefault();trackExam('"+sinav.name+"')":''}"
+           class="card-link">
+          <div class="card" style="background: linear-gradient(135deg, ${sinav.color}, ${sinav.color}cc); color:white; min-height:140px; display:flex; flex-direction:column; justify-content:flex-start; padding:20px; position:relative; overflow:hidden;">
+            <i class="fa ${sinav.icon}" style="position:absolute;right:16px;top:16px;font-size:28px;opacity:0.3;"></i>
+            <h3 style="margin:0 0 8px;font-size:15px;">${sinav.name}</h3>
+            <p style="font-size:12px;margin:0 0 12px;opacity:0.9;">${sinav.desc}</p>
+            <div style="display:flex;gap:12px;margin-top:auto;">
+              <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:3px 8px;border-radius:8px;"><i class="fa fa-question"></i> ${sinav.questions} soru</span>
+              <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:3px 8px;border-radius:8px;"><i class="fa fa-clock"></i> ${sinav.sure}</span>
+            </div>
+            <div style="position:absolute;bottom:12px;right:16px;font-size:12px;opacity:0.8;">Sınava Gir <i class="fa fa-arrow-right"></i></div>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    async function trackExam(name) {
+      const user = getCurrentUser();
+      if(!user) return;
+      // localStorage güncelle
+      const stats = JSON.parse(localStorage.getItem('student_stats_'+user.tc)||'{"content_count":0,"exam_count":0,"social_count":0,"week_start":"'+new Date().toISOString()+'"}');
+      stats.exam_count = (stats.exam_count||0) + 1;
+      localStorage.setItem('student_stats_'+user.tc, JSON.stringify(stats));
+      // API
+      try{ await fetch('/api/student-stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({student_tc:user.tc,type:'exam'})}); }catch(e){}
+      alert(`"${name}" sınavına giriliyor... (Bu sınav sistemi geliştirme aşamasındadır.)`);
+    }
+  </script>
 
 </body>
+
 </html>

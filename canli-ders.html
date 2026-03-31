@@ -2,78 +2,269 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Canlı Dersler</title>
-
+<title>Canlı Dersler - EBA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
 <style>
+.canli-body { padding: 24px; }
+.canli-top { display:flex; gap:14px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+.btn-add-live { background:#5C8EAD; color:white; border:none; padding:10px 20px; border-radius:8px;
+                font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; }
+.btn-add-live:hover { background:#4A748F; }
+.info-box { background:#EBF5FB; border-left:4px solid #1C98C3; padding:12px 16px; border-radius:6px;
+            color:#284B63; font-size:13px; display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; }
+.lesson-card { background:white; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.05);
+               margin-bottom:12px; display:flex; align-items:center; gap:16px; border-left:4px solid #4A748F; }
+.lesson-icon { width:50px;height:50px;background:linear-gradient(135deg,#4A748F,#284B63);border-radius:12px;
+               display:flex;align-items:center;justify-content:center;color:white;font-size:20px;flex-shrink:0; }
+.lesson-info { flex:1; }
+.lesson-title { font-weight:700; color:#284B63; font-size:15px; }
+.lesson-meta  { font-size:12px; color:#888; margin-top:4px; }
+.lesson-link  { padding:8px 16px; border-radius:8px; background:#EBF5FB; color:#4A748F; border:none;
+                cursor:pointer; font-size:12px; font-weight:700; text-decoration:none; transition:all .2s; }
+.lesson-link:hover { background:#4A748F; color:white; }
+.class-badge { display:inline-block; padding:3px 9px; background:#f0f4f8; border-radius:10px; font-size:11px; color:#5C8EAD; font-weight:600; margin-top:5px; }
+.empty-lesson { text-align:center; padding:60px; color:#ccc; background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+.empty-lesson i { font-size:64px; display:block; margin-bottom:16px; opacity:.3; }
 
-body{
-font-family:Arial;
-background:#e9eef3;
-padding:40px;
-}
+/* Modal form */
+.modal-ovl { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center; }
+.modal-ovl.open { display:flex; }
+.modal-box { background:white;border-radius:16px;width:90vw;max-width:560px;padding:28px;position:relative; }
+.modal-close { position:absolute;top:14px;right:14px;border:none;background:#f0f0f0;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:15px; }
+.form-row { margin-bottom:14px; }
+.form-lbl { font-size:12px;color:#666;font-weight:600;margin-bottom:5px;display:block; }
+.form-inp { width:100%;padding:10px 13px;border:1.5px solid #DDE7EC;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit; }
+.form-inp:focus { border-color:#4A748F; }
+.form-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+.btn-submit { width:100%;padding:12px;border-radius:8px;border:none;background:#4A748F;color:white;cursor:pointer;font-weight:700;font-size:14px;margin-top:4px; }
 
-.container{
-background:white;
-padding:30px;
-border-radius:10px;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-
-.tabs{
-display:flex;
-gap:30px;
-margin-bottom:20px;
-font-weight:bold;
-}
-
-.info{
-background:#f4f4f4;
-padding:15px;
-border-radius:6px;
-margin-bottom:20px;
-}
-
-.empty{
-text-align:center;
-color:#777;
-padding:80px;
-font-size:18px;
-}
-
-.btn{
-background:#f4a43a;
-border:none;
-padding:10px 20px;
-border-radius:6px;
-color:white;
-cursor:pointer;
-}
-
+/* Dark mode */
+body.dark-mode .lesson-card,.modal-box { background:#1e2d3d !important; }
+body.dark-mode .lesson-title { color:#a8d4f0 !important; }
+body.dark-mode .info-box { background:#162030 !important; }
+body.dark-mode .empty-lesson { background:#1e2d3d !important; }
+body.dark-mode .form-inp { background:#0f1923 !important; border-color:#2d4060 !important; color:#d0dce8 !important; }
 </style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
 </head>
-
 <body>
 
-<h2>Canlı Dersler</h2>
-
-<div class="container">
-
-<div class="tabs">
-<span>Harici Canlı Dersler</span>
-<span>Canlı Dersler</span>
+<!-- ─── SIDEBAR ──────────────────────────────────────────────────── -->
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile">
+    <div class="profile-img-container">
+      <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;">
+        <i class="fa fa-user" id="av-icon" style="font-size:40px;color:#ccc;"></i>
+        <img id="av-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+      </div>
+      <div class="status-indicator"></div>
+    </div>
+    <p id="sb-name"   style="font-weight:600;font-size:15px;margin-bottom:2px;"></p>
+    <p id="sb-role"   style="font-size:12px;opacity:.8;margin-bottom:3px;"></p>
+    <p id="sb-school" style="font-size:12px;opacity:.7;"></p>
+    <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
+  </div>
+  <ul id="sidebar-menu"></ul>
 </div>
 
-<div class="info">
-Harici canlı ders saatleri bilgisayarınızda ayarlı olan GMT +3 Europe/Istanbul saat dilimine göre gösterilmektedir.
+<!-- ─── MAIN ─────────────────────────────────────────────────────── -->
+<div class="main">
+  <div class="topbar">
+    <div style="font-weight:700;color:#284B63;font-size:16px;"><i class="fa fa-video" style="color:#4A748F;margin-right:8px;"></i>Canlı Dersler</div>
+    <div class="icons">
+      <i class="fa fa-bell"></i>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+  </div>
+
+  <div class="canli-body">
+    <div class="canli-top">
+      <button class="btn-add-live" id="addBtn" style="display:none;" onclick="openAddModal()">
+        <i class="fa fa-plus-circle"></i> Harici Canlı Ders Ekle
+      </button>
+      <select id="filterSel" style="padding:9px 14px;border:1.5px solid #DDE7EC;border-radius:8px;font-size:13px;color:#555;outline:none;background:white;">
+        <option value="all">Güncel Canlı Dersler</option>
+        <option value="past">Geçmiş Canlı Dersler</option>
+      </select>
+    </div>
+
+    <div class="info-box">
+      <i class="fa fa-info-circle" style="color:#1C98C3;font-size:16px;margin-top:2px;"></i>
+      <div>Harici canlı ders saatleri bilgisayarınızdaki <strong>GMT +3 Europe/Istanbul</strong> saat dilimine göre gösterilmektedir. Saat dilimi ayarlarınızı kontrol ediniz.</div>
+    </div>
+
+    <div id="lessonsContainer">
+      <div class="empty-lesson">
+        <i class="fa fa-magnifying-glass"></i>
+        <strong style="display:block;font-size:18px;color:#5C8EAD;margin-bottom:8px;">Listelecek canlı ders bulunmamaktadır.</strong>
+        <p style="margin:0;font-size:13px;">Oluşturulan veya atandığınız canlı dersler burada listelenir.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
-<button class="btn">Derslerin Durumunu Güncelle</button>
-
-<div class="empty">
-Listelenecek canlı ders bulunmamaktadır.
+<!-- MODAL: Ders Ekle (sadece öğretmene görünür) -->
+<div class="modal-ovl" id="addModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAddModal()"><i class="fa fa-times"></i></button>
+    <h3 style="color:#284B63;margin:0 0 18px;"><i class="fa fa-plus-circle" style="color:#4A748F;"></i> Harici Canlı Ders Ekle</h3>
+    <div class="form-row">
+      <label class="form-lbl">Ders Başlığı *</label>
+      <input class="form-inp" id="aTitle" placeholder="Örn: 10-A Matematik – Denklemler">
+    </div>
+    <div class="form-row">
+      <label class="form-lbl">Canlı Ders Linki * (Zoom / Google Meet / MS Teams)</label>
+      <input class="form-inp" id="aLink" placeholder="https://...">
+    </div>
+    <div class="form-grid2">
+      <div class="form-row">
+        <label class="form-lbl">Tarih</label>
+        <input class="form-inp" type="date" id="aDate">
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Saat</label>
+        <input class="form-inp" type="time" id="aTime">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-lbl">Hedef Sınıf</label>
+      <select class="form-inp" id="aCls">
+        <option value="all">Tüm Sınıflar</option>
+        <option value="9-A">9-A</option><option value="9-B">9-B</option>
+        <option value="10-A">10-A</option><option value="10-G">10-G</option>
+        <option value="11-B">11-B</option><option value="12-C">12-C</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="addLesson()"><i class="fa fa-check"></i> Ders Ekle & Bildirim Gönder</button>
+  </div>
 </div>
 
-</div>
+<script src="auth-utils.js"></script>
+<script>
+let cu;
 
+async function init() {
+  cu = requireAuth();
+  if (!cu) return;
+
+  // Profil
+  document.getElementById('sb-name').textContent   = cu.name;
+  document.getElementById('sb-role').textContent   = 'Rol: ' + (cu.role==='ogrenci'?'Öğrenci':cu.role==='ogretmen'?'Öğretmen':'Veli');
+  document.getElementById('sb-school').textContent = cu.school;
+  if (cu.profilePic) {
+    document.getElementById('av-icon').style.display='none';
+    const img=document.getElementById('av-img'); img.src=cu.profilePic; img.style.display='block';
+  }
+  document.getElementById('logoutBtn').onclick = logout;
+
+  // Sidebar
+  const homeLink  = redirectByRole(cu.role);
+  const dersLink  = cu.role==='ogretmen'?'ogretmen-dersler.html':'dersler.html';
+  const canliLink = cu.role==='ogretmen'?'ogretmen-canli-ders.html':'canli-ders.html';
+  document.getElementById('sidebar-menu').innerHTML = `
+    <li><a href="${homeLink}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+    <li><a href="${dersLink}"><i class="fa-solid fa-book"></i> Dersler</a></li>
+    <li><a href="${canliLink}" class="active"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+    <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+    <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+    <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+  `;
+
+  // Öğretmene ders ekleme butonu
+  if (cu.role === 'ogretmen') {
+    document.getElementById('addBtn').style.display = 'flex';
+    // Bugünün tarihini default yap
+    document.getElementById('aDate').value = new Date().toISOString().split('T')[0];
+  }
+
+  await loadLessons();
+}
+
+async function loadLessons() {
+  let lessons = [];
+  try {
+    const r = await fetch(`/api/live-lessons?school=${encodeURIComponent(cu.school)}&userClass=${encodeURIComponent(cu.class||cu.classNum||'')}`);
+    const d = await r.json();
+    if (d.success) lessons = d.lessons;
+  } catch(e) {
+    lessons = JSON.parse(localStorage.getItem('live_lessons')||'[]')
+      .filter(l => l.school===cu.school && (l.target_class==='all'||l.target_class===cu.class||l.target_class===cu.classNum));
+  }
+
+  // Öğretmen sadece kendi derslerini görür
+  if (cu.role === 'ogretmen') lessons = lessons.filter(l=>l.teacher_tc===cu.tc);
+
+  const el = document.getElementById('lessonsContainer');
+  if (!lessons.length) {
+    el.innerHTML = `<div class="empty-lesson">
+      <i class="fa fa-magnifying-glass"></i>
+      <strong style="display:block;font-size:16px;color:#5C8EAD;margin-bottom:8px;">Listelecek canlı ders bulunmamaktadır.</strong>
+      <p style="margin:0;font-size:13px;">Oluşturulan veya atandığınız canlı dersler burada listelenir.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = lessons.map(l => `
+    <div class="lesson-card">
+      <div class="lesson-icon"><i class="fa fa-video"></i></div>
+      <div class="lesson-info">
+        <div class="lesson-title">${l.title}</div>
+        <div class="lesson-meta"><i class="fa fa-user" style="margin-right:4px;"></i>${l.teacher_name||''} &nbsp;|&nbsp; <i class="fa fa-calendar" style="margin-right:4px;"></i>${l.lesson_date||''} ${l.lesson_time||''}</div>
+        <span class="class-badge"><i class="fa fa-users" style="margin-right:4px;"></i>${l.target_class==='all'?'Tüm Sınıflar':l.target_class}</span>
+      </div>
+      <a href="${l.link}" target="_blank" class="lesson-link"><i class="fa fa-play" style="margin-right:5px;"></i>Derse Gir</a>
+    </div>
+  `).join('');
+}
+
+async function addLesson() {
+  const title = document.getElementById('aTitle').value.trim();
+  const link  = document.getElementById('aLink').value.trim();
+  const date  = document.getElementById('aDate').value;
+  const time  = document.getElementById('aTime').value;
+  const cls   = document.getElementById('aCls').value;
+
+  if (!title||!link) { alert('Başlık ve link zorunludur.'); return; }
+
+  const lesson = { teacher_tc:cu.tc, teacher_name:cu.name, title, link, lesson_date:date, lesson_time:time, target_class:cls, school:cu.school, createdAt:new Date().toISOString() };
+
+  try {
+    const r = await fetch('/api/live-lessons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lesson)});
+    const d = await r.json();
+    if (d.success) {
+      alert(`✅ Canlı ders eklendi! ${cls==='all'?'Tüm sınıflara':''+cls+' sınıfına'} bildirim gönderildi.`);
+    } else throw new Error(d.message);
+  } catch(e) {
+    // LocalStorage fallback
+    const lessons = JSON.parse(localStorage.getItem('live_lessons')||'[]');
+    lessons.unshift({...lesson, id:Date.now()});
+    localStorage.setItem('live_lessons', JSON.stringify(lessons));
+
+    // Yerel bildirim
+    const users = JSON.parse(localStorage.getItem('users')||'[]');
+    const students = users.filter(u=>u.role==='ogrenci'&&u.school===cu.school&&(cls==='all'||u.class===cls));
+    const notifs = JSON.parse(localStorage.getItem('eba_notifications')||'[]');
+    students.forEach(s=>{
+      notifs.unshift({id:Date.now()+Math.random(),receiver_tc:s.tc,text:`📹 ${cu.name} yeni canlı ders: ${title} – ${date} ${time}`,isRead:false,createdAt:new Date().toISOString()});
+    });
+    localStorage.setItem('eba_notifications',JSON.stringify(notifs));
+    alert('✅ Ders eklendi (yerel)!');
+  }
+
+  closeAddModal();
+  document.getElementById('aTitle').value='';
+  document.getElementById('aLink').value='';
+  await loadLessons();
+}
+
+function openAddModal()  { document.getElementById('addModal').classList.add('open'); }
+function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+document.getElementById('addModal').addEventListener('click', e=>{ if(e.target===document.getElementById('addModal')) closeAddModal(); });
+
+init();
+</script>
 </body>
 </html>

@@ -3,42 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <title>Ders Yönetimi</title>
-<link rel="stylesheet" href="ogretmen-panel.css">
-</head>
+<link rel="stylesheet" href="panel.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="auth-utils.js"></script><script>requireAuth();</script></head>
 
 <body>
 
-<div class="sidebar">
+    <div class="sidebar">
+        <div class="logo">EBA</div>
+        <div class="profile">
+            <div class="profile-img-container">
+                <div style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; overflow:hidden; margin: 0 auto 10px;">
+                    <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+                    <img src="" alt="Profil Fotoğrafı" id="profile-img-display" style="display:none; width:100%; height:100%; object-fit:cover;" />
+                </div>
+            </div>
+            <p id="profile-name" style="font-weight:600; font-size:16px; margin-bottom:2px;"></p>
+            <p id="profile-role" style="font-size:12px; opacity:0.8; margin-bottom:4px;">Öğretmen</p>
+            <p id="profile-school" style="font-size:12px; opacity:0.7;">–</p>
+        </div>
 
-<h2>Öğretmen</h2>
-
-<ul>
-<li><a href="ogretmen-panel.html">Ana Sayfa</a></li>
-<li><a href="ogretmen-dersler.html">Ders Yönetimi</a></li>
-<li><a href="ogretmen-ogrenciler.html">Öğrenciler</a></li>
-<li><a href="sinav-olustur.html">Sınav Oluştur</a></li>
-</ul>
-
-</div>
+        <ul id="sidebar-menu">
+            <li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+            <li><a href="ogretmen-dersler.html" class="active"><i class="fa-solid fa-book"></i> Dersler</a></li>
+            <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+            <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+            <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+            <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+        </ul>
+    </div>
 
 <div class="main">
+    <div class="topbar">
+        <div></div>
+        <div class="icons">
+            <i class="fa fa-bell"></i>
+            <a href="chat.html"><i class="fa fa-envelope"></i></a>
+        </div>
+    </div>
 
-<h1>Ders Dosyası Yükle</h1>
+    <div style="padding:30px;">
+        <h1 style="color:#284B63; margin-bottom:20px;">Ders Dosyası Yükle</h1>
+        
+        <div style="background:white; padding:30px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05); max-width:500px;">
+            <div class="input-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px; color:#666; font-size:14px;">Ders Adı</label>
+                <input id="dersadi" placeholder="Örn: 9A Matematik" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; outline:none;">
+            </div>
 
-<input id="dersadi" placeholder="Ders adı">
+            <div class="input-group" style="margin-bottom:25px;">
+                <label style="display:block; margin-bottom:8px; color:#666; font-size:14px;">Dosya Seç (Sadece PDF)</label>
+                <input type="file" id="dosya" accept=".pdf" style="width:100%; padding:10px; border:1px dashed #ccc; border-radius:8px; background:#f9f9f9;">
+            </div>
 
-<br><br>
+            <button onclick="yukle()" style="width:100%; background:#f39200; color:white; border:none; padding:15px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">Dosya Yükle</button>
+        </div>
 
-<input type="file" id="dosya">
-
-<br><br>
-
-<button onclick="yukle()">Dosya Yükle</button>
-
-<h2>Yüklenen Dersler</h2>
-
-<ul id="liste"></ul>
-
+        <h2 style="color:#284B63; margin:40px 0 20px;">Yüklenen Dersler</h2>
+        <div id="liste" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:15px;"></div>
+    </div>
 </div>
 
 <script>
@@ -63,21 +86,21 @@ goster()
 
 }
 
-function goster(){
-
-let liste = document.getElementById("liste")
-liste.innerHTML=""
-
-dersler.forEach(d=>{
-
-liste.innerHTML += "<li>"+d.ad+" - "+d.dosya+"</li>"
-
-})
-
+function initCommon() {
+    const user = getCurrentUser();
+    if(user) {
+        document.getElementById('profile-name').textContent = user.name;
+        document.getElementById('profile-school').textContent = user.school;
+        if(user.profilePic) {
+            document.getElementById('default-avatar-icon').style.display='none';
+            const img = document.getElementById('profile-img-display');
+            img.src = user.profilePic;
+            img.style.display = 'block';
+        }
+    }
 }
-
+initCommon();
 goster()
-
 </script>
 
 </body>

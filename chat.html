@@ -6,7 +6,7 @@
   <title>EBA Chat Sistemi</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="chat.css">
-</head>
+<script src="auth-utils.js"></script><script>requireAuth();</script></head>
 
 <body>
   <header class="chat-header">
@@ -21,6 +21,9 @@
     </div>
 
     <div class="chat-header-right">
+      <button class="icon-btn" id="openContactsBtn" title="Kişiler">
+        <i class="fa-solid fa-address-book"></i>
+      </button>
       <button class="icon-btn" id="openGroupModal" title="Yeni Grup Oluştur">
         <i class="fa-solid fa-users"></i>
       </button>
@@ -110,8 +113,27 @@
     </div>
   </div>
 
+  <!-- CONTACTS MODAL -->
+  <div class="modal" id="contactsModal" aria-hidden="true">
+    <div class="modal-backdrop" id="contactsBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Kişiler (Okuldaşlarım)</h3>
+        <button class="icon-btn" id="closeContacts" aria-label="Kapat">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="user-grid" id="contactsList">
+          <!-- Dinamik olarak doldurulur -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
   <script src="auth-utils.js"></script>
   <script src="chat.js"></script>
 </body>
 </html>
+

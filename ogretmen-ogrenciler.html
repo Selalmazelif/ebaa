@@ -1,109 +1,115 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-<meta charset="UTF-8">
-<title>Öğrenciler</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
+  <meta charset="UTF-8">
+  <title>Öğrenciler</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
 </head>
 
 <body>
 
-<div class="sidebar">
+  <div class="sidebar">
+    <div class="logo">EBA</div>
+    <div class="profile">
+      <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; overflow:hidden; margin: 0 auto 10px;">
+          <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="Profil Fotoğrafı" id="profile-img-display"
+            style="display:none; width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <div class="edit-overlay"><i class="fa fa-camera"></i></div>
+        <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+      </div>
+      <p id="profile-name" style="font-weight:600; font-size:16px; margin-bottom:2px;"></p>
+      <p id="profile-role" style="font-size:12px; opacity:0.8; margin-bottom:4px;">Öğretmen</p>
+      <p id="profile-school" style="font-size:12px; opacity:0.7;">–</p>
+      <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+      <button id="logoutBtn"
+        style="margin-top:15px; padding:6px 12px; background:#fff; color:#284B63; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:12px;">Çıkış</button>
+    </div>
+    <ul id="sidebar-menu">
+      <li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+      <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    </ul>
+  </div>
 
-<div class="logo">EBA</div>
+  <div class="main">
 
-<div class="profile">
-<div class="profile-box"></div>
-<p id="profile-name">Öğretmen</p>
-<p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
-<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
-</div>
+    <div class="topbar">
+      <div></div>
+      <div class="icons">
+        <i class="fa fa-bell"></i>
+        <a href="chat.html">
+          <i class="fa fa-envelope"></i>
+        </a>
+      </div>
+    </div>
 
-<ul>
+    <div class="banner">
 
-<li><a href="ogretmen-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <div>
+        <h2>Öğrenciler</h2>
+        <p>Kendi okulunuzdaki öğrencilerinizi yönetin</p>
+      </div>
 
-<li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Derslerim</a></li>
+    </div>
 
-<li><a href="ogretmen-ogrenciler.html"><i class="fa-solid fa-users"></i> Öğrenciler</a></li>
+    <div class="cards" id="ogrenciler-grid">
 
-<li><a href="sinav-olustur.html"><i class="fa-solid fa-pen"></i> Sınav Oluştur</a></li>
+      <!-- Dinamik olarak doldurulur -->
 
-<li><a href="chat.html"><i class="fa-solid fa-comments"></i> Mesajlar</a></li>
+    </div>
 
-</ul>
+  </div>
 
-</div>
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-school').textContent = user.school || '';
+      document.getElementById('logoutBtn').addEventListener('click', logout);
 
-<div class="main">
+      if (user.profilePic) {
+        document.getElementById('default-avatar-icon').style.display = 'none';
+        const profileImg = document.getElementById('profile-img-display');
+        profileImg.src = user.profilePic;
+        profileImg.style.display = 'block';
+      }
 
-<div class="topbar">
+      const ogrencilerGrid = document.getElementById('ogrenciler-grid');
 
-<div class="search">
-<i class="fa fa-search"></i>
-<input placeholder="Ara">
-</div>
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const students = users.filter(u => u.role === 'ogrenci' && u.school === user.school && user.authorizedClasses.includes(u.class));
 
-<div class="icons">
+      ogrencilerGrid.innerHTML = students.map((student, index) => {
+        // Öğrencilerin aktiflik durumunu simüle et (bazıları çevrimiçi bazıları çevrimdışı)
+        const isOnline = parseInt(student.tc.slice(-1)) % 2 !== 0; // Tek TC'ler online
+        const statusColor = isOnline ? '#4caf50' : '#bbb';
+        const statusText = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
 
-<i class="fa fa-bell"></i>
-
-<a href="chat.html">
-<i class="fa fa-envelope"></i>
-</a>
-
-</div>
-
-</div>
-
-<div class="banner">
-
-<div>
-<h2>Öğrenciler</h2>
-<p>Kendi okulunuzdaki öğrencilerinizi yönetin</p>
-</div>
-
-</div>
-
-<div class="cards" id="ogrenciler-grid">
-
-<!-- Dinamik olarak doldurulur -->
-
-</div>
-
-</div>
-
-<script src="auth-utils.js"></script>
-<script>
-const user = requireAuth();
-if (user) {
-  document.getElementById('profile-name').textContent = user.name;
-  document.getElementById('profile-school').textContent = user.school;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  const ogrencilerGrid = document.getElementById('ogrenciler-grid');
-
-  const users = JSON.parse(localStorage.getItem('users') || '[]');
-  const students = users.filter(u => u.role === 'ogrenci' && u.school === user.school && user.authorizedClasses.includes(u.class));
-
-  ogrencilerGrid.innerHTML = students.map((student, index) => {
-    // Öğrencilerin aktiflik durumunu simüle et (bazıları çevrimiçi bazıları çevrimdışı)
-    const isOnline = parseInt(student.tc.slice(-1)) % 2 !== 0; // Tek TC'ler online
-    const statusColor = isOnline ? '#4caf50' : '#bbb';
-    const statusText = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
-    
-    return `
+        return `
     <div class="card" style="position:relative; text-align:center; padding:25px 15px;">
       <div style="position:absolute; top:15px; right:15px; width:16px; height:16px; background-color:${statusColor}; border-radius:50%; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.2);" title="${statusText}"></div>
-      <i class="fa-solid fa-user-graduate" style="font-size:40px; color:#8a1550; margin-bottom:15px; display:block;"></i>
+      <i class="fa-solid fa-user-graduate" style="font-size:40px; color:#4A748F; margin-bottom:15px; display:block;"></i>
       <h3 style="margin-bottom:5px;">${student.name}</h3>
       <p style="color:#555; margin-bottom:8px;">${student.class}. Sınıf</p>
       <span style="font-size:12px; font-weight:600; padding:4px 8px; border-radius:12px; background-color:${isOnline ? '#e8f5e9' : '#f5f5f5'}; color:${isOnline ? '#2e7d32' : '#757575'};">${statusText}</span>
     </div>
   `}).join('');
-}
-</script>
+    }
+  </script>
 
 </body>
+
 </html>

@@ -1,3 +1,22 @@
+// ─── GLOBAL TEMA UYGULA (tüm sayfalarda çalışır) ─────────────────
+(function applyThemeImmediately() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')); } catch(e) { return null; } })();
+  const tc = user?.tc;
+  
+  // Önce kullanıcı tercihini, yoksa cihaz genelindeki tercihi kontrol et
+  const userPrefs = tc ? JSON.parse(localStorage.getItem('eba_prefs_' + tc) || '{}') : {};
+  const deviceTheme = localStorage.getItem('eba_device_theme');
+  
+  const theme = userPrefs.theme || deviceTheme;
+
+  if (theme === 'dark') {
+    document.documentElement.style.backgroundColor = '#0f1923';
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('dark-mode');
+    });
+  }
+})();
+
 function getCurrentUser() {
   try {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -26,10 +45,67 @@ function requireAuth() {
   return currentUser;
 }
 
-function logout() {
+async function logout() {
+  const user = getCurrentUser();
+  if (user) {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tc: user.tc })
+      });
+    } catch(e) {}
+  }
   localStorage.removeItem('currentUser');
   localStorage.removeItem('authToken');
+  localStorage.removeItem('eba_device_theme'); // Opsiyonel: Cihaz temasını sıfırlamak isterseniz
   window.location.href = 'index.html';
+}
+
+function startHeartbeat() {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  const sendPing = async () => {
+    try {
+      await fetch('/api/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tc: user.tc })
+      });
+    } catch(e) {}
+  };
+
+  // Hemen gönder ve sonra her 60 sn'de bir tekrarla
+  sendPing();
+  setInterval(sendPing, 60000);
+}
+
+// Pencere kapanırken çıkış yap (best effort)
+window.addEventListener('beforeunload', () => {
+  const user = getCurrentUser();
+  if (user) {
+    const data = JSON.stringify({ tc: user.tc });
+    navigator.sendBeacon('/api/logout', data);
+  }
+});
+
+// LocalStorage tabanlı eski fonksiyonlar temizlendi.
+// updateOnlineStatus(true/false) artık kullanılmıyor, yerine heartbeat ve logout geldi.
+
+function deleteCurrentUser() {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return;
+  
+  let users = JSON.parse(localStorage.getItem('users') || '[]');
+  users = users.filter(u => u.tc !== currentUser.tc);
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  let allNotifications = JSON.parse(localStorage.getItem('notifications') || '{}');
+  delete allNotifications[currentUser.tc];
+  localStorage.setItem('notifications', JSON.stringify(allNotifications));
+
+  logout();
 }
 
 function isSessionValid() {
@@ -69,7 +145,14 @@ function handleSearch(query) {
     'ana': 'ogrenci-panel.html',
     'profil': 'ogrenci-panel.html',
     'matematik': 'dersler.html',
-    'türkçe': 'dersler.html'
+    'türkçe': 'dersler.html',
+    'sürdürülebilir': 'surdurulebilir-dunya.html',
+    'dünya': 'surdurulebilir-dunya.html',
+    'dijital': 'dijital-teknolojiler.html',
+    'teknoloji': 'dijital-teknolojiler.html',
+    'dil': 'dil-ogrenimi.html',
+    'öğrenim': 'dil-ogrenimi.html',
+    'haber': 'haberimiz-olsun.html'
   };
 
   for (const [key, url] of Object.entries(pages)) {
@@ -197,4 +280,8 @@ function initNotifications() {
 document.addEventListener('DOMContentLoaded', () => {
   initSearch();
   initNotifications();
+  
+  if (getCurrentUser()) {
+    startHeartbeat();
+  }
 });

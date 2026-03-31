@@ -1,86 +1,129 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8">
   <title>Kitaplar</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="panel.css">
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
 </head>
+
 <body>
 
-<div class="sidebar">
-  <div class="logo">EBA</div>
-  <div class="profile">
-    <div class="profile-box"></div>
-    <p id="profile-name">Öğrenci</p>
-    <button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
+  <div class="sidebar">
+
+    <div class="logo">EBA</div>
+
+    <div class="profile">
+      <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; overflow:hidden; margin: 0 auto 10px;">
+          <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="Profil Fotoğrafı" id="profile-img-display"
+            style="display:none; width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <div class="edit-overlay">
+          <i class="fa fa-camera"></i>
+        </div>
+        <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+      </div>
+      <p id="profile-name" style="font-weight:600; font-size:16px; margin-bottom:2px;"></p>
+      <p id="profile-role" style="font-size:12px; opacity:0.8; margin-bottom:4px;">Rol: Öğrenci</p>
+      <p id="profile-school" style="font-size:12px; opacity:0.7;">–</p>
+      <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+      <button id="logoutBtn"
+        style="margin-top:15px; padding:6px 12px; background:#fff; color:#284B63; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:12px;">Çıkış</button>
+    </div>
+
+    <ul id="sidebar-menu">
+      <li><a href="ogrenci-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+      <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    </ul>
+
   </div>
-  <ul>
-    <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+
+  <div class="main">
+    <div class="topbar">
+      <div></div>
+      <div class="icons">
+        <i class="fa fa-bell" title="Bildirimler"></i>
+        <a href="chat.html"><i class="fa fa-envelope" title="Mesajlar"></i></a>
+      </div>
+    </div>
+
+    <div class="banner">
+      <div>
+        <h2>Kitaplar</h2>
+        <p>Önerilen ve okumanız gereken kitaplar</p>
+      </div>
+    </div>
+
+    <div class="cards" id="kitaplar-grid">
+      <!-- JS ile doldurulacak -->
+    </div>
+  </div>
+
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-school').textContent = user.school;
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+      if (user.profilePic) {
+        document.getElementById('default-avatar-icon').style.display = 'none';
+        const profileImg = document.getElementById('profile-img-display');
+        profileImg.src = user.profilePic;
+        profileImg.style.display = 'block';
+      }
+
+      const menu = document.getElementById('sidebar-menu');
+      menu.innerHTML = `
+    <li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
     <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
     <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
-    <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+    <li><a href="kitaplar.html" class="active"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
     <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
-    <li><a href="chat.html"><i class="fa-solid fa-comments"></i> Mesajlar</a></li>
-  </ul>
-</div>
+    <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+  `;
 
-<div class="main">
-  <div class="topbar">
-    <div class="search">
-      <i class="fa fa-search"></i>
-      <input placeholder="Ara">
-    </div>
-    <div class="icons">
-      <i class="fa fa-bell"></i>
-      <a href="chat.html"><i class="fa fa-envelope"></i></a>
-    </div>
-  </div>
+      const kitaplar = [
+        { title: "Sefiller", author: "Victor Hugo", img: "https://m.media-amazon.com/images/I/51rY8Z+8T1L._SY344_BO1,204,203,200_.jpg", type: "Roman" },
+        { title: "Suç ve Ceza", author: "Dostoyevski", img: "https://m.media-amazon.com/images/I/41Z-mndfVzL._SY344_BO1,204,203,200_.jpg", type: "Roman" },
+        { title: "1984", author: "George Orwell", img: "https://m.media-amazon.com/images/I/41aM4xOZxaL._SY344_BO1,204,203,200_.jpg", type: "Bilim Kurgu" },
+        { title: "Simyacı", author: "Paulo Coelho", img: "https://m.media-amazon.com/images/I/51y1Ww1yC0L._SY344_BO1,204,203,200_.jpg", type: "Fantastik" },
+        { title: "Nutuk", author: "Mustafa Kemal Atatürk", img: "https://m.media-amazon.com/images/I/41O+nQkI9TL._SY344_BO1,204,203,200_.jpg", type: "Tarih" },
+        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", img: "https://m.media-amazon.com/images/I/41SgR7-oO3L._SY344_BO1,204,203,200_.jpg", type: "Hikaye" },
+      ];
 
-  <div class="banner">
-    <div>
-      <h2>Kitaplar</h2>
-      <p>Önerilen ve okumanız gereken kitaplar</p>
-    </div>
-  </div>
-
-  <div class="cards" id="kitaplar-grid">
-    <!-- JS ile doldurulacak -->
-  </div>
-</div>
-
-<script src="auth-utils.js"></script>
-<script>
-const user = requireAuth();
-if (user) {
-  document.getElementById('profile-name').textContent = user.name;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  const kitaplar = [
-    { title: "Sefiller", author: "Victor Hugo", img: "img/foto1.jpg", type: "Roman" },
-    { title: "Suç ve Ceza", author: "Dostoyevski", img: "img/foto2.jpeg", type: "Roman" },
-    { title: "1984", author: "George Orwell", img: "img/foto3.jpeg", type: "Bilim Kurgu" },
-    { title: "Simyacı", author: "Paulo Coelho", img: "img/foto4.jpeg", type: "Fantastik" },
-    { title: "Nutuk", author: "Mustafa Kemal Atatürk", img: "img/foto5.jpg", type: "Tarih" },
-    { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", img: "img/foto6.jpeg", type: "Hikaye" },
-  ];
-
-  const grid = document.getElementById('kitaplar-grid');
-  grid.innerHTML = kitaplar.map(kitap => `
+      const grid = document.getElementById('kitaplar-grid');
+      grid.innerHTML = kitaplar.map(kitap => `
     <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;" onclick="alert('${kitap.title} kitabını okumaya başladınız!')">
       <div>
         <div style="background:#eee; height:150px; border-radius:8px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-            ${kitap.img ? `<img src="${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">` : `<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>`}
+            ${kitap.img ?\`<img src="\${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">\` : \`<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>\`}
         </div>
-        <h3 style="font-size:16px; margin-bottom:5px;">${kitap.title}</h3>
-        <p style="font-size:13px; color:#666;">${kitap.author}</p>
+        <h3 style="font-size:16px; margin-bottom:5px;">\${kitap.title}</h3>
+        <p style="font-size:13px; color:#666;">\${kitap.author}</p>
       </div>
-      <div style="margin-top:15px; display:inline-block; padding:4px 10px; background:#f0d4e2; color:#8a1550; font-size:11px; font-weight:bold; border-radius:12px; align-self:flex-start;">
-        ${kitap.type}
+      <div style="margin-top:15px; display:inline-block; padding:4px 10px; background:#DDE7EC; color:#4A748F; font-size:11px; font-weight:bold; border-radius:12px; align-self:flex-start;">
+        \${kitap.type}
       </div>
-    </div>
-  `).join('');
-}
-</script>
+    </div>\`).join('');
+  `)
+
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+    }
+  </script>
 </body>
+
 </html>

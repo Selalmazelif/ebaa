@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -8,21 +8,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f1f8ff; margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
-        .header { background: #8a1550; color: white; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; }
+        .header { background: #4A748F; color: white; padding: 15px 30px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-size: 24px; font-weight: bold; text-decoration: none; color: white; }
         .container { max-width: 800px; margin: 40px auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; flex-grow: 1; width: 100%; }
-        h1 { color: #8a1550; font-size: 28px; margin-bottom: 20px; }
+        h1 { color: #4A748F; font-size: 28px; margin-bottom: 20px; }
         .game-area { margin-top: 30px; }
-        .question-box { background: #f9f9f9; border: 2px dashed #8a1550; border-radius: 12px; padding: 25px; font-size: 20px; font-weight: 500; color: #333; margin-bottom: 20px; }
+        .question-box { background: #f9f9f9; border: 2px dashed #4A748F; border-radius: 12px; padding: 25px; font-size: 20px; font-weight: 500; color: #333; margin-bottom: 20px; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .option-btn { background: #fff; border: 2px solid #ddd; padding: 15px; border-radius: 12px; font-size: 16px; cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; font-weight: 500; color: #444; }
         .option-btn:hover { background: #f0f0f0; border-color: #ccc; transform: scale(1.02); }
         .option-btn.correct { background: #4caf50; color: white; border-color: #4caf50; }
         .option-btn.wrong { background: #f44336; color: white; border-color: #f44336; }
-        .score-board { font-size: 18px; font-weight: 600; color: #8a1550; margin-bottom: 20px; text-align: right; }
-        .action-btn { background: #8a1550; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; display: none; margin: 20px auto; font-family: 'Poppins'; }
+        .score-board { font-size: 18px; font-weight: 600; color: #4A748F; margin-bottom: 20px; text-align: right; }
+        .action-btn { background: #4A748F; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; display: none; margin: 20px auto; font-family: 'Poppins'; }
     </style>
-</head>
+<script src="auth-utils.js"></script><script>requireAuth();</script></head>
 <body>
 
     <div class="header">
@@ -141,3 +141,4 @@
     </script>
 </body>
 </html>
+

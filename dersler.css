@@ -1,4 +1,4 @@
-/* GENEL */
+﻿/* GENEL */
 
 body{
 margin:0;
@@ -11,7 +11,7 @@ display:flex;
 
 .sidebar{
 width:220px;
-background:#8a1550;
+background:#4A748F;
 color:white;
 height:100vh;
 padding:20px;

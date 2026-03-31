@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>EBA - Veritabanı Görüntüleyici</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Arial,sans-serif; }
+
+body {
+  background: #0d1117;
+  color: #c9d1d9;
+  min-height: 100vh;
+}
+
+/* TOP BAR */
+.topbar {
+  background: linear-gradient(90deg, #1f2937, #111827);
+  border-bottom: 1px solid #30363d;
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-left { display:flex; align-items:center; gap:14px; }
+.topbar-logo { font-size:22px; font-weight:800; background:linear-gradient(135deg,#58a6ff,#79c0ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.topbar-title { color:#8b949e; font-size:14px; }
+.db-mode-badge {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.db-mode-badge.local { background: rgba(255,170,0,0.15); color: #f5a623; border: 1px solid rgba(255,170,0,0.3); }
+.db-mode-badge.mssql { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+.dot { width:8px; height:8px; border-radius:50%; }
+.dot.orange { background:#f5a623; box-shadow:0 0 6px #f5a623; }
+.dot.green  { background:#3fb950; box-shadow:0 0 6px #3fb950; }
+
+/* LAYOUT */
+.layout { display:flex; min-height:calc(100vh - 60px); }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  background: #161b22;
+  border-right: 1px solid #30363d;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+.sidebar-group { padding: 6px 16px 4px; font-size:11px; color:#484f58; text-transform:uppercase; font-weight:700; letter-spacing:1px; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; cursor: pointer; font-size: 13px;
+  color: #8b949e; transition: all 0.15s; border-left: 3px solid transparent;
+}
+.sidebar-item:hover { background: rgba(255,255,255,0.05); color:#c9d1d9; }
+.sidebar-item.active { background: rgba(88,166,255,0.1); color:#58a6ff; border-left-color:#58a6ff; }
+.sidebar-item .count {
+  margin-left: auto; background: #21262d; padding: 1px 7px;
+  border-radius: 10px; font-size: 11px; color: #8b949e;
+}
+.sidebar-item.active .count { background: rgba(88,166,255,0.2); color: #58a6ff; }
+
+/* MAIN CONTENT */
+.content { flex:1; padding:24px; overflow:auto; }
+
+/* STATS ROW */
+.stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:24px; }
+.stat-box {
+  background:#161b22; border:1px solid #30363d; border-radius:10px;
+  padding:18px 20px; cursor:pointer; transition:all 0.2s;
+}
+.stat-box:hover { border-color:#58a6ff; transform:translateY(-2px); }
+.stat-box.active { border-color:#58a6ff; background:rgba(88,166,255,0.06); }
+.stat-num { font-size:28px; font-weight:800; margin-bottom:4px; }
+.stat-label { font-size:12px; color:#8b949e; display:flex; align-items:center; gap:7px; }
+
+/* TABLE CONTAINER */
+.table-card {
+  background:#161b22; border:1px solid #30363d; border-radius:10px; overflow:hidden;
+}
+.table-card-head {
+  padding:16px 20px; border-bottom:1px solid #30363d;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+}
+.table-card-title { font-size:15px; font-weight:700; color:#e6edf3; display:flex; align-items:center; gap:10px; }
+.table-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.search-box {
+  display:flex; align-items:center; gap:8px;
+  background:#0d1117; border:1px solid #30363d;
+  border-radius:7px; padding:6px 12px;
+}
+.search-box input { background:none; border:none; outline:none; color:#c9d1d9; font-size:13px; width:180px; }
+.search-box i { color:#8b949e; font-size:13px; }
+.btn-refresh { background:#21262d; border:1px solid #30363d; color:#c9d1d9; padding:6px 14px; border-radius:7px; cursor:pointer; font-size:13px; transition:all .2s; }
+.btn-refresh:hover { background:#30363d; color:#58a6ff; border-color:#58a6ff; }
+.btn-export { background:rgba(88,166,255,0.12); border:1px solid #58a6ff; color:#58a6ff; padding:6px 14px; border-radius:7px; cursor:pointer; font-size:13px; transition:all .2s; }
+.btn-export:hover { background:rgba(88,166,255,0.2); }
+.btn-del { background:rgba(248,81,73,0.12); border:1px solid #f85149; color:#f85149; padding:4px 10px; border-radius:6px; cursor:pointer; font-size:11px; }
+.btn-del:hover { background:rgba(248,81,73,0.25); }
+
+/* TABLE */
+.db-table-wrap { overflow-x:auto; }
+table.db-table { width:100%; border-collapse:collapse; font-size:13px; }
+table.db-table th {
+  background:#1c2128; color:#8b949e; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px;
+  padding:10px 14px; text-align:left; border-bottom:1px solid #30363d;
+  white-space:nowrap;
+}
+table.db-table td {
+  padding:10px 14px; border-bottom:1px solid #21262d;
+  color:#c9d1d9; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+table.db-table tr:last-child td { border-bottom:none; }
+table.db-table tr:hover td { background:rgba(255,255,255,0.03); }
+.badge {
+  padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700;
+}
+.badge-blue   { background:rgba(88,166,255,0.15); color:#58a6ff; }
+.badge-green  { background:rgba(63,185,80,0.15);  color:#3fb950; }
+.badge-orange { background:rgba(245,166,35,0.15); color:#f5a623; }
+.badge-red    { background:rgba(248,81,73,0.15);  color:#f85149; }
+.badge-purple { background:rgba(188,140,255,0.15);color:#bc8cff; }
+.empty-state { padding:50px; text-align:center; color:#484f58; }
+.empty-state i { font-size:48px; display:block; margin-bottom:14px; }
+
+/* JSON modal */
+.modal-ovl { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; }
+.modal-ovl.open { display:flex; }
+.modal-box { background:#161b22; border:1px solid #30363d; border-radius:12px; width:90vw; max-width:800px; max-height:85vh; display:flex; flex-direction:column; }
+.modal-head { padding:16px 20px; border-bottom:1px solid #30363d; display:flex; align-items:center; justify-content:space-between; }
+.modal-head h3 { font-size:15px; color:#e6edf3; }
+.modal-close { background:#21262d; border:1px solid #30363d; color:#c9d1d9; width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; }
+.modal-body { padding:20px; overflow:auto; flex:1; }
+pre.json-code {
+  background:#0d1117; border:1px solid #30363d; border-radius:8px;
+  padding:16px; font-size:12px; font-family:'Consolas','Courier New',monospace;
+  color:#a5d6ff; white-space:pre-wrap; word-break:break-word; max-height:60vh; overflow-y:auto;
+}
+
+/* Add form */
+.add-form { padding:16px 20px; border-top:1px solid #30363d; display:none; background:#0d1117; }
+.add-form.open { display:block; }
+.add-form textarea {
+  width:100%; background:#161b22; border:1px solid #30363d; border-radius:7px;
+  color:#a5d6ff; font-family:'Consolas','Courier New',monospace; font-size:12px;
+  padding:12px; resize:vertical; min-height:120px; outline:none;
+}
+.add-form textarea:focus { border-color:#58a6ff; }
+.add-form-actions { display:flex; gap:10px; margin-top:10px; }
+.btn-save-row { background:#3fb950; border:none; color:white; padding:7px 18px; border-radius:7px; cursor:pointer; font-size:13px; font-weight:700; }
+.btn-cancel { background:#21262d; border:1px solid #30363d; color:#c9d1d9; padding:7px 14px; border-radius:7px; cursor:pointer; font-size:13px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:#161b22; }
+::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#484f58; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">EBA</div>
+    <div style="color:#30363d;font-size:20px;">|</div>
+    <div class="topbar-title"><i class="fa fa-database" style="margin-right:6px;"></i>Veritabanı Yönetimi</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="db-mode-badge local" id="dbModeBadge">
+      <div class="dot orange" id="modeIndicatorDot"></div>
+      <span id="modeText">Yerel DB (local_db.json)</span>
+    </div>
+    <button class="btn-refresh" onclick="loadAllData()"><i class="fa fa-rotate"></i> Yenile</button>
+    <a href="index.html" style="color:#8b949e;font-size:14px;text-decoration:none;"><i class="fa fa-arrow-left"></i> Geri</a>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-group">Tablolar</div>
+    <div class="sidebar-item active" onclick="showTable('users')" id="nav-users">
+      <i class="fa fa-users" style="color:#58a6ff;width:16px;"></i> Kullanıcılar
+      <span class="count" id="cnt-users">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('posts')" id="nav-posts">
+      <i class="fa fa-newspaper" style="color:#f5a623;width:16px;"></i> Paylaşımlar
+      <span class="count" id="cnt-posts">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('grades')" id="nav-grades">
+      <i class="fa fa-star" style="color:#3fb950;width:16px;"></i> Notlar
+      <span class="count" id="cnt-grades">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('assignments')" id="nav-assignments">
+      <i class="fa fa-book-open" style="color:#bc8cff;width:16px;"></i> Ödevler
+      <span class="count" id="cnt-assignments">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('liveLessons')" id="nav-liveLessons">
+      <i class="fa fa-video" style="color:#f85149;width:16px;"></i> Canlı Dersler
+      <span class="count" id="cnt-liveLessons">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('notifications')" id="nav-notifications">
+      <i class="fa fa-bell" style="color:#f5a623;width:16px;"></i> Bildirimler
+      <span class="count" id="cnt-notifications">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showTable('students_stats')" id="nav-students_stats">
+      <i class="fa fa-chart-bar" style="color:#58a6ff;width:16px;"></i> İstatistikler
+      <span class="count" id="cnt-students_stats">0</span>
+    </div>
+
+    <div class="sidebar-group" style="margin-top:16px;">İşlemler</div>
+    <div class="sidebar-item" onclick="exportJSON()">
+      <i class="fa fa-download" style="color:#8b949e;width:16px;"></i> JSON İndir
+    </div>
+    <div class="sidebar-item" onclick="clearTable()">
+      <i class="fa fa-trash" style="color:#f85149;width:16px;"></i> Tabloyu Temizle
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- İSTATİSTİK KUTULARI -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- TABLO KARTI -->
+    <div class="table-card">
+      <div class="table-card-head">
+        <div class="table-card-title">
+          <i class="fa fa-table" style="color:#58a6ff;"></i>
+          <span id="tableTitle">Kullanıcılar</span>
+          <span style="font-size:12px;color:#8b949e;font-weight:400;" id="tableCount"></span>
+        </div>
+        <div class="table-actions">
+          <div class="search-box">
+            <i class="fa fa-search"></i>
+            <input id="searchInp" placeholder="Tabloda ara..." oninput="filterTable(this.value)">
+          </div>
+          <button class="btn-refresh" onclick="toggleAddForm()"><i class="fa fa-plus"></i> Ekle</button>
+          <button class="btn-export" onclick="exportJSON()"><i class="fa fa-download"></i> JSON İndir</button>
+        </div>
+      </div>
+
+      <!-- Ekleme Formu -->
+      <div class="add-form" id="addForm">
+        <p style="font-size:12px;color:#8b949e;margin-bottom:8px;">JSON formatında yeni kayıt girin:</p>
+        <textarea id="addJson" placeholder='{"key": "value"}'></textarea>
+        <div class="add-form-actions">
+          <button class="btn-save-row" onclick="addRow()"><i class="fa fa-floppy-disk"></i> Kaydet</button>
+          <button class="btn-cancel" onclick="toggleAddForm()">İptal</button>
+          <span id="addMsg" style="font-size:12px;margin-left:8px;"></span>
+        </div>
+      </div>
+
+      <div class="db-table-wrap">
+        <table class="db-table" id="mainTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON Modal -->
+<div class="modal-ovl" id="jsonModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fa fa-code"></i> Ham Veri</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fa fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <pre class="json-code" id="jsonContent"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── VERİTABANI API ─────────────────────────────────────────────────
+const API_BASE = 'http://localhost:3000';
+
+// Tablo tanımlamaları
+const TABLE_META = {
+  users: {
+    label: 'Kullanıcılar', icon: 'fa-users', color: '#58a6ff',
+    cols: ['id','tc','name','role','school','class','grade_avg','isOnline','createdAt'],
+    labels: ['ID','TC','Ad Soyad','Rol','Okul','Sınıf','Ortalama','Çevrimiçi','Kayıt Tarihi']
+  },
+  posts: {
+    label: 'Paylaşımlar', icon: 'fa-newspaper', color: '#f5a623',
+    cols: ['id','author_name','type','content','target_group','school','createdAt'],
+    labels: ['ID','Yazar','Tür','İçerik','Hedef Grup','Okul','Tarih']
+  },
+  grades: {
+    label: 'Notlar', icon: 'fa-star', color: '#3fb950',
+    cols: ['id','student_tc','teacher_tc','subject','grade','note','createdAt'],
+    labels: ['ID','Öğrenci TC','Öğretmen TC','Ders','Not','Açıklama','Tarih']
+  },
+  assignments: {
+    label: 'Ödevler', icon: 'fa-book-open', color: '#bc8cff',
+    cols: ['id','teacher_name','title','subject','due_date','target_class','school','createdAt'],
+    labels: ['ID','Öğretmen','Başlık','Ders','Son Tarih','Sınıf','Okul','Tarih']
+  },
+  liveLessons: {
+    label: 'Canlı Dersler', icon: 'fa-video', color: '#f85149',
+    cols: ['id','teacher_name','title','link','lesson_date','lesson_time','target_class','school'],
+    labels: ['ID','Öğretmen','Başlık','Link','Tarih','Saat','Sınıf','Okul']
+  },
+  notifications: {
+    label: 'Bildirimler', icon: 'fa-bell', color: '#f5a623',
+    cols: ['id','receiver_tc','text','isRead','createdAt'],
+    labels: ['ID','Alıcı TC','Metin','Okundu?','Tarih']
+  },
+  students_stats: {
+    label: 'İstatistikler', icon: 'fa-chart-bar', color: '#58a6ff',
+    cols: ['student_tc','content_count','exam_count','social_count','week_start'],
+    labels: ['Öğrenci TC','İçerik','Sınav','Sosyal','Hafta Başı']
+  }
+};
+
+let db = {};
+let currentTable = 'users';
+let filteredRows = [];
+
+// ─── VERİ YükLE ──────────────────────────────────────────────────────
+async function loadAllData() {
+  try {
+    const r = await fetch(`${API_BASE}/api/db-view`);
+    const d = await r.json();
+    if (d.success) {
+      db = d.db;
+      updateModeBadge(d.mode);
+    } else throw new Error('API hatası');
+  } catch(e) {
+    // Fallback: local_db.json'u localStorage'dan veya statik olarak yükle
+    try {
+      const r = await fetch('/local_db.json');
+      db = await r.json();
+      updateModeBadge('local');
+    } catch(e2) {
+      // localStorage'dan yükle
+      db = {
+        users: JSON.parse(localStorage.getItem('users')||'[]'),
+        posts: JSON.parse(localStorage.getItem('eba_posts')||'[]'),
+        grades: JSON.parse(localStorage.getItem('eba_grades')||'[]'),
+        assignments: JSON.parse(localStorage.getItem('eba_assignments')||'[]'),
+        liveLessons: JSON.parse(localStorage.getItem('live_lessons')||'[]'),
+        notifications: JSON.parse(localStorage.getItem('eba_notifications')||'[]'),
+        students_stats: []
+      };
+      updateModeBadge('localstorage');
+    }
+  }
+  updateStats();
+  showTable(currentTable);
+}
+
+function updateModeBadge(mode) {
+  const badge = document.getElementById('dbModeBadge');
+  const dot   = document.getElementById('modeIndicatorDot');
+  const text  = document.getElementById('modeText');
+  if (mode === 'mssql') {
+    badge.className = 'db-mode-badge mssql';
+    dot.className   = 'dot green';
+    text.textContent = 'MSSQL Server (Aktif)';
+  } else if (mode === 'local') {
+    badge.className = 'db-mode-badge local';
+    dot.className   = 'dot orange';
+    text.textContent = 'Yerel DB (local_db.json)';
+  } else {
+    badge.className = 'db-mode-badge local';
+    dot.className   = 'dot orange';
+    text.textContent = 'Tarayıcı (localStorage)';
+  }
+}
+
+// ─── İSTATİSTİKLER ───────────────────────────────────────────────────
+function updateStats() {
+  const tables = Object.keys(TABLE_META);
+  const icons  = ['fa-users','fa-newspaper','fa-star','fa-book-open','fa-video','fa-bell','fa-chart-bar'];
+  const colors = ['#58a6ff','#f5a623','#3fb950','#bc8cff','#f85149','#f5a623','#58a6ff'];
+
+  // Sidebar sayaçları
+  tables.forEach(t => {
+    const el = document.getElementById('cnt-'+t);
+    if (el) el.textContent = (db[t]||[]).length;
+  });
+
+  // İstatistik kutuları
+  const row = document.getElementById('statsRow');
+  row.innerHTML = tables.map((t,i)=>`
+    <div class="stat-box${t===currentTable?' active':''}" onclick="showTable('${t}')" id="stat-${t}">
+      <div class="stat-num" style="color:${colors[i]}">${(db[t]||[]).length}</div>
+      <div class="stat-label"><i class="fa ${icons[i]}" style="color:${colors[i]};"></i>${TABLE_META[t].label}</div>
+    </div>
+  `).join('');
+}
+
+// ─── TABLO GÖSTER ────────────────────────────────────────────────────
+function showTable(tableName) {
+  currentTable = tableName;
+  document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+tableName);
+  if (navEl) navEl.classList.add('active');
+
+  document.querySelectorAll('.stat-box').forEach(el=>el.classList.remove('active'));
+  const statEl = document.getElementById('stat-'+tableName);
+  if (statEl) statEl.classList.add('active');
+
+  document.getElementById('searchInp').value = '';
+  document.getElementById('addForm').classList.remove('open');
+  const meta = TABLE_META[tableName];
+  document.getElementById('tableTitle').textContent = meta.label;
+  renderTable(db[tableName]||[]);
+}
+
+function renderTable(rows) {
+  filteredRows = rows;
+  const meta = TABLE_META[currentTable];
+  document.getElementById('tableCount').textContent = `(${rows.length} kayıt)`;
+
+  // Başlık
+  const headEl = document.getElementById('tableHead');
+  headEl.innerHTML = '<tr>' +
+    meta.labels.map(l=>`<th>${l}</th>`).join('') +
+    '<th style="width:70px;">İşlem</th></tr>';
+
+  // Satırlar
+  const bodyEl = document.getElementById('tableBody');
+  if (!rows.length) {
+    bodyEl.innerHTML = `<tr><td colspan="${meta.cols.length+1}" class="empty-state"><i class="fa fa-inbox"></i><div style="font-size:14px;">Bu tabloda kayıt yok</div></td></tr>`;
+    return;
+  }
+  bodyEl.innerHTML = rows.map((row,idx)=>{
+    const cells = meta.cols.map(col=>{
+      let val = row[col];
+      if (val === null || val === undefined) val = '–';
+      if (col==='role')      return `<td><span class="badge ${roleBadge(val)}">${val}</span></td>`;
+      if (col==='type')      return `<td><span class="badge ${typeBadge(val)}">${val}</span></td>`;
+      if (col==='isOnline'||col==='isRead') return `<td><span class="badge ${val?'badge-green':'badge-red'}">${val?'Evet':'Hayır'}</span></td>`;
+      if (col==='grade')     return `<td><strong style="color:${gradeColor(val)}">${val}</strong></td>`;
+      if (col==='link')      return `<td><a href="${val}" target="_blank" style="color:#58a6ff;font-size:11px;">${val?val.slice(0,25)+'…':'–'}</a></td>`;
+      if (col==='createdAt'||col==='week_start') return `<td style="color:#8b949e;">${formatDate(val)}</td>`;
+      const str = String(val);
+      return `<td title="${str.length>40?str:''}">${str.length>40?str.slice(0,40)+'…':str}</td>`;
+    }).join('');
+    return `<tr>
+      ${cells}
+      <td>
+        <button class="btn-del" onclick="deleteRow(${idx})" title="Sil"><i class="fa fa-trash"></i></button>
+        <span style="margin-left:4px;cursor:pointer;color:#8b949e;font-size:12px;" onclick="showJSON(${idx})" title="Ham veri"><i class="fa fa-code"></i></span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── ARAMA ───────────────────────────────────────────────────────────
+function filterTable(q) {
+  const rows = db[currentTable]||[];
+  if (!q.trim()) { renderTable(rows); return; }
+  const qLow = q.toLowerCase();
+  const filtered = rows.filter(r=>JSON.stringify(r).toLowerCase().includes(qLow));
+  renderTable(filtered);
+}
+
+// ─── SiL ─────────────────────────────────────────────────────────────
+function deleteRow(idx) {
+  const rows = filteredRows;
+  if (!rows[idx]) return;
+  if (!confirm(`Bu kaydı silmek istediğinize emin misiniz?\n${JSON.stringify(rows[idx]).slice(0,100)}...`)) return;
+  const realIdx = (db[currentTable]||[]).indexOf(rows[idx]);
+  if (realIdx>-1) db[currentTable].splice(realIdx,1);
+  saveToLocal();
+  updateStats();
+  showTable(currentTable);
+}
+
+// ─── EKLE ─────────────────────────────────────────────────────────────
+function toggleAddForm() {
+  const f = document.getElementById('addForm');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) {
+    const meta = TABLE_META[currentTable];
+    const sample = {};
+    meta.cols.forEach(c=>{ if(c!=='id') sample[c]=''; });
+    document.getElementById('addJson').value = JSON.stringify(sample, null, 2);
+  }
+}
+
+function addRow() {
+  const msg = document.getElementById('addMsg');
+  try {
+    const obj = JSON.parse(document.getElementById('addJson').value);
+    obj.id = obj.id || Date.now();
+    if (!db[currentTable]) db[currentTable]=[];
+    db[currentTable].unshift(obj);
+    saveToLocal();
+    updateStats();
+    showTable(currentTable);
+    document.getElementById('addForm').classList.remove('open');
+    msg.textContent='';
+  } catch(e) {
+    msg.textContent='❌ Geçersiz JSON: ' + e.message;
+    msg.style.color='#f85149';
+  }
+}
+
+// ─── JSON MODAL ───────────────────────────────────────────────────────
+function showJSON(idx) {
+  const row = filteredRows[idx];
+  document.getElementById('jsonContent').textContent = JSON.stringify(row, null, 2);
+  document.getElementById('jsonModal').classList.add('open');
+}
+function closeModal() { document.getElementById('jsonModal').classList.remove('open'); }
+document.getElementById('jsonModal').addEventListener('click',e=>{ if(e.target===document.getElementById('jsonModal'))closeModal(); });
+
+// ─── EXPORT ───────────────────────────────────────────────────────────
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(db[currentTable]||[], null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `eba_${currentTable}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ─── TEMIZLE ──────────────────────────────────────────────────────────
+function clearTable() {
+  if (!confirm(`"${TABLE_META[currentTable].label}" tablosundaki TÜM kayıtlar silinecek. Emin misiniz?`)) return;
+  db[currentTable] = [];
+  saveToLocal();
+  updateStats();
+  showTable(currentTable);
+}
+
+// ─── LOCAL KAYDET ────────────────────────────────────────────────────
+async function saveToLocal() {
+  // API aracılığıyla kaydet
+  try {
+    await fetch(`${API_BASE}/api/db-save`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(db)
+    });
+  } catch(e) {}
+  // localStorage fallback
+  try {
+    const mapLS = {
+      users:'users', posts:'eba_posts', grades:'eba_grades',
+      assignments:'eba_assignments', liveLessons:'live_lessons',
+      notifications:'eba_notifications'
+    };
+    Object.entries(mapLS).forEach(([k,v])=>{ if(db[k]) localStorage.setItem(v, JSON.stringify(db[k])); });
+  } catch(e) {}
+}
+
+// ─── YARDIMCILAR ─────────────────────────────────────────────────────
+function roleBadge(r) {
+  if(r==='ogrenci') return 'badge-blue';
+  if(r==='ogretmen') return 'badge-green';
+  if(r==='veli') return 'badge-orange';
+  return 'badge-purple';
+}
+function typeBadge(t) {
+  if(t==='İleti') return 'badge-orange';
+  if(t==='Tartışma') return 'badge-green';
+  if(t==='Oylama') return 'badge-blue';
+  if(t==='Etkinlik') return 'badge-red';
+  return 'badge-purple';
+}
+function gradeColor(g) {
+  if(g>=85) return '#3fb950';
+  if(g>=60) return '#f5a623';
+  return '#f85149';
+}
+function formatDate(d) {
+  if(!d||d==='–') return '–';
+  try { return new Date(d).toLocaleString('tr-TR'); } catch(e) { return d; }
+}
+
+// ─── BAŞLAT ──────────────────────────────────────────────────────────
+loadAllData();
+setInterval(loadAllData, 30000); // 30 saniyede otomatik yenile
+</script>
+</body>
+</html>

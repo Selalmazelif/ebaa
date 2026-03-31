@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>MSSQL SSMS Kurulum Kılavuzu - EBA</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Arial,sans-serif; }
+body { background:#0d1117; color:#c9d1d9; min-height:100vh; }
+
+.header {
+  background:linear-gradient(135deg,#1f2937,#111827);
+  border-bottom:1px solid #30363d;
+  padding:20px 36px;
+  display:flex; align-items:center; gap:16px;
+}
+.header-icon { font-size:36px; }
+.header h1 { font-size:22px; color:#e6edf3; margin-bottom:4px; }
+.header p  { font-size:13px; color:#8b949e; }
+
+.container { max-width:860px; margin:0 auto; padding:36px 24px; }
+
+/* ADIM KARTI */
+.step-card {
+  background:#161b22; border:1px solid #30363d; border-radius:14px;
+  margin-bottom:24px; overflow:hidden;
+}
+.step-head {
+  display:flex; align-items:center; gap:14px;
+  padding:18px 24px; border-bottom:1px solid #30363d;
+  background:linear-gradient(90deg,rgba(88,166,255,0.06),transparent);
+}
+.step-num {
+  width:36px; height:36px; border-radius:50%;
+  background:linear-gradient(135deg,#1f6feb,#388bfd);
+  color:white; font-size:15px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.step-title { font-size:16px; font-weight:700; color:#e6edf3; }
+.step-sub   { font-size:12px; color:#8b949e; margin-top:2px; }
+.step-body  { padding:20px 24px; }
+
+/* TAG */
+.tag {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 10px; border-radius:7px; font-size:12px; font-weight:700;
+  margin:2px;
+}
+.tag-red    { background:rgba(248,81,73,0.15);  color:#f85149; border:1px solid rgba(248,81,73,0.3); }
+.tag-green  { background:rgba(63,185,80,0.15);  color:#3fb950; border:1px solid rgba(63,185,80,0.3); }
+.tag-blue   { background:rgba(88,166,255,0.15); color:#58a6ff; border:1px solid rgba(88,166,255,0.3); }
+.tag-orange { background:rgba(245,166,35,0.15); color:#f5a623; border:1px solid rgba(245,166,35,0.3); }
+
+/* Komut kutusu */
+.cmd-box {
+  background:#0d1117; border:1px solid #30363d; border-radius:8px;
+  padding:14px 18px; margin:12px 0;
+  font-family:'Consolas','Courier New',monospace;
+  font-size:13px; color:#a5d6ff; position:relative;
+  cursor:pointer;
+}
+.cmd-box:hover { border-color:#58a6ff; }
+.copy-hint { position:absolute; top:10px; right:12px; font-size:11px; color:#484f58; font-family:inherit; }
+.cmd-box:hover .copy-hint { color:#58a6ff; }
+
+/* Açıklama listesi */
+.inst-list { list-style:none; padding:0; margin:10px 0; display:flex; flex-direction:column; gap:10px; }
+.inst-list li {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 16px; background:#0d1117; border-radius:8px;
+  border:1px solid #21262d; font-size:13px; line-height:1.5;
+}
+.inst-list li .icon { font-size:18px; flex-shrink:0; margin-top:2px; }
+.inst-list li strong { color:#e6edf3; }
+
+/* Uyarı */
+.alert {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:14px 18px; border-radius:10px; margin:14px 0; font-size:13px;
+}
+.alert-warning { background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.3); color:#f5a623; }
+.alert-success { background:rgba(63,185,80,0.1);  border:1px solid rgba(63,185,80,0.3);  color:#3fb950; }
+.alert-info    { background:rgba(88,166,255,0.1); border:1px solid rgba(88,166,255,0.3); color:#58a6ff; }
+.alert i { font-size:18px; flex-shrink:0; margin-top:1px; }
+
+/* Test butonu */
+.test-btn {
+  width:100%; padding:14px; border-radius:10px; border:none;
+  background:linear-gradient(135deg,#1f6feb,#388bfd);
+  color:white; font-size:15px; font-weight:700; cursor:pointer;
+  margin-top:8px; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.test-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(31,111,235,0.4); }
+.test-result { margin-top:12px; padding:14px; border-radius:8px; font-size:13px; text-align:center; display:none; }
+.test-result.ok  { background:rgba(63,185,80,0.1); border:1px solid rgba(63,185,80,0.3); color:#3fb950; }
+.test-result.err { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); color:#f85149; }
+
+/* Status kutusu */
+.status-box {
+  background:#161b22; border:1px solid #30363d; border-radius:12px;
+  padding:20px 24px; margin-bottom:24px;
+  display:flex; align-items:center; gap:18px;
+}
+.status-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.status-dot.err { background:#f85149; box-shadow:0 0 8px #f85149; animation:pulse 1.5s infinite; }
+.status-dot.ok  { background:#3fb950; box-shadow:0 0 8px #3fb950; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-info strong { font-size:15px; color:#e6edf3; display:block; margin-bottom:3px; }
+.status-info span  { font-size:12px; color:#8b949e; }
+
+/* Path box */
+.path-box {
+  background:#0d1117; border:1px solid #30363d; border-left:3px solid #58a6ff;
+  border-radius:6px; padding:10px 14px; margin:8px 0;
+  font-family:'Consolas','Courier New',monospace; font-size:12px; color:#79c0ff;
+}
+
+/* Bağlantı config */
+.config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+.config-item { background:#0d1117; border:1px solid #21262d; border-radius:8px; padding:12px 16px; }
+.config-label { font-size:11px; color:#484f58; text-transform:uppercase; font-weight:700; margin-bottom:4px; }
+.config-val   { font-size:14px; color:#a5d6ff; font-family:'Consolas','Courier New',monospace; font-weight:700; }
+
+/* Nav */
+.bottom-nav { display:flex; gap:12px; margin-top:8px; }
+.btn-nav {
+  padding:10px 20px; border-radius:8px; border:none; cursor:pointer;
+  font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-nav.back  { background:#21262d; color:#c9d1d9; border:1px solid #30363d; }
+.btn-nav.viewer{ background:rgba(63,185,80,0.15); color:#3fb950; border:1px solid rgba(63,185,80,0.3); }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🗄️</div>
+  <div>
+    <h1>MSSQL – SSMS Bağlantı Kurulum Kılavuzu</h1>
+    <p>EBA platformunu MSSQL Server'a bağlamak için aşağıdaki adımları sırasıyla uygulayın</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Mevcut durum -->
+  <div class="status-box">
+    <div class="status-dot err" id="connDot"></div>
+    <div class="status-info">
+      <strong id="connStatus">🔴 MSSQL Bağlantısı YOK – Yerel DB kullanılıyor</strong>
+      <span id="connDetail">Hata: Login failed for user 'sa' — Mixed Mode Authentication kapalı olabilir</span>
+    </div>
+    <button onclick="testDB()" style="padding:8px 16px;background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:7px;cursor:pointer;font-size:12px;margin-left:auto;flex-shrink:0;">🔄 Bağlantıyı Test Et</button>
+  </div>
+
+  <!-- ADIM 1: SSMS'i aç -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">SSMS'i Aç ve SQL Server'a Bağlan</div>
+        <div class="step-sub">Windows Authentication ile giriş yap</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <ul class="inst-list">
+        <li>
+          <span class="icon">🔍</span>
+          <div><strong>Başlat menüsünden</strong> ara: <span style="background:#21262d;padding:2px 7px;border-radius:4px;font-family:Consolas;color:#a5d6ff;font-size:12px;">SQL Server Management Studio</span></div>
+        </li>
+        <li>
+          <span class="icon">🖥️</span>
+          <div>
+            <strong>Bağlan ekranında:</strong><br>
+            <div class="config-grid" style="margin-top:8px;">
+              <div class="config-item">
+                <div class="config-label">Server Type</div>
+                <div class="config-val">Database Engine</div>
+              </div>
+              <div class="config-item">
+                <div class="config-label">Server Name</div>
+                <div class="config-val">localhost  veya  .</div>
+              </div>
+              <div class="config-item">
+                <div class="config-label">Authentication</div>
+                <div class="config-val">Windows Authentication</div>
+              </div>
+              <div class="config-item">
+                <div class="config-label">Connect</div>
+                <div class="config-val">Connect butonuna bas</div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ADIM 2: Mixed Mode -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">SQL Server Authentication (Mixed Mode) Aktif Et</div>
+        <div class="step-sub">Bu adım olmadan sa ile bağlantı çalışmaz</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="alert alert-warning">
+        <i class="fa fa-triangle-exclamation"></i>
+        <div><strong>Neden gerekli?</strong> EBA, <code>sa</code> hesabı ile bağlanmaya çalışıyor. SQL Server varsayılan olarak sadece Windows Authentication kullanır. Mixed Mode'u açarak SQL hesaplarına izin vermeniz gerekiyor.</div>
+      </div>
+      <ul class="inst-list">
+        <li><span class="icon">🖱️</span><div>SSMS'de sol tarafta <strong>Object Explorer</strong>'da sunucu adına (en üst satır) <strong>sağ tıkla → Properties</strong></div></li>
+        <li><span class="icon">🔒</span><div>Açılan pencerede sol menüden <strong>Security</strong> sekmesine tıkla</div></li>
+        <li><span class="icon">✅</span><div><strong>Server authentication</strong> bölümünde <strong>"SQL Server and Windows Authentication mode"</strong> seçeneğini seç (yani Mixed Mode)</div></li>
+        <li><span class="icon">💾</span><div><strong>OK</strong> butonuna bas</div></li>
+        <li><span class="icon">⚠️</span><div style="color:#f5a623;"><strong>Önemli:</strong> Bir uyarı çıkacak ve SQL Server'ı yeniden başlatmanız istenecek — bunu kabul et</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ADIM 3: sa şifre -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">sa Hesabını Aktif Et ve Şifre Belirle</div>
+        <div class="step-sub">sa hesabı varsayılan olarak devre dışı olabilir</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="alert alert-info">
+        <i class="fa fa-circle-info"></i>
+        <div>EBA'nın bağlanmak istediği hesap: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">sa</code> — şifre: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">123456</code></div>
+      </div>
+
+      <strong style="font-size:13px;color:#e6edf3;display:block;margin-bottom:10px;">📋 Yöntem A: SSMS ile (görsel)</strong>
+      <ul class="inst-list" style="margin-bottom:16px;">
+        <li><span class="icon">📂</span><div>SSMS'de: <strong>Security → Logins → sa</strong> üzerine <strong>çift tıkla</strong></div></li>
+        <li><span class="icon">🔑</span><div><strong>General</strong> sekmesinde şifreyi <code style="background:#0d1117;padding:2px 6px;border-radius:4px;color:#a5d6ff;">123456</code> olarak gir, tekrar gir</div></li>
+        <li><span class="icon">🔓</span><div><strong>Status</strong> sekmesine geç → <strong>Login: Enabled</strong> seç</div></li>
+        <li><span class="icon">💾</span><div><strong>OK</strong>'a bas</div></li>
+      </ul>
+
+      <strong style="font-size:13px;color:#e6edf3;display:block;margin-bottom:10px;">📋 Yöntem B: SQL komutu ile (daha hızlı)</strong>
+      <p style="font-size:12px;color:#8b949e;margin-bottom:6px;">SSMS'de <strong>New Query</strong> aç, aşağıdaki kodu yapıştır ve <strong>F5</strong> ile çalıştır:</p>
+
+      <div class="cmd-box" onclick="copyCmd(this)">
+        <span class="copy-hint">📋 Kopyala</span>
+<span style="color:#ff7b72;">ALTER</span> <span style="color:#ff7b72;">LOGIN</span> <span style="color:#79c0ff;">sa</span> <span style="color:#ff7b72;">WITH</span> PASSWORD = <span style="color:#a5d6ff;">'123456'</span><span style="color:#8b949e;">,</span> CHECK_POLICY = <span style="color:#a5d6ff;">OFF</span><span style="color:#8b949e;">,</span> CHECK_EXPIRATION = <span style="color:#a5d6ff;">OFF</span>;
+<span style="color:#ff7b72;">ALTER</span> <span style="color:#ff7b72;">LOGIN</span> <span style="color:#79c0ff;">sa</span> <span style="color:#ff7b72;">ENABLE</span>;
+<span style="color:#8b949e;">GO</span></div>
+    </div>
+  </div>
+
+  <!-- ADIM 4: SQL Server'ı yeniden başlat -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">SQL Server Servisini Yeniden Başlat</div>
+        <div class="step-sub">Mixed Mode değişikliği ancak yeniden başlatmadan sonra geçerli olur</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <strong style="font-size:13px;color:#e6edf3;display:block;margin-bottom:10px;">📋 Yöntem A: SSMS ile</strong>
+      <ul class="inst-list" style="margin-bottom:16px;">
+        <li><span class="icon">🖱️</span><div>SSMS'de sunucu adına <strong>sağ tıkla → Restart</strong></div></li>
+        <li><span class="icon">✅</span><div>Çıkan onay kutusuna <strong>Yes</strong> de</div></li>
+      </ul>
+
+      <strong style="font-size:13px;color:#e6edf3;display:block;margin-bottom:10px;">📋 Yöntem B: Windows PowerShell ile (Yönetici olarak aç)</strong>
+      <div class="cmd-box" onclick="copyCmd(this)">
+        <span class="copy-hint">📋 Kopyala</span>
+        Restart-Service -Name 'MSSQLSERVER' -Force</div>
+
+      <div class="alert alert-warning" style="margin-top:12px;">
+        <i class="fa fa-triangle-exclamation"></i>
+        <div>Servis yeniden başlayınca SSMS'de bağlantı geçici olarak kesilecek. Bu normaldir — 10-20 saniye bekle.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADIM 5: EBA_DB oluştur -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div>
+        <div class="step-title">EBA_DB Veritabanını Oluştur</div>
+        <div class="step-sub">EBA sunucusu bu veritabanı içine tablolar oluşturacak</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p style="font-size:12px;color:#8b949e;margin-bottom:8px;">SSMS'de yeni <strong>New Query</strong> açıp çalıştır:</p>
+      <div class="cmd-box" onclick="copyCmd(this)">
+        <span class="copy-hint">📋 Kopyala</span>
+<span style="color:#ff7b72;">IF NOT EXISTS</span> (<span style="color:#ff7b72;">SELECT</span> * <span style="color:#ff7b72;">FROM</span> sys.databases <span style="color:#ff7b72;">WHERE</span> name = <span style="color:#a5d6ff;">'EBA_DB'</span>)
+<span style="color:#ff7b72;">BEGIN</span>
+  <span style="color:#ff7b72;">CREATE DATABASE</span> <span style="color:#79c0ff;">EBA_DB</span>;
+  <span style="color:#ff7b72;">PRINT</span> <span style="color:#a5d6ff;">'EBA_DB oluşturuldu!'</span>;
+<span style="color:#ff7b72;">END</span>
+<span style="color:#ff7b72;">ELSE</span>
+  <span style="color:#ff7b72;">PRINT</span> <span style="color:#a5d6ff;">'EBA_DB zaten mevcut.'</span>;
+<span style="color:#8b949e;">GO</span></div>
+    </div>
+  </div>
+
+  <!-- ADIM 6: Bağlantıyı test et -->
+  <div class="step-card">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div>
+        <div class="step-title">EBA Sunucusunu Yeniden Başlat ve Test Et</div>
+        <div class="step-sub">Tüm adımları yaptıktan sonra sunucuyu yenile</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="config-grid" style="margin-bottom:14px;">
+        <div class="config-item">
+          <div class="config-label">Kullanıcı</div>
+          <div class="config-val">sa</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Şifre</div>
+          <div class="config-val">123456</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Server</div>
+          <div class="config-val">localhost</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Veritabanı</div>
+          <div class="config-val">EBA_DB</div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <i class="fa fa-terminal"></i>
+        <div>Komut satırında <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">node server.js</code> çalıştırdığınız terminale gidin → <strong>Ctrl+C</strong> ile durdurun → tekrar çalıştırın.<br>
+        <strong style="color:#3fb950;">✅ MSSQL veritabanı hazır!</strong> yazısını görürseniz bağlantı başarılı!</div>
+      </div>
+
+      <button class="test-btn" onclick="testDB()">
+        <i class="fa fa-plug"></i> Bağlantıyı Şimdi Test Et
+      </button>
+      <div class="test-result" id="testResult"></div>
+    </div>
+  </div>
+
+  <!-- Navigasyon -->
+  <div class="bottom-nav">
+    <a href="index.html" class="btn-nav back"><i class="fa fa-arrow-left"></i> Ana Sayfa</a>
+    <a href="db-viewer.html" class="btn-nav viewer"><i class="fa fa-database"></i> Veritabanı Görüntüleyici</a>
+  </div>
+
+</div>
+
+<script>
+async function testDB() {
+  const resultEl = document.getElementById('testResult');
+  const dotEl    = document.getElementById('connDot');
+  const statusEl = document.getElementById('connStatus');
+  const detailEl = document.getElementById('connDetail');
+  resultEl.style.display = 'block';
+  resultEl.className = 'test-result';
+  resultEl.innerHTML = '⏳ Test ediliyor...';
+
+  try {
+    const r = await fetch('/api/db-view', { cache: 'no-store' });
+    const d = await r.json();
+    if (d.success && d.mode === 'mssql') {
+      dotEl.className    = 'status-dot ok';
+      statusEl.textContent = '🟢 MSSQL Bağlantısı BAŞARILI!';
+      detailEl.textContent = 'EBA_DB veritabanına sa kullanıcısıyla bağlanıldı.';
+      resultEl.className = 'test-result ok';
+      resultEl.innerHTML = '✅ MSSQL bağlantısı başarılı! Veritabanı hazır. Şimdi <a href="db-viewer.html" style="color:#3fb950;">DB Görüntüleyici</a>ye gidebilirsiniz.';
+    } else {
+      resultEl.className = 'test-result err';
+      resultEl.innerHTML = '❌ Bağlantı kurulamadı — hâlâ yerel DB kullanılıyor. Yukarıdaki adımları kontrol edin.';
+    }
+  } catch(e) {
+    resultEl.className = 'test-result err';
+    resultEl.innerHTML = '❌ Sunucuya ulaşılamadı: ' + e.message;
+  }
+}
+
+// Komut kutularını kopyala
+function copyCmd(el) {
+  const text = el.innerText.replace('📋 Kopyala\n','').replace('📋 Kopyala','').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    const hint = el.querySelector('.copy-hint');
+    hint.textContent = '✅ Kopyalandı!';
+    hint.style.color = '#3fb950';
+    setTimeout(()=>{ hint.textContent='📋 Kopyala'; hint.style.color=''; }, 2000);
+  });
+}
+
+// Sayfa yüklenince otomatik test
+window.onload = () => setTimeout(testDB, 1000);
+</script>
+</body>
+</html>

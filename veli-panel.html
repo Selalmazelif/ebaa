@@ -1,357 +1,580 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <title>Veli Paneli</title>
-    <link rel="stylesheet" href="panel.css">
-</head>
+<meta charset="UTF-8">
+<title>Veli Paneli - EBA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+.info-card { background:white; border-radius:12px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+.stat-circle-sm { width:65px; height:65px; border:5px solid; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; }
+.schedule-table { width:100%; border-collapse:collapse; font-size:13px; }
+.schedule-table th { background:#EBF5FB; color:#284B63; padding:8px 12px; text-align:left; font-size:12px; }
+.schedule-table td { padding:8px 12px; border-bottom:1px solid #f0f0f0; color:#444; }
+.schedule-table tr:hover td { background:#f8f9fa; }
+.feed-item { background:white; border-radius:10px; padding:14px; margin-bottom:10px; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
+.feed-author { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.feed-avatar { width:32px; height:32px; background:linear-gradient(135deg,#4A748F,#284B63); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:700; }
+.pending-item { padding:10px; border-bottom:1px solid #eee; font-size:13px; }
+.pending-item strong { color:#284B63; }
+.cal-table { width:100%; font-size:12px; text-align:center; border-collapse:separate; border-spacing:2px 4px; }
+.cal-table th { color:#aaa; font-weight:500; font-size:11px; }
+.cal-day { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; position:relative; cursor:pointer; }
+.cal-day.today { background:#f39200; color:white; font-weight:700; }
+.cal-day.has-task { color:#e74c3c; font-weight:700; }
+.cal-day.has-holiday { color:#2ecc71; font-weight:700; }
+.cal-day.other-month { color:#ddd; }
+.notification-badge { background:#e74c3c; color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:inline-flex; align-items:center; justify-content:center; position:absolute; top:-6px; right:-6px; }
 
+/* Tablo bölümleri */
+.data-section { background:white; border-radius:12px; padding:18px 20px; margin-bottom:16px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+.data-section h4 { margin:0 0 14px; color:#284B63; font-size:15px; border-bottom:1px solid #f0f0f0; padding-bottom:10px; }
+.data-table { width:100%; border-collapse:collapse; font-size:12px; }
+.data-table th { background:#f5f8fa; color:#284B63; padding:7px 10px; text-align:left; font-size:11px; font-weight:700; }
+.data-table td { padding:7px 10px; border-bottom:1px solid #f8f8f8; color:#444; }
+.data-table tr:last-child td { border-bottom:none; }
+.pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+.pill-green { background:#d1e7dd; color:#0f5132; }
+.pill-blue  { background:#cfe2ff; color:#084298; }
+.pill-orange{ background:#fff3cd; color:#856404; }
+
+/* Dark Overrides */
+body.dark-mode .info-card, 
+body.dark-mode .feed-item, 
+body.dark-mode .data-section { background:#1e2d3d !important; border-color:#2d4060 !important; }
+body.dark-mode .schedule-table th,
+body.dark-mode .data-table th { background:#162030 !important; color:#a8d4f0 !important; }
+body.dark-mode .schedule-table td,
+body.dark-mode .data-table td { border-color:#2d4060 !important; color:#94afc5 !important; }
+body.dark-mode .schedule-table tr:hover td { background:#1a2a3a !important; }
+body.dark-mode .stat-circle-sm { background:rgba(0,0,0,0.2) !important; border-color:rgba(255,255,255,0.1) !important; }
+body.dark-mode h4, body.dark-mode h2 { color:#a8d4f0 !important; border-color:#2d4060 !important; }
+body.dark-mode .pill { opacity:0.8; }
+</style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
+</head>
 <body>
 
-    <div class="sidebar">
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile">
+    <div class="profile-img-container">
+      <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;">
+        <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
+        <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;">
+      </div>
+      <div class="status-indicator"></div>
+    </div>
+    <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
+    <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Veli</p>
+    <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
+    <button id="logoutBtn" style="margin-top:15px;padding:6px 12px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
+  </div>
+  <ul id="sidebar-menu">
+    <li><a href="veli-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+    <li><a href="#" onclick="scrollToSection('section-stats')"><i class="fa-solid fa-chart-pie"></i> EBA'da Ne Yaptı?</a></li>
+    <li><a href="#" onclick="scrollToSection('section-posts')"><i class="fa-solid fa-newspaper"></i> Paylaşımlar</a></li>
+    <li><a href="#" onclick="scrollToSection('section-assignments')"><i class="fa-solid fa-tasks"></i> Ödevler</a></li>
+    <li><a href="#" onclick="scrollToSection('section-videos')"><i class="fa-solid fa-play-circle"></i> İzlenen Videolar</a></li>
+    <li><a href="#" onclick="scrollToSection('section-tests')"><i class="fa-solid fa-pen"></i> Yapılan Testler</a></li>
+    <li><a href="#" onclick="scrollToSection('section-settings-log')"><i class="fa-solid fa-history"></i> Ayarlar Log</a></li>
+    <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+  </ul>
+</div>
 
-        <div class="logo">EBA</div>
+<div class="main">
+  <div class="topbar">
+    <div></div>
+    <div class="icons" style="position:relative;">
+      <span style="position:relative;cursor:pointer;" onclick="toggleNotifPanel()">
+        <i class="fa fa-bell" id="bellIcon"></i>
+        <span id="notifCount" class="notification-badge" style="display:none;"></span>
+      </span>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+  </div>
 
-        <div class="profile">
-            <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()" title="Fotoğrafı Değiştir">
-              <div class="profile-box" id="profile-box-container">
-                  <div style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid #f0d4e2; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                      <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
-                      <img src="" alt="Profil Fotoğrafı" id="profile-img-display" style="display:none; width:100%; height:100%; object-fit:cover;" />
-                  </div>
-              </div>
-              <div class="edit-overlay">
-                  <i class="fa fa-camera"></i>
-              </div>
-              <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
-            </div>
-            <p id="profile-name">Veli</p>
-            <p id="profile-role" style="font-size:12px; color:#f0d4e2; margin-top:2px;">Rol: Veli</p>
-            <p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
-            <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
-            <button id="logoutBtn" style="margin-top:15px; padding:6px 10px; background:#fff; color:#8a1550; border-radius:8px; border:none; cursor:pointer; font-weight:700;">Çıkış</button>
-        </div>
+  <!-- Bildirim paneli -->
+  <div id="notifPanel" style="display:none;position:fixed;top:60px;right:20px;width:300px;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:1000;max-height:350px;overflow-y:auto;">
+    <div style="padding:10px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:14px;">Bildirimler</div>
+    <div id="notifList" style="padding:8px;"></div>
+  </div>
 
-        <ul>
-            <li><a href="veli-panel.html">Ana Sayfa</a></li>
-            <li><a href="dersler.html">Dersler</a></li>
-            <li><a href="sinavlar.html">Sınavlar</a></li>
-            <li><a href="chat.html">Mesajlar</a></li>
-        </ul>
+  <div style="padding:20px;">
 
+    <!-- ÖĞRENCİ BAŞLIK -->
+    <div class="info-card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h2 style="margin:0;color:#1F3C56;font-size:20px;">Öğrenci: <span id="child-name-display">–</span></h2>
+        <p style="margin:5px 0 0;color:#888;font-size:14px;" id="child-school-display">–</p>
+      </div>
+      <div style="background:#EBF5FB;padding:12px 18px;border-radius:10px;text-align:center;">
+        <div style="font-size:22px;font-weight:800;color:#1C98C3;" id="average-display">–</div>
+        <div style="font-size:10px;color:#5C8EAD;text-transform:uppercase;letter-spacing:1px;">Genel Ortalama</div>
+      </div>
     </div>
 
-    <div class="main">
+    <div style="display:flex;gap:20px;align-items:flex-start;">
+      <div style="flex:2;display:flex;flex-direction:column;gap:16px;">
 
-        <div class="topbar">
-            <div class="search">
-                <i class="fa fa-search"></i>
-                <input placeholder="Ara">
-            </div>
-
-            <div class="icons">
-                <i class="fa fa-bell"></i>
-                <a href="chat.html"><i class="fa fa-envelope"></i></a>
-            </div>
-        </div>
-
-        <div class="banner">
+        <!-- İSTATİSTİKLER -->
+        <div class="data-section" id="section-stats">
+          <h4><i class="fa fa-chart-pie" style="color:#4A748F;margin-right:8px;"></i>Çocuğun EBA'da Ne Yaptı?</h4>
+          <div style="display:flex;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:10px;">
             <div>
-                <h2>Veli Paneli</h2>
-                <p>Çocuğunuzun öğrenim sürecini takip edin.</p>
+              <p style="font-size:11px;color:#888;margin-bottom:10px;">Tamamladığı<br>İçerik</p>
+              <div class="stat-circle-sm" style="border-color:#4FC3F7;color:#4FC3F7;" id="child-stat-content">0</div>
             </div>
-            <button><a href="dersler.html">Derslere Git</a></button>
+            <div>
+              <p style="font-size:11px;color:#888;margin-bottom:10px;">Tamamladığı<br>Sınav</p>
+              <div class="stat-circle-sm" style="border-color:#26A69A;color:#26A69A;" id="child-stat-exam">0</div>
+            </div>
+            <div>
+              <p style="font-size:11px;color:#888;margin-bottom:10px;">Sosyal<br>Paylaşım</p>
+              <div class="stat-circle-sm" style="border-color:#00796B;color:#00796B;" id="child-stat-social">0</div>
+            </div>
+            <div>
+              <p style="font-size:11px;color:#888;margin-bottom:10px;">Video İzleme<br>Süresi (dk)</p>
+              <div class="stat-circle-sm" style="border-color:#AB47BC;color:#AB47BC;" id="child-stat-time">0</div>
+            </div>
+          </div>
+          <p id="child-stats-info" style="font-size:10px;color:#aaa;text-align:center;margin-top:12px;margin-bottom:0;"></p>
         </div>
 
-        <div class="cards">
-            <div class="card">
-                <a href="dersler.html">
-                    <i class="fa-solid fa-book"></i>
-                    <h3>Dersler</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="#" onclick="showSchedule()">
-                    <i class="fa-solid fa-calendar-alt"></i>
-                    <h3>Ders Programı</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="#" onclick="showHomework()">
-                    <i class="fa-solid fa-tasks"></i>
-                    <h3>Ödev Durumu</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="sinavlar.html">
-                    <i class="fa-solid fa-pen"></i>
-                    <h3>Sınavlar</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="chat.html">
-                    <i class="fa-solid fa-comments"></i>
-                    <h3>Mesaj</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="#" onclick="showPasswordResetRequests()">
-                    <i class="fa-solid fa-id-badge"></i>
-                    <h3>Öğrenci Şifre İstekleri</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="#" onclick="showParentPasswordChange()">
-                    <i class="fa-solid fa-key"></i>
-                    <h3>Şifre Değiştir</h3>
-                </a>
-            </div>
-            <div class="card">
-                <a href="#" id="resetStorageBtn">
-                    <i class="fa-solid fa-trash"></i>
-                    <h3>Verileri Sıfırla</h3>
-                </a>
-            </div>
+        <!-- BEKLEYEN ÖDEVLER -->
+        <div class="data-section">
+          <h4><i class="fa fa-tasks" style="color:#e74c3c;margin-right:8px;"></i>Bekleyen Ödevler</h4>
+          <div id="child-pending-list">
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Bekleyen çalışma yok</div>
+          </div>
         </div>
 
-        <div id="scheduleView" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>Haftalık Ders Programı</h3>
-                <button onclick="document.getElementById('scheduleView').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
+        <!-- OKUL PAYLAŞIMLARI -->
+        <div class="data-section" id="section-posts">
+          <h4><i class="fa fa-newspaper" style="color:#4A748F;margin-right:8px;"></i>Okul Haberleri / Paylaşımlar</h4>
+          <div id="veli-feed">
+            <div style="text-align:center;padding:20px;color:#aaa;">
+              <i class="fa fa-newspaper" style="font-size:32px;margin-bottom:8px;display:block;"></i>
+              Henüz yeni bir paylaşım yok.
             </div>
-            <table style="width:100%; border-collapse:collapse; text-align:left;">
-                <tr style="background:#f1f1f1;"><th style="padding:10px; border:1px solid #ddd;">Gün</th><th style="padding:10px; border:1px solid #ddd;">Dersler</th></tr>
-                <tr><td style="padding:10px; border:1px solid #ddd;">Pazartesi</td><td style="padding:10px; border:1px solid #ddd;">Matematik, Matematik, Türkçe, Fizik</td></tr>
-                <tr><td style="padding:10px; border:1px solid #ddd;">Salı</td><td style="padding:10px; border:1px solid #ddd;">Kimya, Biyoloji, Tarih, Coğrafya</td></tr>
-                <tr><td style="padding:10px; border:1px solid #ddd;">Çarşamba</td><td style="padding:10px; border:1px solid #ddd;">Türkçe, Türkçe, İngilizce, Beden Eğitimi</td></tr>
-                <tr><td style="padding:10px; border:1px solid #ddd;">Perşembe</td><td style="padding:10px; border:1px solid #ddd;">Fizik, Kimya, Matematik, Din Kültürü</td></tr>
-                <tr><td style="padding:10px; border:1px solid #ddd;">Cuma</td><td style="padding:10px; border:1px solid #ddd;">Biyoloji, Müzik, Görsel Sanatlar, İngilizce</td></tr>
-            </table>
+          </div>
         </div>
 
-        <div id="homeworkView" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>Öğrenci Ödev Durumu</h3>
-                <button onclick="document.getElementById('homeworkView').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
-            </div>
-            <ul style="list-style:none; padding:0;">
-                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-                    <span><i class="fa fa-book" style="color:#2c6aa0; width:20px;"></i> Matematik - Olasılık Testi</span> 
-                    <span style="color:#4caf50; font-weight:bold;"><i class="fa fa-check"></i> Yaptı</span>
-                </li>
-                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-                    <span><i class="fa fa-book" style="color:#e33a6a; width:20px;"></i> Türkçe - Makale Özeti</span> 
-                    <span style="color:#f44336; font-weight:bold;"><i class="fa fa-times"></i> Yapmadı</span>
-                </li>
-                <li style="padding:10px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
-                    <span><i class="fa fa-book" style="color:#ff9800; width:20px;"></i> Fizik - Proje Sunumu</span> 
-                    <span style="color:#4caf50; font-weight:bold;"><i class="fa fa-check"></i> Yaptı</span>
-                </li>
-            </ul>
+        <!-- GÖNDERİLEN ÖDEVLER TABLOSU -->
+        <div class="data-section" id="section-assignments">
+          <h4><i class="fa fa-book-open" style="color:#2ecc71;margin-right:8px;"></i>Gönderilen Ödevler</h4>
+          <div id="assignments-table-container">
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Ödev bulunamadı</div>
+          </div>
         </div>
 
-        <div id="parentPasswordChange" style="display:none; margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3>Şifremi Değiştir</h3>
-                <button onclick="document.getElementById('parentPasswordChange').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#aaa;"><i class="fa fa-times"></i></button>
-            </div>
-            <div id="parentPasswordForm">
-                <input type="password" id="parentCurrentPassword" placeholder="Mevcut şifreniz" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
-                <input type="password" id="parentNewPassword" placeholder="Yeni şifreniz" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
-                <button onclick="changeParentPassword()" style="background:#8a1550; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Değiştir</button>
-            </div>
-            <div id="parentPasswordMessage" style="margin-top:10px;"></div>
+        <!-- İZLENEN VİDEOLAR TABLOSU -->
+        <div class="data-section" id="section-videos">
+          <h4><i class="fa fa-play-circle" style="color:#4A748F;margin-right:8px;"></i>İzlenen Videolar</h4>
+          <div id="watched-videos-container">
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Video izleme geçmişi bulunamadı</div>
+          </div>
         </div>
 
-        <div id="resetRequests" style="display:none; margin-top:20px;">
-            <h3>Şifre Sıfırlama İstekleri</h3>
-            <div id="requestsList"></div>
+        <!-- YAPILAN TESTLER TABLOSU -->
+        <div class="data-section" id="section-tests">
+          <h4><i class="fa fa-pen" style="color:#f39200;margin-right:8px;"></i>Yapılan Testler</h4>
+          <div id="tests-container">
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Test sonucu bulunamadı</div>
+          </div>
         </div>
 
+        <!-- AYARLARDAki DEĞİŞİKLİKLER -->
+        <div class="data-section" id="section-settings-log">
+          <h4><i class="fa fa-history" style="color:#9c27b0;margin-right:8px;"></i>Ayarlardaki Değişiklikler</h4>
+          <div id="settings-log-container">
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Ayar değişikliği kaydı yok</div>
+          </div>
+        </div>
+
+        <!-- CANLÜ DERSLER -->
+        <div class="data-section">
+          <h4><i class="fa fa-video" style="color:#4A748F;margin-right:8px;"></i>Yaklaşan Canlı Dersler</h4>
+          <div id="live-lessons-list">
+            <div style="text-align:center;color:#aaa;padding:16px;font-size:13px;">Canlı ders bulunamadı</div>
+          </div>
+        </div>
+
+        <!-- DERS PROGRAMI -->
+        <div class="data-section" id="section-program">
+          <h4><i class="fa fa-calendar-days" style="color:#4A748F;margin-right:8px;"></i>Ders Programı</h4>
+          <table class="schedule-table">
+            <thead>
+              <tr><th>Gün</th><th>Saat</th><th>Ders</th><th>Tür</th></tr>
+            </thead>
+            <tbody id="schedule-body">
+              <tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px;">Ders programı yükleniyor...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- TAKVİM -->
+      <div style="width:280px;display:flex;flex-direction:column;gap:16px;">
+        <div class="info-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#284B63;font-weight:bold;">
+            <i class="fa fa-chevron-left" style="cursor:pointer;color:#f39200;" onclick="calPrev()"></i>
+            <span id="cal-header"></span>
+            <i class="fa fa-chevron-right" style="cursor:pointer;color:#f39200;" onclick="calNext()"></i>
+          </div>
+          <div id="calGrid"></div>
+          <div style="margin-top:10px;font-size:11px;display:flex;flex-direction:column;gap:4px;">
+            <span><span style="display:inline-block;width:8px;height:8px;background:#f39200;border-radius:50%;"></span> Bugün</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#e74c3c;border-radius:50%;"></span> Ödev Bitiş</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#2ecc71;border-radius:50%;"></span> Resmi Tatil</span>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+</div>
 
 <script src="auth-utils.js"></script>
 <script>
-  function initParentPanel() {
-    const user = requireAuth();
-    if (!user) return;
-    if (user.role !== 'veli') {
-      logout();
-      return;
-    }
+const officialHolidays = {
+  '01-01':'Yılbaşı','04-23':'Ulusal Egemenlik ve Çocuk Bayramı',
+  '05-01':'Emek ve Dayanışma Günü',"05-19":"Atatürk'ü Anma ve Gençlik",
+  '08-30':'Zafer Bayramı','10-29':'Cumhuriyet Bayramı','03-21':'Nevruz'
+};
 
-    const nameEl = document.getElementById('profile-name');
-    const roleEl = document.getElementById('profile-role');
-    const schoolEl = document.getElementById('profile-school');
-    if (nameEl) nameEl.textContent = user.name;
-    if (roleEl) roleEl.textContent = 'Rol: ' + (user.role === 'ogrenci' ? 'Öğrenci' : user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Kullanıcı');
-    if (schoolEl) schoolEl.textContent = user.school;
-    if (user.profilePic) {
-      const defaultIcon = document.getElementById('default-avatar-icon');
-      const profileImg = document.getElementById('profile-img-display');
-      if (defaultIcon && profileImg) {
-          defaultIcon.style.display = 'none';
-          profileImg.src = user.profilePic;
-          profileImg.style.display = 'block';
+let calYear, calMonth, currentUser, childUser;
+let assignmentsCache = [];
+
+function scrollToSection(id) {
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth'});
+}
+
+async function initVeliPanel() {
+  const user = requireAuth();
+  if(!user) return;
+  if(user.role !== 'veli') { logout(); return; }
+  currentUser = user;
+
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('profile-school').textContent = user.school || '';
+  document.getElementById('logoutBtn').onclick = logout;
+
+  if(user.profilePic){
+    document.getElementById('default-avatar-icon').style.display='none';
+    const img=document.getElementById('profile-img-display'); img.src=user.profilePic; img.style.display='block';
+  }
+
+  // Öğrenciyi veliTc eşleşmesiyle bul
+  // Önce veliTc=user.tc olan öğrenciyi ara
+  let allUsers = [];
+  try {
+    const r = await fetch(`/api/users?role=ogrenci`);
+    const d = await r.json();
+    if(d.success) allUsers = d.users;
+  } catch(e) {}
+
+  // veliTc alanına göre eşleştir
+  childUser = allUsers.find(u => u.veliTc === user.tc);
+
+  // Yoksa aynı okuldan bulur (eski kayıtlar için fallback)
+  if(!childUser && user.school) {
+    childUser = allUsers.find(u => u.school === user.school);
+  }
+
+  if(childUser) {
+    document.getElementById('child-name-display').textContent = childUser.name;
+    document.getElementById('child-school-display').textContent =
+      `${childUser.school} - ${childUser.classNum||childUser.class||''} Sınıfı`;
+    const avg = childUser.grade_avg || childUser.gradeAvg;
+    if(avg) document.getElementById('average-display').textContent = avg;
+
+    // Tüm verileri MSSQL'den çek
+    await Promise.all([
+      loadChildStats(childUser),
+      loadPendingTasks(childUser),
+      loadFeed(user, childUser),
+      loadLiveLessons(childUser),
+      loadWatchedVideos(childUser),
+      loadTestResults(childUser),
+      loadSettingsLog(childUser),
+      loadAssignments(childUser),
+    ]);
+    loadSchedule(childUser);
+  } else {
+    document.getElementById('child-name-display').textContent = '(Öğrenci bulunamadı)';
+    document.getElementById('child-school-display').textContent =
+      'Lütfen öğrenci kaydında Veli TC numaranızın girildiğinden emin olun.';
+  }
+
+  await loadNotifications(user);
+  const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
+  renderCalendar();
+}
+
+// ─── ÖĞRENCİ İSTATİSTİKLERİ (MSSQL) ──────────────────────────────
+async function loadChildStats(child) {
+  try {
+    const r = await fetch(`/api/student-stats?student_tc=${child.tc}`);
+    const d = await r.json();
+    if(d.success && d.stats) {
+      const s = d.stats;
+      document.getElementById('child-stat-content').textContent = s.content_count||0;
+      document.getElementById('child-stat-exam').textContent    = s.exam_count||0;
+      document.getElementById('child-stat-social').textContent  = s.social_count||0;
+      document.getElementById('child-stat-time').textContent    = s.video_minutes||0;
+      if(s.week_start) {
+        const rd = new Date(new Date(s.week_start).getTime() + 7*24*60*60*1000);
+        document.getElementById('child-stats-info').textContent =
+          `Haftalık sayaç sıfırlanma: ${rd.toLocaleDateString('tr-TR')}`;
       }
     }
+  } catch(e) {}
+}
 
-    const profilePicInput = document.getElementById('profilePicInput');
-    if (profilePicInput) {
-      profilePicInput.addEventListener('change', () => {
-        if (!profilePicInput.files || !profilePicInput.files[0]) return;
-        const file = profilePicInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const photoData = e.target.result;
-          const users = JSON.parse(localStorage.getItem('users') || '[]');
-          const index = users.findIndex(u => u.id === user.id || u.tc === user.tc);
-          if (index !== -1) {
-            users[index].profilePic = photoData;
-            localStorage.setItem('users', JSON.stringify(users));
-            user.profilePic = photoData;
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
-            
-            const defaultIcon = document.getElementById('default-avatar-icon');
-            const profileImg = document.getElementById('profile-img-display');
-            if (defaultIcon && profileImg) {
-                defaultIcon.style.display = 'none';
-                profileImg.src = photoData;
-                profileImg.style.display = 'block';
-            }
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+// ─── BEKLEYEN ÖDEVLER (MSSQL) ──────────────────────────────────────
+async function loadPendingTasks(child) {
+  try {
+    const r = await fetch(`/api/assignments?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    const d = await r.json();
+    if(d.success) assignmentsCache = d.assignments;
+  } catch(e) {}
+  const el = document.getElementById('child-pending-list');
+  if(!assignmentsCache.length) return;
+  el.innerHTML = assignmentsCache.slice(0,5).map(a=>`
+    <div class="pending-item">
+      <div style="font-size:11px;color:#5C8EAD;font-weight:700;">${a.subject||'Genel'}</div>
+      <strong>${a.title}</strong>
+      ${a.due_date?`<div style="font-size:10px;color:#e74c3c;margin-top:2px;"><i class="fa fa-clock"></i> Son: ${a.due_date}</div>`:''}
+    </div>
+  `).join('');
+}
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) logoutBtn.addEventListener('click', logout);
-  }
+// ─── GÖNDERİLEN ÖDEVLER TABLOSU (MSSQL) ──────────────────────────
+async function loadAssignments(child) {
+  try {
+    const r = await fetch(`/api/assignments?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    const d = await r.json();
+    if(!d.success || !d.assignments.length) return;
+    const el = document.getElementById('assignments-table-container');
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Ödev</th><th>Ders</th><th>Öğretmen</th><th>Son Tarih</th><th>Sınıf</th></tr></thead>
+      <tbody>
+      ${d.assignments.map(a=>`
+        <tr>
+          <td><strong>${a.title}</strong></td>
+          <td>${a.subject||'–'}</td>
+          <td>${a.teacher_name||'–'}</td>
+          <td style="color:${a.due_date?'#e74c3c':'#aaa'};">${a.due_date||'–'}</td>
+          <td><span class="pill pill-blue">${a.target_class==='all'?'Tüm Sınıflar':a.target_class}</span></td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {}
+}
 
-  function showSchedule() {
-      const u = getCurrentUser();
-      document.getElementById('resetRequests').style.display = 'none';
-      document.getElementById('homeworkView').style.display = 'none';
-      document.getElementById('parentPasswordChange').style.display = 'none';
-      document.getElementById('scheduleView').style.display = 'block';
-  }
-
-  function showHomework() {
-      document.getElementById('resetRequests').style.display = 'none';
-      document.getElementById('scheduleView').style.display = 'none';
-      document.getElementById('parentPasswordChange').style.display = 'none';
-      document.getElementById('homeworkView').style.display = 'block';
-  }
-
-  function showParentPasswordChange() {
-      document.getElementById('resetRequests').style.display = 'none';
-      document.getElementById('scheduleView').style.display = 'none';
-      document.getElementById('homeworkView').style.display = 'none';
-      document.getElementById('parentPasswordChange').style.display = 'block';
-  }
-
-  function changeParentPassword() {
-      const currentPwd = document.getElementById('parentCurrentPassword').value;
-      const newPwd = document.getElementById('parentNewPassword').value;
-      const msg = document.getElementById('parentPasswordMessage');
-      
-      const user = getCurrentUser();
-      
-      if (!currentPwd || !newPwd) {
-          msg.textContent = 'Lütfen tüm alanları doldurun.';
-          msg.style.color = 'red';
-          return;
-      }
-      
-      if (currentPwd !== user.password) {
-          msg.textContent = 'Mevcut şifreniz hatalı.';
-          msg.style.color = 'red';
-          return;
-      }
-      
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const index = users.findIndex(u => u.tc === user.tc);
-      if (index !== -1) {
-          users[index].password = newPwd;
-          localStorage.setItem('users', JSON.stringify(users));
-          user.password = newPwd;
-          sessionStorage.setItem('currentUser', JSON.stringify(user));
-          
-          msg.textContent = 'Şifreniz başarıyla değiştirildi.';
-          msg.style.color = 'green';
-          document.getElementById('parentCurrentPassword').value = '';
-          document.getElementById('parentNewPassword').value = '';
-      }
-  }
-
-  function showPasswordResetRequests() {
-    document.getElementById('scheduleView').style.display = 'none';
-    document.getElementById('homeworkView').style.display = 'none';
-    document.getElementById('parentPasswordChange').style.display = 'none';
-
-    const requestsDiv = document.getElementById('resetRequests');
-    const requestsList = document.getElementById('requestsList');
-    
-    // Fallback user since this runs globally sometimes
-    const currentUser = getCurrentUser();
-    if(!currentUser) return;
-
-    const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
-    const myRequests = requests.filter(r => r.veliTc === currentUser.tc && r.status === "pending");
-
-    if (myRequests.length === 0) {
-      requestsList.innerHTML = "<p>Gelen istek yok.</p>";
-    } else {
-      requestsList.innerHTML = myRequests.map(req => `
-        <div style="border:1px solid #ddd; padding:10px; margin:10px 0; border-radius:8px;">
-          <p><strong>Öğrenci:</strong> ${req.studentName} (${req.class}. sınıf)</p>
-          <p><strong>Okul:</strong> ${req.school}</p>
-          <p><strong>Tarih:</strong> ${new Date(req.createdAt).toLocaleString('tr-TR')}</p>
-          <button onclick="approveRequest('${req.id}')" style="background:#4CAF50; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Onayla</button>
-          <button onclick="rejectRequest('${req.id}')" style="background:#f44336; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Reddet</button>
+// ─── CANLÜ DERSLER (MSSQL) ────────────────────────────────────────
+async function loadLiveLessons(child) {
+  try {
+    const r = await fetch(`/api/live-lessons?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    const d = await r.json();
+    if(!d.success || !d.lessons.length) return;
+    const el = document.getElementById('live-lessons-list');
+    el.innerHTML = d.lessons.slice(0,3).map(l=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #f0f0f0;">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#4A748F,#284B63);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;"><i class="fa fa-video"></i></div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13px;color:#284B63;">${l.title}</div>
+          <div style="font-size:11px;color:#888;">${l.teacher_name||''} - ${l.lesson_date||''} ${l.lesson_time||''}</div>
         </div>
-      `).join('');
-    }
+      </div>
+    `).join('');
+  } catch(e) {}
+}
 
-    requestsDiv.style.display = 'block';
+// ─── İZLENEN VİDEOLAR (MSSQL) ────────────────────────────────────
+async function loadWatchedVideos(child) {
+  try {
+    const r = await fetch(`/api/watched-videos?student_tc=${child.tc}`);
+    const d = await r.json();
+    if(!d.success || !d.videos.length) return;
+    const el = document.getElementById('watched-videos-container');
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Video</th><th>Ders</th><th>Süre (dk)</th><th>İzlenme Tarihi</th></tr></thead>
+      <tbody>
+      ${d.videos.slice(0,10).map(v=>`
+        <tr>
+          <td><i class="fa fa-play-circle" style="color:#4A748F;margin-right:6px;"></i>${v.title||'Video'}</td>
+          <td>${v.subject||'–'}</td>
+          <td><span class="pill pill-blue">${v.duration||0} dk</span></td>
+          <td style="color:#aaa;font-size:11px;">${v.watchedAt?new Date(v.watchedAt).toLocaleString('tr-TR'):''}</td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {}
+}
+
+// ─── YAPILAN TESTLER (MSSQL) ─────────────────────────────────────
+async function loadTestResults(child) {
+  try {
+    const r = await fetch(`/api/test-results?student_tc=${child.tc}`);
+    const d = await r.json();
+    if(!d.success || !d.tests.length) return;
+    const el = document.getElementById('tests-container');
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Test</th><th>Ders</th><th>Puan</th><th>Süre (dk)</th><th>Tarih</th></tr></thead>
+      <tbody>
+      ${d.tests.slice(0,10).map(t=>`
+        <tr>
+          <td><strong>${t.title||'Test'}</strong></td>
+          <td>${t.subject||'–'}</td>
+          <td>
+            <span class="pill ${t.score/t.total>=0.7?'pill-green':t.score/t.total>=0.5?'pill-orange':'pill-blue'}">
+              ${t.score}/${t.total}
+            </span>
+          </td>
+          <td>${t.duration||0} dk</td>
+          <td style="color:#aaa;font-size:11px;">${t.takenAt?new Date(t.takenAt).toLocaleString('tr-TR'):''}</td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {}
+}
+
+// ─── AYARLAR DEĞİŞİKLİK LOGU (öğrencinin ayarları) ─────────────
+async function loadSettingsLog(child) {
+  try {
+    const r = await fetch(`/api/settings-log?user_tc=${child.tc}`);
+    const d = await r.json();
+    if(!d.success || !d.logs.length) return;
+    const el = document.getElementById('settings-log-container');
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Alan</th><th>Eski Değer</th><th>Yeni Değer</th><th>Değiştirilme Tarihi</th></tr></thead>
+      <tbody>
+      ${d.logs.map(l=>`
+        <tr>
+          <td><strong>${l.field||'–'}</strong></td>
+          <td style="color:#aaa;">${l.old_value||'–'}</td>
+          <td style="color:#284B63;">${l.new_value||'–'}</td>
+          <td style="color:#aaa;font-size:11px;">${l.changedAt?new Date(l.changedAt).toLocaleString('tr-TR'):''}</td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {}
+}
+
+// ─── FEED (MSSQL) ─────────────────────────────────────────────────
+async function loadFeed(user, child) {
+  try {
+    const school = child?.school || user.school;
+    const r = await fetch(`/api/posts?school=${encodeURIComponent(school)}&group=veliler&userClass=veliler`);
+    const d = await r.json();
+    if(!d.success || !d.posts.length) return;
+    const el = document.getElementById('veli-feed');
+    el.innerHTML = d.posts.slice(0,5).map(p=>{
+      const initials=(p.author_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `
+        <div class="feed-item">
+          <div class="feed-author">
+            <div class="feed-avatar">${initials}</div>
+            <div><div style="font-weight:700;font-size:13px;color:#284B63;">${p.author_name||''}</div>
+            <div style="font-size:10px;color:#aaa;">${p.createdAt?new Date(p.createdAt).toLocaleString('tr-TR'):''}</div></div>
+          </div>
+          <div style="font-size:13px;color:#444;">${p.content||''}</div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {}
+}
+
+// ─── BİLDİRİMLER (MSSQL) ─────────────────────────────────────────
+async function loadNotifications(user) {
+  try {
+    const r = await fetch(`/api/notifications?tc=${user.tc}`);
+    const d = await r.json();
+    if(!d.success) return;
+    const notifs = d.notifications;
+    const unread = notifs.filter(n=>!n.isRead).length;
+    const countEl = document.getElementById('notifCount');
+    if(unread>0) { countEl.style.display='flex'; countEl.textContent=unread; }
+    const list = document.getElementById('notifList');
+    if(!notifs.length) { list.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:12px;">Bildirim yok</div>'; return; }
+    list.innerHTML = notifs.slice(0,8).map(n=>`
+      <div style="padding:8px;border-bottom:1px solid #f0f0f0;font-size:12px;${n.isRead?'opacity:0.6;':'font-weight:600;'}">${n.text}</div>
+    `).join('');
+  } catch(e) {}
+}
+
+function toggleNotifPanel() {
+  const p=document.getElementById('notifPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+// ─── DERS PROGRAMI (sabit şablon) ────────────────────────────────
+function loadSchedule(child) {
+  const programs = {
+    default: [
+      {gun:'Pazartesi',saat:'09:00',ders:'Matematik',tur:'Normal'},
+      {gun:'Pazartesi',saat:'10:00',ders:'Türkçe',tur:'Normal'},
+      {gun:'Salı',saat:'09:00',ders:'Fizik',tur:'Normal'},
+      {gun:'Salı',saat:'11:00',ders:'İngilizce',tur:'Normal'},
+      {gun:'Çarşamba',saat:'09:00',ders:'Kimya',tur:'Normal'},
+      {gun:'Perşembe',saat:'09:00',ders:'Matematik',tur:'Canlı Ders'},
+      {gun:'Cuma',saat:'10:00',ders:'Türkçe',tur:'Normal'},
+    ]
+  };
+  const schedule = programs[child.classNum||child.class] || programs.default;
+  const tbody = document.getElementById('schedule-body');
+  tbody.innerHTML = schedule.map(s=>`
+    <tr>
+      <td>${s.gun}</td>
+      <td>${s.saat}</td>
+      <td>${s.ders}</td>
+      <td><span style="padding:2px 8px;border-radius:10px;font-size:11px;background:${s.tur==='Canlı Ders'?'#d1e7dd;color:#0f5132':'#EBF5FB;color:#4A748F'}">${s.tur}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ─── TAKVİM ───────────────────────────────────────────────────────
+function renderCalendar() {
+  const months=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  document.getElementById('cal-header').textContent=`${months[calMonth]} ${calYear}`;
+  const today=new Date();
+  let sd=new Date(calYear,calMonth,1).getDay();if(sd===0)sd=7;sd--;
+  const dim=new Date(calYear,calMonth+1,0).getDate();
+  const pDim=new Date(calYear,calMonth,0).getDate();
+  const taskDates={};
+  assignmentsCache.forEach(a=>{if(a.due_date)taskDates[a.due_date]=(taskDates[a.due_date]||[]).concat(a.title);});
+  let html=`<table class="cal-table"><thead><tr>`;
+  ['PZT','SAL','ÇAR','PER','CUM','CMT','PAZ'].forEach(d=>html+=`<th>${d}</th>`);
+  html+='</tr></thead><tbody><tr>';
+  let col=0;
+  for(let i=sd-1;i>=0;i--){html+=`<td><span class="cal-day other-month">${pDim-i}</span></td>`;col++;}
+  for(let d=1;d<=dim;d++){
+    if(col===7){html+='</tr><tr>';col=0;}
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const mm=`${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const hol=officialHolidays[mm]; const tasks=taskDates[ds]||[];
+    const cls=['cal-day'];
+    if(isT)cls.push('today');else if(hol)cls.push('has-holiday');else if(tasks.length)cls.push('has-task');
+    html+=`<td><span class="${cls.join(' ')}" title="${hol||tasks.join(', ')||''}">${d}</span></td>`;col++;
   }
+  let nx=1;while(col<7&&col>0){html+=`<td><span class="cal-day other-month">${nx++}</span></td>`;col++;}
+  html+='</tr></tbody></table>';
+  document.getElementById('calGrid').innerHTML=html;
+}
 
-  function approveRequest(requestId) {
-    const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
-    const request = requests.find(r => r.id === requestId);
-    if (request) {
-      request.status = "approved";
-      localStorage.setItem("passwordRequests", JSON.stringify(requests));
-      alert("İstek onaylandı! Öğrenci şifresini değiştirebilir.");
-      showPasswordResetRequests();
-    }
-  }
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
 
-  function rejectRequest(requestId) {
-    const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
-    const request = requests.find(r => r.id === requestId);
-    if (request) {
-      request.status = "rejected";
-      localStorage.setItem("passwordRequests", JSON.stringify(requests));
-      alert("İstek reddedildi.");
-      showPasswordResetRequests();
-    }
-  }
-
-  const resetStorageBtn = document.getElementById('resetStorageBtn');
-  if (resetStorageBtn) {
-    resetStorageBtn.addEventListener('click', () => {
-      if (confirm('Tüm verileri silmek istediğinizden emin misiniz?')) {
-        localStorage.clear();
-        alert('Tüm veriler silindi!');
-        window.location.href = 'index.html';
-      }
-    });
-  }
-
-  initParentPanel();
+initVeliPanel();
 </script>
-
 </body>
 </html>

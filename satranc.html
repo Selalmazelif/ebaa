@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Satranç - EBA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+.chess-wrapper { display:flex; gap:24px; align-items:flex-start; justify-content:center; padding:20px; flex-wrap:wrap; }
+.chess-controls { background:white; border-radius:12px; padding:20px; min-width:220px; box-shadow:0 2px 10px rgba(0,0,0,0.06); }
+.chess-controls h3 { color:#284B63; margin:0 0 16px; font-size:16px; }
+.mode-btn {
+  width:100%; padding:10px; margin-bottom:8px; border-radius:8px; border:2px solid #4A748F;
+  cursor:pointer; font-weight:600; font-size:13px; background:white; color:#4A748F; transition:all 0.2s;
+}
+.mode-btn.active, .mode-btn:hover { background:#4A748F; color:white; }
+.btn-reset { width:100%; padding:10px; margin-top:12px; border-radius:8px; border:none; background:#e74c3c; color:white; cursor:pointer; font-weight:600; }
+.chess-board-wrapper { position:relative; }
+#chessBoard {
+  display:grid; grid-template-columns:repeat(8,62px); grid-template-rows:repeat(8,62px);
+  border:3px solid #4A748F; border-radius:4px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.15);
+}
+.cell {
+  width:62px; height:62px; display:flex; align-items:center; justify-content:center;
+  font-size:36px; cursor:pointer; user-select:none; transition:background 0.15s;
+  position:relative;
+}
+.cell.light { background:#f0d9b5; }
+.cell.dark { background:#b58863; }
+.cell.selected { background:#7fc97f !important; }
+.cell.possible { background:#cfc !important; }
+.cell.possible::after { content:''; width:20px; height:20px; background:rgba(0,150,0,0.4); border-radius:50%; position:absolute; }
+.cell.last-move { background:#ccc700 !important; }
+.cell.check { background:#ff6b6b !important; }
+.coord-row { display:flex; }
+.coord { width:62px; text-align:center; font-size:11px; color:#888; padding:2px 0; }
+.coord-col { display:flex; flex-direction:column; }
+.coord-col span { height:62px; display:flex; align-items:center; font-size:11px; color:#888; padding:0 4px; }
+.status-bar { background:white; border-radius:8px; padding:10px 16px; margin-bottom:12px; font-size:13px; color:#284B63; font-weight:600; box-shadow:0 1px 6px rgba(0,0,0,0.06); }
+.captured { margin-top:12px; font-size:14px; }
+.captured span { font-size:18px; }
+</style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile">
+    <p id="profile-name" style="color:white;font-weight:600;margin:10px;"></p>
+    <button id="logoutBtn" style="margin:5px 10px;padding:5px 10px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:11px;">Çıkış</button>
+  </div>
+  <ul id="sidebar-menu"></ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="kütüphane.html" style="color:#4A748F;text-decoration:none;"><i class="fa fa-arrow-left"></i> Kütüphane</a>
+      <span style="color:#aaa;">|</span>
+      <strong style="color:#284B63;">♟️ Satranç</strong>
+    </div>
+    <div class="icons">
+      <i class="fa fa-bell"></i>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+  </div>
+
+  <div class="chess-wrapper">
+    <div class="chess-controls">
+      <h3>🎮 Oyun Modu</h3>
+      <button class="mode-btn active" id="btnBot" onclick="setMode('bot')"><i class="fa fa-robot"></i> Bot ile Oyna</button>
+      <button class="mode-btn" id="btn2p" onclick="setMode('2p')"><i class="fa fa-users"></i> 2 Kişi Oyna</button>
+
+      <div style="margin-top:20px;">
+        <h3 style="color:#284B63;font-size:14px;margin-bottom:8px;">🟨 Renk Seç</h3>
+        <button class="mode-btn" id="btnWhite" onclick="setColor('white')">Beyaz ♟️</button>
+        <button class="mode-btn" id="btnBlack" onclick="setColor('black')">Siyah ♙</button>
+      </div>
+
+      <button class="btn-reset" onclick="resetGame()"><i class="fa fa-rotate"></i> Yeni Oyun</button>
+
+      <div class="captured" id="capturedW"><strong>Alınan (Siyah):</strong><br><span id="capW"></span></div>
+      <div class="captured" id="capturedB" style="margin-top:8px;"><strong>Alınan (Beyaz):</strong><br><span id="capB"></span></div>
+    </div>
+
+    <div>
+      <div class="status-bar" id="statusBar">♟️ Beyaz'ın hamlesi</div>
+      <div style="display:flex;">
+        <div class="coord-col" id="rankCoords"></div>
+        <div>
+          <div id="chessBoard"></div>
+          <div class="coord-row" id="fileCoords"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="auth-utils.js"></script>
+<script>
+const user = requireAuth();
+if(user) {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  const menu = document.getElementById('sidebar-menu');
+  menu.innerHTML = `<li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li><li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>`;
+}
+
+// ─── SATRANÇ MOTORU ───────────────────────────────────────────────
+const PIECES = {
+  wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟'
+};
+
+let board, turn, selected, mode, playerColor, gameOver, capturedW, capturedB, lastMove;
+
+function initBoard() {
+  board = [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR']
+  ];
+  turn = 'w'; selected = null; gameOver = false;
+  capturedW = []; capturedB = []; lastMove = null;
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnBot').classList.toggle('active', m==='bot');
+  document.getElementById('btn2p').classList.toggle('active', m==='2p');
+  resetGame();
+}
+
+function setColor(c) {
+  playerColor = c==='white'?'w':'b';
+  document.getElementById('btnWhite').classList.toggle('active', c==='white');
+  document.getElementById('btnBlack').classList.toggle('active', c==='black');
+  resetGame();
+}
+
+function resetGame() {
+  initBoard();
+  renderBoard();
+  updateStatus();
+  if(mode==='bot' && playerColor==='b') {
+    setTimeout(botMove, 600);
+  }
+}
+
+function renderBoard() {
+  const el = document.getElementById('chessBoard');
+  el.innerHTML = '';
+  for(let r=0;r<8;r++) {
+    for(let c=0;c<8;c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell ' + ((r+c)%2===0?'light':'dark');
+      cell.dataset.r = r; cell.dataset.c = c;
+      const piece = board[r][c];
+      if(piece) cell.textContent = PIECES[piece];
+      if(selected && selected[0]===r && selected[1]===c) cell.classList.add('selected');
+      if(lastMove && ((lastMove[0]===r&&lastMove[1]===c)||(lastMove[2]===r&&lastMove[3]===c))) cell.classList.add('last-move');
+      cell.addEventListener('click', ()=>handleClick(r,c));
+      el.appendChild(cell);
+    }
+  }
+  document.getElementById('capW').textContent = capturedW.map(p=>PIECES[p]||'').join('');
+  document.getElementById('capB').textContent = capturedB.map(p=>PIECES[p]||'').join('');
+
+  // Koordinatlar
+  const ranks = document.getElementById('rankCoords');
+  const files = document.getElementById('fileCoords');
+  if(ranks) {
+    ranks.innerHTML = ['8','7','6','5','4','3','2','1'].map(n=>`<span>${n}</span>`).join('');
+  }
+  if(files) {
+    files.innerHTML = ['a','b','c','d','e','f','g','h'].map(l=>`<div class="coord">${l}</div>`).join('');
+  }
+}
+
+function handleClick(r,c) {
+  if(gameOver) return;
+  if(mode==='bot' && turn!==playerColor) return;
+
+  const piece = board[r][c];
+  if(selected) {
+    const moves = getLegalMoves(selected[0], selected[1]);
+    const isMove = moves.some(m=>m[0]===r&&m[1]===c);
+    if(isMove) {
+      makeMove(selected[0],selected[1],r,c);
+      selected = null;
+      renderBoard();
+      updateStatus();
+      if(!gameOver && mode==='bot' && turn!==playerColor) {
+        setTimeout(botMove,500);
+      }
+    } else if(piece && piece[0]===turn) {
+      selected = [r,c];
+      showPossibleMoves(r,c);
+    } else {
+      selected = null;
+      renderBoard();
+    }
+  } else {
+    if(piece && piece[0]===turn) {
+      selected = [r,c];
+      showPossibleMoves(r,c);
+    }
+  }
+}
+
+function showPossibleMoves(r,c) {
+  renderBoard();
+  const el = document.getElementById('chessBoard');
+  const cells = el.querySelectorAll('.cell');
+  cells[r*8+c].classList.add('selected');
+  const moves = getLegalMoves(r,c);
+  moves.forEach(([mr,mc])=>{
+    cells[mr*8+mc].classList.add('possible');
+  });
+}
+
+function makeMove(fr,fc,tr,tc) {
+  const piece = board[fr][fc];
+  const target = board[tr][tc];
+  if(target) {
+    if(target[0]==='w') capturedB.push(target);
+    else capturedW.push(target);
+  }
+  board[tr][tc] = piece;
+  board[fr][fc] = null;
+  lastMove = [fr,fc,tr,tc];
+
+  // Piyon terfi
+  if(piece==='wP' && tr===0) board[tr][tc] = 'wQ';
+  if(piece==='bP' && tr===7) board[tr][tc] = 'bQ';
+
+  turn = turn==='w'?'b':'w';
+}
+
+function getLegalMoves(r,c) {
+  const piece = board[r][c];
+  if(!piece) return [];
+  const color = piece[0];
+  const type = piece[1];
+  const moves = [];
+
+  const addIfValid = (nr,nc) => {
+    if(nr<0||nr>7||nc<0||nc>7) return false;
+    const target = board[nr][nc];
+    if(target && target[0]===color) return false;
+    moves.push([nr,nc]);
+    return !target;
+  };
+
+  const slide = (dr,dc) => {
+    let nr=r+dr, nc=c+dc;
+    while(nr>=0&&nr<=7&&nc>=0&&nc<=7) {
+      const t = board[nr][nc];
+      if(t) { if(t[0]!==color) moves.push([nr,nc]); break; }
+      moves.push([nr,nc]);
+      nr+=dr; nc+=dc;
+    }
+  };
+
+  if(type==='P') {
+    const dir = color==='w'?-1:1;
+    const start = color==='w'?6:1;
+    const nr = r+dir;
+    if(nr>=0&&nr<=7&&!board[nr][c]) {
+      moves.push([nr,c]);
+      if(r===start && !board[r+2*dir][c]) moves.push([r+2*dir,c]);
+    }
+    [c-1,c+1].forEach(nc=>{
+      if(nc>=0&&nc<=7&&board[nr]?.[nc]&&board[nr][nc][0]!==color) moves.push([nr,nc]);
+    });
+  }
+  if(type==='R') { [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>slide(dr,dc)); }
+  if(type==='B') { [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>slide(dr,dc)); }
+  if(type==='Q') { [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>slide(dr,dc)); }
+  if(type==='N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>addIfValid(r+dr,c+dc)); }
+  if(type==='K') { [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>addIfValid(r+dr,c+dc)); }
+
+  return moves;
+}
+
+function isKingInCheck(color) {
+  let kr=-1, kc=-1;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]===color+'K'){kr=r;kc=c;}
+  const opp = color==='w'?'b':'w';
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(board[r][c]?.[0]===opp) {
+      const m = getLegalMoves(r,c);
+      if(m.some(([mr,mc])=>mr===kr&&mc===kc)) return true;
+    }
+  }
+  return false;
+}
+
+function updateStatus() {
+  const sb = document.getElementById('statusBar');
+  const opp = turn==='w'?'b':'w';
+  let hasMoves = false;
+  for(let r=0;r<8&&!hasMoves;r++) for(let c=0;c<8&&!hasMoves;c++) {
+    if(board[r][c]?.[0]===turn && getLegalMoves(r,c).length>0) hasMoves=true;
+  }
+  if(!hasMoves) {
+    gameOver=true;
+    if(isKingInCheck(turn)) {
+      sb.textContent = `♟️ Şah Mat! ${turn==='w'?'Siyah':'Beyaz'} kazandı! 🎉`;
+    } else {
+      sb.textContent = '♟️ Pat! Beraberlik!';
+    }
+    return;
+  }
+  sb.textContent = `${turn==='w'?'♙ Beyaz':'♟ Siyah'}'ın hamlesi ${isKingInCheck(turn)?' – ⚠️ ŞAH!':''}`;
+}
+
+function botMove() {
+  if(gameOver) return;
+  const botColor = playerColor==='w'?'b':'w';
+  const moves = [];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(board[r][c]?.[0]===botColor) {
+      getLegalMoves(r,c).forEach(([mr,mc])=>moves.push([r,c,mr,mc]));
+    }
+  }
+  if(!moves.length) { updateStatus(); return; }
+  // Öncelikle taş yiyen hamleler
+  const captureMoves = moves.filter(([fr,fc,tr,tc])=>board[tr][tc]);
+  const m = captureMoves.length ? captureMoves[Math.floor(Math.random()*captureMoves.length)] : moves[Math.floor(Math.random()*moves.length)];
+  makeMove(m[0],m[1],m[2],m[3]);
+  renderBoard(); updateStatus();
+}
+
+// Init
+mode = 'bot'; playerColor = 'w';
+document.getElementById('btnBot').classList.add('active');
+document.getElementById('btnWhite').classList.add('active');
+initBoard(); renderBoard(); updateStatus();
+</script>
+</body>
+</html>

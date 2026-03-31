@@ -26,6 +26,11 @@ const elements = {
   groupName: document.getElementById('groupName'),
   userList: document.getElementById('userList'),
   createGroupBtn: document.getElementById('createGroupBtn'),
+  contactsModal: document.getElementById('contactsModal'),
+  openContactsBtn: document.getElementById('openContactsBtn'),
+  closeContacts: document.getElementById('closeContacts'),
+  contactsBackdrop: document.getElementById('contactsBackdrop'),
+  contactsList: document.getElementById('contactsList'),
 };
 
 function formatTime(date = new Date()) {
@@ -39,34 +44,52 @@ function randomId() {
   return `id_${Math.random().toString(16).slice(2)}`;
 }
 
-function createDummyData() {
+async function createDummyData() {
   const user = getCurrentUser();
-  const users = JSON.parse(localStorage.getItem('users') || '[]');
-  if (!user) {
-    state.users = [];
-    state.conversations = [];
-    return;
+  if (!user) return;
+
+  try {
+    // Sabit localhost:3000 yerine göreceli yol kullanıyoruz
+    const res = await fetch(`/api/users?school=${encodeURIComponent(user.school || '')}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    
+    // Kendisini listeden çıkar (Hem TC hem ID kontrolü ile daha güvenli)
+    const peers = data.users.filter(u => String(u.tc) !== String(user.tc));
+    state.users = peers;
+
+    const individualConvs = peers.map((p) => ({
+      id: p.tc,
+      type: 'individual',
+      name: p.name,
+      members: [p.tc],
+      isOnline: p.isOnline,
+      lastMessage: 'Henüz mesaj yok',
+      lastTime: '',
+      messages: [],
+    }));
+
+    state.conversations = [...individualConvs];
+
+    const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
+    // Kullanıcının üye olduğu grupları getir (ID veya TC eşleşmesi)
+    const myGroups = allGroups.filter(g => g.members.includes(String(user.id)) || g.members.includes(String(user.tc)));
+    myGroups.forEach(g => {
+      // Eğer grup zaten listede yoksa ekle
+      if(!state.conversations.find(c => c.id === g.id)) {
+        state.conversations.unshift(g);
+      }
+    });
+
+    renderConversationLists();
+    if (state.conversations.length > 0 && !state.activeConversationId) {
+      setActiveConversation(state.conversations[0].id);
+    }
+  } catch(e) {
+    console.error("User fetch failed:", e);
+    // Hata durumunda boş liste göster veya kullanıcıya bildir
+    elements.individualList.innerHTML = '<div style="padding:10px;color:#aaa;font-size:12px;text-align:center;">Kullanıcılar yüklenemedi.</div>';
   }
-
-  const peers = users.filter((u) => u.school === user.school && u.tc !== user.tc);
-  state.users = peers;
-  state.conversations = peers.map((p) => ({
-    id: p.tc,
-    type: 'individual',
-    name: p.name,
-    members: [p.tc],
-    lastMessage: 'Henüz mesaj yok',
-    lastTime: '',
-    messages: [],
-  }));
-
-  // Load groups from localstorage
-  const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
-  const myGroups = allGroups.filter(g => g.members.includes(user.id || user.tc));
-  
-  myGroups.forEach(g => {
-    state.conversations.unshift(g);
-  });
 }
 
 function renderConversationItem(conversation) {
@@ -82,7 +105,10 @@ function renderConversationItem(conversation) {
     .join('');
 
   item.innerHTML = `
-    <span class="conversation-avatar">${initials}</span>
+    <span class="conversation-avatar">
+      ${initials}
+      ${conversation.type === 'individual' ? `<span class="online-indicator ${conversation.isOnline ? 'online' : ''}"></span>` : ''}
+    </span>
     <div class="conversation-info">
       <div class="conversation-name">${conversation.name}</div>
       <div class="conversation-meta">
@@ -141,8 +167,10 @@ function setActiveConversation(id) {
 
   if (conversation.type === 'group') {
     elements.chatSubtitle.textContent = `Grup sohbeti · ${conversation.members.length} kişi`;
+    elements.chatSubtitle.style.color = 'var(--muted)';
   } else {
-    elements.chatSubtitle.textContent = 'Bireysel sohbet';
+    elements.chatSubtitle.textContent = conversation.isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+    elements.chatSubtitle.style.color = conversation.isOnline ? '#2ecc71' : 'var(--muted)';
   }
 
   renderMessages(conversation.messages);
@@ -208,16 +236,66 @@ function toggleSidebar() {
 function goToPanel() {
   const user = getCurrentUser();
   if (!user) return;
+  window.location.href = redirectByRole(user.role);
+}
+
+async function openContactsModal() {
+  const user = getCurrentUser();
+  if (!user) return;
   
-  if (user.role === 'ogrenci') {
-    window.location.href = 'ogrenci-panel.html';
-  } else if (user.role === 'ogretmen') {
-    window.location.href = 'ogretmen-panel.html';
-  } else if (user.role === 'veli') {
-    window.location.href = 'veli-panel.html';
-  } else {
-    window.location.href = 'index.html';
+  try {
+    const res = await fetch(`/api/users?school=${encodeURIComponent(user.school || '')}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    
+    // Kendisini listeden çıkar
+    const peers = data.users.filter(u => String(u.tc) !== String(user.tc));
+    
+    if(elements.contactsList) {
+      elements.contactsList.innerHTML = peers.map(u => `
+        <div class="user-card" onclick="startChat('${u.tc}', '${u.name}')" style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--border); width:100%; text-align:left; background:transparent;">
+          <span class="user-avatar" style="width:38px; height:38px; background:rgba(92,142,173,0.18); color:var(--primary); border-radius:50%; display:grid; place-items:center; font-weight:700; position:relative; flex-shrink:0;">
+            ${u.name.split(' ').map(n=>n[0]).join('')}
+            <span class="online-indicator ${u.isOnline ? 'online' : ''}" style="width:11px; height:11px; border:2px solid var(--surface); position:absolute; bottom:0; right:0;"></span>
+          </span>
+          <div style="flex:1; min-width:0;">
+            <div class="user-name" style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.name}</div>
+            <div style="font-size:11px; color:${u.isOnline ? '#2ecc71' : 'var(--muted)'};">${u.isOnline ? 'Çevrimiçi' : 'Çevrimdışı'} · ${u.role === 'ogretmen' ? 'Öğretmen' : u.role === 'ogrenci' ? 'Öğrenci' : 'Veli'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    if(elements.contactsModal) elements.contactsModal.classList.add('open');
+  } catch(e) {
+    console.error("Contacts fetch failed:", e);
+    if(elements.contactsList) elements.contactsList.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Kişiler yüklenemedi.</div>';
   }
+}
+
+function closeContactsModal() {
+  if(elements.contactsModal) elements.contactsModal.classList.remove('open');
+}
+
+function startChat(peerTc, peerName) {
+    closeContactsModal();
+    const existing = state.conversations.find(c => c.id === peerTc);
+    if(existing) {
+        setActiveConversation(peerTc);
+    } else {
+        const newConv = {
+            id: peerTc,
+            type: 'individual',
+            name: peerName,
+            members: [peerTc],
+            lastMessage: 'Yeni sohbet...',
+            lastTime: '',
+            messages: []
+        };
+        state.conversations.unshift(newConv);
+        renderConversationLists();
+        setActiveConversation(peerTc);
+    }
 }
 
 function openModal() {
@@ -239,7 +317,7 @@ function renderUserList() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'user-card';
-    card.dataset.userId = user.id;
+    card.dataset.userId = user.id || user.tc;
 
     card.innerHTML = `
       <span class="user-avatar">${user.name
@@ -306,7 +384,6 @@ function init() {
 
   createDummyData();
   renderConversationLists();
-  showUserInfo();
 
   // Varsayılan olarak ilk konuşmayı seç
   if (state.conversations.length) {
@@ -322,24 +399,28 @@ function init() {
     renderConversationLists(elements.conversationSearch.value);
   });
 
-  elements.toggleSidebar.addEventListener('click', toggleSidebar);
+  if(elements.toggleSidebar) elements.toggleSidebar.addEventListener('click', toggleSidebar);
 
-  elements.openGroupModal.addEventListener('click', openModal);
-  elements.createGroupBtn.addEventListener('click', openModal);
-  elements.closeModal.addEventListener('click', closeModal);
-  elements.cancelGroup.addEventListener('click', (event) => {
+  if(elements.openGroupModal) elements.openGroupModal.addEventListener('click', openModal);
+  if(elements.createGroupBtn) elements.createGroupBtn.addEventListener('click', openModal);
+  if(elements.closeModal) elements.closeModal.addEventListener('click', closeModal);
+  if(elements.cancelGroup) elements.cancelGroup.addEventListener('click', (event) => {
     event.preventDefault();
     closeModal();
   });
-  elements.modalBackdrop.addEventListener('click', closeModal);
-  elements.saveGroup.addEventListener('click', (event) => {
+  if(elements.modalBackdrop) elements.modalBackdrop.addEventListener('click', closeModal);
+  if(elements.saveGroup) elements.saveGroup.addEventListener('click', (event) => {
     event.preventDefault();
     createGroup();
   });
 
+  if(elements.openContactsBtn) elements.openContactsBtn.addEventListener('click', openContactsModal);
+  if(elements.closeContacts) elements.closeContacts.addEventListener('click', closeContactsModal);
+  if(elements.contactsBackdrop) elements.contactsBackdrop.addEventListener('click', closeContactsModal);
+
   window.addEventListener('resize', () => {
     if (window.innerWidth > 980) {
-      elements.chatSidebar.classList.remove('hidden');
+      if(elements.chatSidebar) elements.chatSidebar.classList.remove('hidden');
     }
   });
 }

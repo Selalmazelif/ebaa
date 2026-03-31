@@ -19,22 +19,22 @@
         <form id="registerForm">
             <div class="input-group">
                 <label>Ad Soyad</label>
-                <input type="text" id="name" placeholder="Ad Soyad">
+                <input type="text" id="name" placeholder="Ad Soyad" required>
             </div>
 
             <div class="input-group">
                 <label>TC Kimlik No</label>
-                <input type="text" id="tc" placeholder="11 haneli TC">
+                <input type="text" id="tc" placeholder="11 haneli TC" required>
             </div>
 
             <div class="input-group">
                 <label>Şifre</label>
-                <input type="password" id="password" placeholder="Şifre">
+                <input type="password" id="password" placeholder="Şifre" required>
             </div>
 
             <div class="input-group" id="phoneGroup">
                 <label>Telefon Numarası</label>
-                <input type="tel" id="phone" placeholder="05xx xxx xx xx">
+                <input type="tel" id="phone" placeholder="05xx xxx xx xx" required>
             </div>
 
             <div class="input-group">
@@ -80,13 +80,16 @@
                 </select>
             </div>
 
-            <div class="input-group" id="teacherClassesGroup" style="display:none;">
-                <label>Yetkili Sınıflar (Ctrl ile çoklu seçin)</label>
-                <select id="teacherClasses" multiple>
-                    <option value="9">9. Sınıf</option>
-                    <option value="10">10. Sınıf</option>
-                    <option value="11">11. Sınıf</option>
-                    <option value="12">12. Sınıf</option>
+            <div class="input-group" id="branchGroup" style="display:none;">
+                <label id="branchLabel">Şube</label>
+                <select id="branchSelect">
+                    <option value="A">A Şubesi</option>
+                    <option value="B">B Şubesi</option>
+                    <option value="C">C Şubesi</option>
+                    <option value="D">D Şubesi</option>
+                    <option value="E">E Şubesi</option>
+                    <option value="F">F Şubesi</option>
+                    <option value="G">G Şubesi</option>
                 </select>
             </div>
 
@@ -130,27 +133,43 @@ function toggleClassField() {
     const role = document.getElementById("role").value;
     const studentGroup = document.getElementById("studentClassGroup");
     const studentLevelGroup = document.getElementById("studentLevelGroup");
-    const teacherGroup = document.getElementById("teacherClassesGroup");
-    if (role === "ogrenci") {
+    const branchGroup = document.getElementById("branchGroup");
+    const branchSelect = document.getElementById("branchSelect");
+    const branchLabel = document.getElementById("branchLabel");
+    
+    if (role === "ogrenci" || role === "ogretmen") {
         studentGroup.style.display = "block";
         studentLevelGroup.style.display = "block";
-        teacherGroup.style.display = "none";
-    } else if (role === "ogretmen") {
-        studentGroup.style.display = "none";
-        studentLevelGroup.style.display = "none";
-        teacherGroup.style.display = "block";
+        branchGroup.style.display = "block";
+        
+        if (role === "ogretmen") {
+            // Teacher selects multiple classes and branches
+            document.getElementById("studentClass").setAttribute("multiple", "multiple");
+            document.getElementById("studentClass").setAttribute("size", "4");
+            branchSelect.setAttribute("multiple", "multiple");
+            branchSelect.setAttribute("size", "4");
+            branchLabel.textContent = "Yetkili Şubeler (Ctrl ile çoklu seçim)";
+        } else {
+            document.getElementById("studentClass").removeAttribute("multiple");
+            document.getElementById("studentClass").removeAttribute("size");
+            branchSelect.removeAttribute("multiple");
+            branchSelect.removeAttribute("size");
+            branchLabel.textContent = "Şube";
+        }
     } else {
         studentGroup.style.display = "none";
         studentLevelGroup.style.display = "none";
-        teacherGroup.style.display = "none";
+        branchGroup.style.display = "none";
     }
 
-    // Öğrenci ise telefon numarasını gizle
+    // Öğretmen/Veli ise telefon numarasını göster, öğrenci ise gizle
     const phoneGroup = document.getElementById("phoneGroup");
     if (role === "ogrenci") {
         phoneGroup.style.display = "none";
+        document.getElementById("phone").removeAttribute("required");
     } else {
         phoneGroup.style.display = "block";
+        document.getElementById("phone").setAttribute("required", "required");
     }
 }
 
@@ -208,74 +227,98 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
         return;
     }
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    // Aynı TC kontrolü
-    if(users.some(user => user.tc === tc)){
-        alert("Bu TC zaten kayıtlı!");
-        return;
-    }
-
-    // Güvenlik: XSS koruması - HTML escaping
-    let user = {
-        id: Date.now().toString(),
-        name: escapeHtml(name),
+    let userPayload = {
         tc: tc,
-        password: password,  // Client-side demo. Prod'da hash olmalı!
-        phone: escapeHtml(phone),
+        password: password,
         role: role,
-        school: escapeHtml(school),
-        createdAt: new Date().toISOString()
+        name: name,
+        school: school,
+        classNum: "",
+        branch: ""
     };
 
     if (role === "ogrenci") {
-        user.level = document.getElementById("studentLevel").value;
-        user.class = document.getElementById("studentClass").value;
+        userPayload.classNum = document.getElementById("studentClass").value;
+        userPayload.branch = document.getElementById("branchSelect").value;
     } else if (role === "ogretmen") {
-        const selected = Array.from(document.getElementById("teacherClasses").selectedOptions).map(opt => opt.value);
-        user.authorizedClasses = selected;
+        const clsSelected = Array.from(document.getElementById("studentClass").selectedOptions).map(opt => opt.value);
+        userPayload.classNum = clsSelected.join(",");
+        const brSelected = Array.from(document.getElementById("branchSelect").selectedOptions).map(opt => opt.value);
+        userPayload.branch = brSelected.join(",");
     }
 
-    const photoInput = document.getElementById('profilePic');
-    if (photoInput && photoInput.files && photoInput.files[0]) {
-        const file = photoInput.files[0];
-        // Güvenlik: Dosya boyutunu kontrol et (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            alert("Dosya boyutu 2MB'dan büyük olamaz!");
+    fetch('http://localhost:3000/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userPayload)
+    }).then(async res => {
+        const data = await res.json();
+        if(data.success) {
+            console.log("SQL DB Kaydı başarılı");
+            fallbackToLocalStorage();
+        } else {
+            alert("Kayıt Hatası: " + data.message);
+            // Don't fallback automatically if server actively returns error
+        }
+    }).catch(err => {
+        console.warn("SQL Server çalışmıyor olabilir, LocalStorage kullanılıyor.", err);
+        fallbackToLocalStorage();
+    });
+
+    function fallbackToLocalStorage() {
+        let users = JSON.parse(localStorage.getItem("users")) || [];
+        if(users.some(user => user.tc === tc)){
+            alert("Bu TC zaten kayıtlı!");
             return;
         }
-        // Güvenlik: Dosya tipini kontrol et
-        if (!file.type.startsWith('image/')) {
-            alert("Sadece görüntü dosyaları kabul edilir!");
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            user.profilePic = e.target.result;
-            users.push(user);
-            localStorage.setItem("users", JSON.stringify(users));
-            alert("Kayıt başarılı");
-            if(role === "ogrenci") window.location.href = "öğrenci-login.html";
-            else if(role === "ogretmen") window.location.href = "öğretmen-login.html";
-            else if(role === "veli") window.location.href = "veli-login.html";
+
+        let user = {
+            id: Date.now().toString(),
+            name: escapeHtml(name),
+            tc: tc,
+            password: password,
+            phone: escapeHtml(phone),
+            role: role,
+            school: escapeHtml(school),
+            createdAt: new Date().toISOString()
         };
-        reader.readAsDataURL(file);
-        return;
+
+        if (role === "ogrenci" || role === "ogretmen") {
+            user.level = document.getElementById("studentLevel").value;
+            if (role === "ogrenci") {
+                user.class = document.getElementById("studentClass").value;
+            } else {
+                const selected = Array.from(document.getElementById("studentClass").selectedOptions).map(opt => opt.value);
+                user.authorizedClasses = selected;
+            }
+        }
+
+        const photoInput = document.getElementById('profilePic');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            const file = photoInput.files[0];
+            if (file.size > 2 * 1024 * 1024) { alert("Sınır 2MB"); return; }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                user.profilePic = e.target.result;
+                users.push(user);
+                localStorage.setItem("users", JSON.stringify(users));
+                alert("Kayıt başarılı");
+                redirectFunc();
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        users.push(user);
+        localStorage.setItem("users", JSON.stringify(users));
+        alert("Kayıt başarılı");
+        redirectFunc();
     }
 
-    users.push(user);
-    localStorage.setItem("users", JSON.stringify(users));
-    alert("Kayıt başarılı");
-
-    // ROLE GÖRE YÖNLENDİRME
-    if(role === "ogrenci"){
-        window.location.href = "öğrenci-login.html";
-    }
-    else if(role === "ogretmen"){
-        window.location.href = "öğretmen-login.html";
-    }
-    else if(role === "veli"){
-        window.location.href = "veli-login.html";
+    function redirectFunc() {
+        if(role === "ogrenci") window.location.href = "öğrenci-login.html";
+        else if(role === "ogretmen") window.location.href = "öğretmen-login.html";
+        else if(role === "veli") window.location.href = "veli-login.html";
     }
 });
 </script>

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>EBA Kütüphane - Keşfet, Öğren, Eğlen</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+:root {
+  --lib-primary: #284B63;
+  --lib-accent: #f39200;
+}
+
+/* Kütüphane Header Banner */
+.lib-banner {
+  background: linear-gradient(135deg, #1e3a4d 0%, #284B63 50%, #3e6a88 100%);
+  border-radius: 20px; margin: 20px; padding: 45px 40px;
+  color: white; display: flex; flex-direction: column; align-items: center;
+  text-align: center; position: relative; overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+.lib-banner::after {
+  content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px;
+  background: rgba(255,255,255,0.03); border-radius: 50%;
+}
+.lib-banner h1 { font-size: 32px; margin: 0 0 10px; font-weight: 800; letter-spacing: -0.5px; }
+.lib-banner p  { margin: 0 0 25px; opacity: 0.85; font-size: 15px; max-width: 600px; line-height: 1.5; }
+
+.lib-search {
+  background: white; padding: 8px 10px 8px 22px; border-radius: 40px;
+  display: flex; align-items: center; width: 90%; max-width: 600px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15); position: relative; z-index: 2;
+}
+.lib-search input { border:none; outline:none; flex:1; padding:10px; font-size:16px; color:#333; background:transparent; }
+.lib-search button {
+  background: var(--lib-accent); color: white; border: none; padding: 12px 28px;
+  border-radius: 30px; cursor: pointer; font-weight: 700; font-size: 15px; transition: 0.3s;
+}
+.lib-search button:hover { background: #d97f00; transform: scale(1.05); }
+
+/* Grid Düzeni */
+.lib-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 25px; padding: 10px 20px 50px;
+}
+
+/* Kategori Kartı */
+.lib-card {
+  background: white; border-radius: 20px; display: flex; overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid #f0f0f0;
+}
+.lib-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); border-color: transparent; }
+
+.lib-card-icon {
+  width: 100px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 40px; color: white; padding: 20px 10px; gap: 8px;
+}
+.lib-card-icon small { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; text-align: center; }
+
+.lib-card-content { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+.lib-card-content h3 { margin: 0 0 12px; font-size: 17px; color: var(--lib-primary); font-weight: 700; }
+.lib-card-content ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.lib-card-content li {
+  font-size: 13.5px; color: #555; padding: 8px 12px;
+  border-radius: 10px; transition: all 0.2s; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+}
+.lib-card-content li:hover { background: #f0f7fb; color: var(--lib-primary); transform: translateX(5px); }
+.lib-card-content li i { width: 20px; color: #5C8EAD; font-size: 14px; text-align: center; }
+
+.no-results { text-align: center; padding: 80px; color: #bbb; display: none; }
+.no-results i { font-size: 60px; margin-bottom: 20px; color: #ddd; }
+
+/* Modallar */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.modal-overlay.open { display: flex; }
+.modal-box { background: white; border-radius: 24px; width: 90vw; max-width: 850px; max-height: 85vh; overflow-y: auto; padding: 40px; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+.modal-close { position: absolute; top: 20px; right: 20px; background: #eee; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+.modal-close:hover { background: #f44336; color: white; transform: rotate(90deg); }
+
+.grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 18px; margin-top: 25px; }
+.grid-item { background: #f8fbfe; border-radius: 16px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #edf2f7; text-align: center; padding-bottom: 15px; }
+.grid-item:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #5C8EAD; }
+.grid-thumb { width:100%; height:110px; display:flex; align-items:center; justify-content:center; font-size:45px; background: #fff; }
+.grid-title { padding: 12px 10px 5px; font-size: 14px; font-weight: 700; color: #284B63; }
+.grid-sub { font-size: 11px; color: #888; }
+
+/* Dark Mode */
+body.dark-mode { background: #0f1923; }
+body.dark-mode .lib-card { background: #1e2d3d; border-color: rgba(255,255,255,0.05); }
+body.dark-mode .lib-card-content h3 { color: #a8d4f0; }
+body.dark-mode .lib-card-content li { color: #94afc5; }
+body.dark-mode .lib-card-content li:hover { background: rgba(92,142,173,0.15); color: #fff; }
+body.dark-mode .lib-search { background: #162030; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+body.dark-mode .lib-search input { color: #d0dce8; }
+body.dark-mode .modal-box { background: #1e2d3d; color: #d0dce8; }
+body.dark-mode .grid-item { background: #162030; border-color: rgba(255,255,255,0.1); }
+body.dark-mode .grid-thumb { background: #0f1923; }
+body.dark-mode .grid-title { color: #a8d4f0; }
+body.dark-mode .modal-close { background: #2c3e50; color: #fff; }
+</style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile" id="sidebarProfile">
+    <!-- JS ile dolacak -->
+  </div>
+  <ul id="sidebar-menu"></ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div></div>
+    <div class="icons">
+      <i class="fa fa-bell"></i>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+  </div>
+
+  <div class="lib-banner">
+    <h1>📚 EBA Dijital Kütüphane</h1>
+    <p>Binlerce eğitici içerik, oyunlar, çizgi filmler ve keşfedilmeyi bekleyen dünyalar tek bir çatı altında. Merak ettiğin her şey burada!</p>
+    <div class="lib-search">
+      <i class="fa fa-search" style="color:#aaa;"></i>
+      <input type="text" id="libSearch" placeholder="Oyun, çizgi film, bilim veya konu ara..." oninput="searchLib(this.value)">
+      <button onclick="searchLib(document.getElementById('libSearch').value)">Ara</button>
+    </div>
+  </div>
+
+  <div class="lib-grid" id="libGrid">
+    
+    <!-- 1. OYUNLAR & EĞLENCE -->
+    <div class="lib-card" data-kw="oyun satranç labirent quiz bulmaca eğlence">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#FF5722,#E64A19);">
+        🎮<small>Oyunlar</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🎮 Eğitici Oyunlar</h3>
+        <ul>
+          <li onclick="location.href='satranc.html'"><i class="fa fa-chess-pawn"></i> Satranç Dünyası</li>
+          <li onclick="location.href='labirent.html'"><i class="fa fa-map-signs"></i> Gizemli Labirent</li>
+          <li onclick="location.href='quiz.html'"><i class="fa fa-lightbulb"></i> Bilgi Yarışması (Quiz)</li>
+          <li onclick="openModal('Oyunlar')"><i class="fa fa-puzzle-piece"></i> Zeka Oyunları & Bulmaca</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. ÇİZGİ FİLMLER -->
+    <div class="lib-card" data-kw="çizgi film kıkırdak kukuli rafadan tayfa video trt çocuk">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#9C27B0,#7B1FA2);">
+        📺<small>TV & Video</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>📺 Çizgi Film Dünyası</h3>
+        <ul>
+          <li onclick="openModal('Cizgifilm')"><i class="fa fa-tv"></i> TRT Çocuk Serileri</li>
+          <li onclick="openExt('https://www.youtube.com/@TRTCocuk')"><i class="fa fa-play-circle"></i> Kıkırdak & Kukuli</li>
+          <li onclick="openExt('https://www.youtube.com/results?search_query=EBA+çizgi+filmler')"><i class="fa fa-film"></i> EBA Animasyonları</li>
+          <li onclick="alert('Masal videoları yakında!')"><i class="fa fa-magic"></i> Videolu Masallar</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3. BİLİM & TEKNOLOJİ -->
+    <div class="lib-card" data-kw="bilim teknoloji kodlama siberay robot uzay tübitak">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#00BCD4,#0097A7);">
+        🚀<small>Teknoloji</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🚀 Bilim ve Gelecek</h3>
+        <ul>
+          <li onclick="window.location.href='dijital-teknolojiler.html'"><i class="fa fa-robot"></i> Robotik & Yazılım</li>
+          <li onclick="openExt('https://siberay.com/')"><i class="fa fa-shield-virus"></i> SİBERAY - Dijital Güvenlik</li>
+          <li onclick="openExt('https://bilimgenc.tubitak.gov.tr/')"><i class="fa fa-microscope"></i> TÜBİTAK Bilim Genç</li>
+          <li><i class="fa fa-rocket"></i> Uzay ve Evren</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. OKUMA & KİTAP -->
+    <div class="lib-card" data-kw="kitap okuma masal roman hikaye sesli kitap meb">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#4CAF50,#388E3C);">
+        📖<small>Okuma</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>📖 Okuma Köşesi</h3>
+        <ul>
+          <li onclick="location.href='kitaplar.html'"><i class="fa fa-book"></i> MEB Yayınları & Ders Kitapları</li>
+          <li><i class="fa fa-headphones"></i> Sesli Kitap Arşivi</li>
+          <li><i class="fa fa-feather-pointed"></i> Klasik Türk Masalları</li>
+          <li><i class="fa fa-scroll"></i> Şiir Antolojisi</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 5. KÜLTÜR & SANAT -->
+    <div class="lib-card" data-kw="kültür sanat müzik resim tiyatro müze">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#FFC107,#FFA000);">
+        🎨<small>Sanat</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🎨 Kültür ve Sanat</h3>
+        <ul>
+          <li><i class="fa fa-palette"></i> Resim Atölyesi</li>
+          <li><i class="fa fa-music"></i> Müzik ve Notalar</li>
+          <li onclick="openModal('SanalTur')"><i class="fa fa-archway"></i> Sanal Müze Gezileri</li>
+          <li><i class="fa fa-masks-theater"></i> Geleneksel Tiyatro</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. DOĞA & ÇEVRE -->
+    <div class="lib-card" data-kw="doğa çevre geri dönüşüm iklim orman su">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#8BC34A,#689F38);">
+        🌿<small>Tabiat</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🌿 Doğa ve Yaşam</h3>
+        <ul>
+          <li onclick="location.href='surdurulebilir-dunya.html'"><i class="fa fa-leaf"></i> Sürdürülebilir Dünya</li>
+          <li><i class="fa fa-droplet"></i> Su Ayak İzi Testi</li>
+          <li><i class="fa fa-tree"></i> Türkiye'nin Ormanları</li>
+          <li><i class="fa fa-paw"></i> Hayvanlar Alemi</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. SAĞLIK & SPOR -->
+    <div class="lib-card" data-kw="sağlık spor beslenme egzersiz ilk yardım">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#F44336,#D32F2F);">
+        ⚽<small>Sağlık</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🍎 Sağlık ve Spor</h3>
+        <ul>
+          <li><i class="fa fa-heart-pulse"></i> Sağlıklı Beslenme</li>
+          <li><i class="fa fa-person-running"></i> Günlük Egzersizler</li>
+          <li><i class="fa fa-medkit"></i> Temel İlk Yardım</li>
+          <li><i class="fa fa-basketball"></i> Branş Tanıtımları</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 8. TARİH YOLCULUĞU -->
+    <div class="lib-card" data-kw="tarih osmanlı cumhuriyet arkeoloji">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#795548,#5D4037);">
+        🏛️<small>Tarih</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🏛️ Tarih Yolculuğu</h3>
+        <ul>
+          <li><i class="fa fa-star-and-crescent"></i> Kurtuluş Savaşı Tarihi</li>
+          <li><i class="fa fa-fort-awesome"></i> Osmanlı İmparatorluğu</li>
+          <li><i class="fa fa-person-digging"></i> Arkeoloji Köşesi</li>
+          <li><i class="fa fa-landmark"></i> Büyük Türk Devletleri</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 9. DİL ÖĞRENİMİ -->
+    <div class="lib-card" data-kw="dil ingilizce almanca türkçe sözlük">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#3F51B5,#303F9F);">
+        🌍<small>Diller</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>🌍 Dil Öğrenimi</h3>
+        <ul>
+          <li onclick="location.href='dil-ogrenimi.html'"><i class="fa fa-language"></i> İngilizce Pratik</li>
+          <li><i class="fa fa-spell-check"></i> Kelime Dağarcığı</li>
+          <li><i class="fa fa-comment-dots"></i> Günlük Konuşmalar</li>
+          <li><i class="fa fa-book-journal-whills"></i> TDK Sözlük Rehberi</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 10. MERAK EDİYORUM -->
+    <div class="lib-card" data-kw="merak genel kültür bilgi ilginç gerçekler">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#607D8B,#455A64);">
+        ❓<small>Merak</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>❓ Merak Ediyorum</h3>
+        <ul>
+          <li><i class="fa fa-magnifying-glass-plus"></i> Şaşırtıcı Bilgiler</li>
+          <li><i class="fa fa-circle-question"></i> Neden? Nasıl?</li>
+          <li><i class="fa fa-earth-americas"></i> Dünyadan Haberler</li>
+          <li><i class="fa fa-brain"></i> Genel Kültür Köşesi</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 11. DİJİTAL BECERİLER -->
+    <div class="lib-card" data-kw="dijital beceri tasarım düzenleme medya">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#f48fb1,#ad1457);">
+        💻<small>Dijital</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>💻 Dijital Beceriler</h3>
+        <ul>
+          <li><i class="fa fa-camera-retro"></i> Temel Fotoğrafçılık</li>
+          <li><i class="fa fa-pen-nib"></i> Dijital Çizim</li>
+          <li><i class="fa fa-video"></i> Video Kurgu Rehberi</li>
+          <li><i class="fa fa-keyboard"></i> Hızlı Klavye Kullanımı</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 12. VELİLERE ÖZEL -->
+    <div class="lib-card" data-kw="veli aile rehberlik çocuk gelişim">
+      <div class="lib-card-icon" style="background:linear-gradient(135deg,#009688,#00796B);">
+        👪<small>Aile</small>
+      </div>
+      <div class="lib-card-content">
+        <h3>👪 Velilere Özel</h3>
+        <ul>
+          <li><i class="fa fa-user-group"></i> Aile ve Çocuk İletişimi</li>
+          <li><i class="fa fa-graduation-cap"></i> Eğitim Rehberliği</li>
+          <li><i class="fa fa-shield-cat"></i> İnternette Güvenlik</li>
+          <li><i class="fa fa-book-open-reader"></i> Gelişim Takip Önerileri</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="no-results" id="noResults">
+    <i class="fa fa-face-frown"></i>
+    <p>Maalesef aradığın içeriği bulamadık. Başka bir kelimeyle deneyebilirsin.</p>
+  </div>
+</div>
+
+<!-- MODAL: Çizgi Filmler -->
+<div class="modal-overlay" id="modalCizgifilm">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('Cizgifilm')"><i class="fa fa-times"></i></button>
+    <h2 style="color:var(--lib-primary);">📺 TRT Çocuk Dünyası</h2>
+    <p style="font-size:14px;color:#888;">En sevilen çizgi filmler parmaklarının ucunda!</p>
+    <div class="grid-view">
+      <div class="grid-item" onclick="openExt('https://www.youtube.com/results?search_query=Aslan+TRT+Çocuk')">
+        <div class="grid-thumb" style="background:#fff3e0;">🦁</div>
+        <div class="grid-title">Aslan</div>
+        <div class="grid-sub">Macera & Keşif</div>
+      </div>
+      <div class="grid-item" onclick="openExt('https://www.youtube.com/results?search_query=Kukuli+TRT+Çocuk')">
+        <div class="grid-thumb" style="background:#e8f5e9;">🐒</div>
+        <div class="grid-title">Kukuli</div>
+        <div class="grid-sub">Eğlence & Müzik</div>
+      </div>
+      <div class="grid-item" onclick="openExt('https://www.youtube.com/results?search_query=Rafadan+Tayfa')">
+        <div class="grid-thumb" style="background:#e3f2fd;">🏘️</div>
+        <div class="grid-title">Rafadan Tayfa</div>
+        <div class="grid-sub">Mahalle Kültürü</div>
+      </div>
+      <div class="grid-item" onclick="openExt('https://www.youtube.com/results?search_query=Mays+ve+Bulut')">
+        <div class="grid-thumb" style="background:#fce4ec;">☁️</div>
+        <div class="grid-title">Mays ve Bulut</div>
+        <div class="grid-sub">Doğa Sevgisi</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Oyunlar -->
+<div class="modal-overlay" id="modalOyunlar">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('Oyunlar')"><i class="fa fa-times"></i></button>
+    <h2 style="color:var(--lib-primary);">🧩 Zeka ve Strateji</h2>
+    <p style="font-size:14px;color:#888;">Düşün, çöz ve geliştir!</p>
+    <div class="grid-view">
+      <div class="grid-item" onclick="location.href='satranc.html'">
+        <div class="grid-thumb" style="background:#f5f5f5;">♔</div>
+        <div class="grid-title">Satranç</div>
+        <div class="grid-sub">Strateji Geliştir</div>
+      </div>
+      <div class="grid-item" onclick="location.href='labirent.html'">
+        <div class="grid-thumb" style="background:#fffde7;">🌀</div>
+        <div class="grid-title">Labirent</div>
+        <div class="grid-sub">Yolu Bul</div>
+      </div>
+      <div class="grid-item" onclick="location.href='quiz.html'">
+        <div class="grid-thumb" style="background:#ede7f6;">💡</div>
+        <div class="grid-title">Quizler</div>
+        <div class="grid-sub">Bilgini Ölç</div>
+      </div>
+      <div class="grid-item" onclick="alert('Kelime avı yakında!')">
+        <div class="grid-thumb" style="background:#e0f7fa;">🔤</div>
+        <div class="grid-title">Kelime Avı</div>
+        <div class="grid-sub">Dilini Geliştir</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Sanal Tur -->
+<div class="modal-overlay" id="modalSanalTur">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('SanalTur')"><i class="fa fa-times"></i></button>
+    <h2 style="color:var(--lib-primary);">🏛️ Sanal Müze Gezileri</h2>
+    <p style="font-size:14px;color:#888;">Yerinden kalkmadan dünyayı gez!</p>
+    <div class="grid-view">
+      <div class="grid-item" onclick="openExt('https://sanalmuze.gov.tr/')">
+        <div class="grid-thumb">🏛️</div>
+        <div class="grid-title">Kültür Bakanlığı</div>
+        <div class="grid-sub">Resmi Sanal Müzeler</div>
+      </div>
+      <div class="grid-item" onclick="openExt('https://www.anitkabir.com.tr/sanal-gezi/')">
+        <div class="grid-thumb">🇹🇷</div>
+        <div class="grid-title">Anıtkabir</div>
+        <div class="grid-sub">Ankara</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const user = getCurrentUser();
+function initSidebar() {
+  if (!user) return;
+  const profileEl = document.getElementById('sidebarProfile');
+  profileEl.innerHTML = `
+    <div class="profile-img-container">
+      <div style="width:70px;height:70px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;border:3px solid rgba(255,255,255,0.2);">
+        ${user.profilePic ? `<img src="${user.profilePic}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fa fa-user" style="font-size:35px;color:#ccc;"></i>`}
+      </div>
+    </div>
+    <p style="font-weight:700;font-size:15px;margin:0;">${user.name}</p>
+    <p style="font-size:11px;opacity:0.8;margin:3px 0;">${user.role==='ogrenci'?'Öğrenci':user.role==='ogretmen'?'Öğretmen':'Veli'}</p>
+    <button onclick="logout()" style="margin-top:10px;padding:5px 12px;background:#fff;color:var(--lib-primary);border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:11px;">Çıkış</button>
+  `;
+
+  document.getElementById('sidebar-menu').innerHTML = `
+    <li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+    <li><a href="${user.role==='ogretmen'?'ogretmen-dersler.html':'dersler.html'}"><i class="fa-solid fa-book"></i> Dersler</a></li>
+    <li><a href="${user.role==='ogretmen'?'ogretmen-canli-ders.html':'canli-ders.html'}"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+    <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+    <li><a href="kütüphane.html" class="active"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+  `;
+}
+
+function searchLib(q) {
+  q = (q||'').toLowerCase().trim();
+  const cards = document.querySelectorAll('#libGrid .lib-card');
+  let count = 0;
+  cards.forEach(c => {
+    const text = c.innerText.toLowerCase() + (c.dataset.kw || '');
+    const show = !q || text.includes(q);
+    c.style.display = show ? 'flex' : 'none';
+    if(show) count++;
+  });
+  document.getElementById('noResults').style.display = count===0 ? 'block' : 'none';
+}
+
+function openModal(id) { document.getElementById('modal'+id).classList.add('open'); }
+function closeModal(id) { document.getElementById('modal'+id).classList.remove('open'); }
+function openExt(url) { window.open(url, '_blank'); }
+
+initSidebar();
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.onclick = (e) => { if(e.target === ov) ov.classList.remove('open'); }
+});
+</script>
+</body>
+</html>

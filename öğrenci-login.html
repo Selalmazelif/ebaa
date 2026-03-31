@@ -70,37 +70,53 @@ if (loginForm) {
             return;
         }
 
-        let users = JSON.parse(localStorage.getItem("users")) || [];
-        let user = users.find(u => u.tc === tc && u.password === password);
-
-        if (user) {
-            if (user.role !== "ogrenci") {
-                let wrongRoleMsg = "❌ Siz öğrenci değilsiniz!\n\n";
-                wrongRoleMsg += "Lütfen uygun giriş sayfasını kullanın:\n\n";
-                if (user.role === "ogretmen") {
-                    wrongRoleMsg += "👨‍🏫 Öğretmen Login: öğretmen-login.html";
-                } else if (user.role === "veli") {
-                    wrongRoleMsg += "👨‍👩‍👧 Veli Login: veli-login.html";
-                }
-                alert(wrongRoleMsg);
-                return;
+        // 1. API (SQL) Denemesi
+        fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tc, password, role: 'ogrenci' })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (data.success) {
+                console.log("✅ SQL Login Başarılı");
+                handleLoginSuccess(data.user, data.token);
+            } else {
+                // Şifre yanlışsa veya kullanıcı yoksa yerel depoda dene
+                fallbackToLocalStorage(tc, password);
             }
-            const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        })
+        .catch(err => {
+            console.warn("⚠️ SQL Server bağlantı hatası, Yerel Depo (LocalStorage) kullanılıyor.");
+            fallbackToLocalStorage(tc, password);
+        });
+
+        function fallbackToLocalStorage(tc, password) {
+            let users = JSON.parse(localStorage.getItem("users")) || [];
+            let user = users.find(u => u.tc === tc && u.password === password);
+
+            if (user) {
+                if (user.role !== "ogrenci") {
+                    alert("❌ Siz öğrenci değilsiniz! Lütfen uygun giriş sayfasını kullanın.");
+                    return;
+                }
+                const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                handleLoginSuccess(user, token);
+            } else {
+                alert("❌ Hatalı giriş bilgileri!");
+            }
+        }
+
+        function handleLoginSuccess(user, token) {
             const secureUser = {
                 ...user,
                 token: token,
                 loginTime: Date.now()
             };
-            
             localStorage.setItem("authToken", token);
             localStorage.setItem("currentUser", JSON.stringify(secureUser));
-            sessionStorage.removeItem("currentUser");
-            sessionStorage.removeItem("tabId");
-
             alert("✅ Giriş başarılı!");
             window.location.href = "ogrenci-panel.html";
-        } else {
-            alert("❌ TC kimlik no veya şifre yanlış");
         }
     });
 }

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Labirent - EBA</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="panel.css">
+<style>
+.maze-wrapper { display:flex; gap:24px; align-items:flex-start; justify-content:center; padding:20px; flex-wrap:wrap; }
+#mazeCanvas { border:3px solid #4A748F; border-radius:8px; background:#fff; display:block; cursor:pointer; }
+.maze-controls { background:white; border-radius:12px; padding:20px; min-width:200px; box-shadow:0 2px 10px rgba(0,0,0,0.06); }
+.maze-controls h3 { color:#284B63;margin:0 0 16px; }
+.diff-btn { width:100%; padding:9px; margin-bottom:8px; border-radius:8px; border:2px solid #4A748F; cursor:pointer; font-weight:600; font-size:13px; background:white; color:#4A748F; transition:all 0.2s; }
+.diff-btn.active, .diff-btn:hover { background:#4A748F; color:white; }
+.stat-item { padding:8px 0; border-bottom:1px solid #eee; font-size:13px; color:#666; }
+.stat-item strong { color:#284B63; }
+.controls-hint { margin-top:16px; background:#EBF5FB; border-radius:8px; padding:12px; font-size:12px; color:#5C8EAD; line-height:1.6; }
+</style>
+<script src="auth-utils.js"></script>
+<script>requireAuth();</script>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">EBA</div>
+  <div class="profile">
+    <p id="profile-name" style="color:white;font-weight:600;margin:10px;"></p>
+    <button id="logoutBtn" style="margin:5px 10px;padding:5px 10px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:11px;">Çıkış</button>
+  </div>
+  <ul id="sidebar-menu"></ul>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div><a href="kütüphane.html" style="color:#4A748F;text-decoration:none;"><i class="fa fa-arrow-left"></i> Kütüphane</a></div>
+    <div class="icons"><i class="fa fa-bell"></i><a href="chat.html"><i class="fa fa-envelope"></i></a></div>
+  </div>
+
+  <div class="maze-wrapper">
+    <div class="maze-controls">
+      <h3>🗺️ Labirent</h3>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Yeşil noktadan kırmızı hedefe ulaş!</p>
+
+      <strong style="font-size:13px;color:#284B63;">Zorluk:</strong>
+      <div style="margin-top:8px;">
+        <button class="diff-btn active" onclick="setDiff(11,'Kolay')">🟢 Kolay</button>
+        <button class="diff-btn" onclick="setDiff(17,'Orta')">🟡 Orta</button>
+        <button class="diff-btn" onclick="setDiff(23,'Zor')">🔴 Zor</button>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="stat-item">⏱️ Süre: <strong id="timer">00:00</strong></div>
+        <div class="stat-item">📦 Adım: <strong id="stepCount">0</strong></div>
+      </div>
+
+      <button onclick="generateMaze()" style="width:100%;margin-top:16px;padding:10px;border-radius:8px;border:none;background:#4A748F;color:white;cursor:pointer;font-weight:600;"><i class="fa fa-rotate"></i> Yeni Labirent</button>
+
+      <div class="controls-hint">
+        🎮 <strong>Nasıl Oynanır?</strong><br>
+        ⬆️⬇️⬅️➡️ Ok tuşları<br>
+        veya <strong>WASD</strong> ile hareket et.<br>
+        Kırmızı hedefe ulaş!
+      </div>
+    </div>
+
+    <div>
+      <canvas id="mazeCanvas" width="462" height="462" tabindex="0"></canvas>
+      <div id="winMsg" style="display:none;text-align:center;margin-top:16px;padding:16px;background:#d4edda;border-radius:12px;color:#155724;font-weight:700;font-size:18px;">
+        🎉 Tebrikler! Çıkışı buldun!
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="auth-utils.js"></script>
+<script>
+const user = requireAuth();
+if(user) {
+  document.getElementById('profile-name').textContent = user.name;
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  const menu = document.getElementById('sidebar-menu');
+  menu.innerHTML = `<li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li><li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>`;
+}
+
+let COLS=11, ROWS=11, CELL=42;
+let maze, playerR, playerC, steps, timerInterval, seconds, won;
+
+function setDiff(size, label) {
+  COLS=ROWS=size;
+  CELL = Math.floor(462/size);
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  generateMaze();
+}
+
+function generateMaze() {
+  clearInterval(timerInterval);
+  seconds=0; steps=0; won=false;
+  document.getElementById('timer').textContent='00:00';
+  document.getElementById('stepCount').textContent='0';
+  document.getElementById('winMsg').style.display='none';
+
+  // Init grid
+  maze = Array.from({length:ROWS},()=>Array.from({length:COLS},()=>({
+    top:true,right:true,bottom:true,left:true,visited:false
+  })));
+
+  // Recursive backtracker
+  const stack=[];
+  const start={r:0,c:0};
+  maze[0][0].visited=true;
+  stack.push(start);
+
+  while(stack.length) {
+    const cur=stack[stack.length-1];
+    const neighbors=getUnvisited(cur.r,cur.c);
+    if(neighbors.length) {
+      const next=neighbors[Math.floor(Math.random()*neighbors.length)];
+      removeWall(cur,next);
+      maze[next.r][next.c].visited=true;
+      stack.push(next);
+    } else {
+      stack.pop();
+    }
+  }
+
+  playerR=0; playerC=0;
+  drawMaze();
+  const canvas=document.getElementById('mazeCanvas');
+  canvas.focus();
+
+  // Start timer
+  timerInterval=setInterval(()=>{
+    seconds++;
+    const m=String(Math.floor(seconds/60)).padStart(2,'0');
+    const s=String(seconds%60).padStart(2,'0');
+    document.getElementById('timer').textContent=`${m}:${s}`;
+  },1000);
+}
+
+function getUnvisited(r,c) {
+  const dirs=[];
+  if(r>0&&!maze[r-1][c].visited) dirs.push({r:r-1,c,dir:'top'});
+  if(r<ROWS-1&&!maze[r+1][c].visited) dirs.push({r:r+1,c,dir:'bottom'});
+  if(c>0&&!maze[r][c-1].visited) dirs.push({r,c:c-1,dir:'left'});
+  if(c<COLS-1&&!maze[r][c+1].visited) dirs.push({r,c:c+1,dir:'right'});
+  return dirs;
+}
+
+function removeWall(a,b) {
+  const dr=b.r-a.r, dc=b.c-a.c;
+  if(dr===-1){maze[a.r][a.c].top=false;maze[b.r][b.c].bottom=false;}
+  if(dr===1){maze[a.r][a.c].bottom=false;maze[b.r][b.c].top=false;}
+  if(dc===-1){maze[a.r][a.c].left=false;maze[b.r][b.c].right=false;}
+  if(dc===1){maze[a.r][a.c].right=false;maze[b.r][b.c].left=false;}
+}
+
+function drawMaze() {
+  const canvas=document.getElementById('mazeCanvas');
+  canvas.width=COLS*CELL; canvas.height=ROWS*CELL;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#f8f9fa';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.strokeStyle='#4A748F'; ctx.lineWidth=2;
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+    const x=c*CELL, y=r*CELL;
+    const cell=maze[r][c];
+    ctx.beginPath();
+    if(cell.top){ctx.moveTo(x,y);ctx.lineTo(x+CELL,y);}
+    if(cell.right){ctx.moveTo(x+CELL,y);ctx.lineTo(x+CELL,y+CELL);}
+    if(cell.bottom){ctx.moveTo(x,y+CELL);ctx.lineTo(x+CELL,y+CELL);}
+    if(cell.left){ctx.moveTo(x,y);ctx.lineTo(x,y+CELL);}
+    ctx.stroke();
+  }
+
+  // Hedef
+  ctx.fillStyle='rgba(231,76,60,0.3)';
+  ctx.fillRect((COLS-1)*CELL+2,(ROWS-1)*CELL+2,CELL-4,CELL-4);
+  ctx.fillStyle='#e74c3c'; ctx.font=`${Math.round(CELL*0.5)}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🚩',(COLS-1)*CELL+CELL/2,(ROWS-1)*CELL+CELL/2);
+
+  // Oyuncu
+  ctx.fillStyle='rgba(46,204,113,0.3)';
+  ctx.fillRect(playerC*CELL+2,playerR*CELL+2,CELL-4,CELL-4);
+  ctx.fillText('🙂',playerC*CELL+CELL/2,playerR*CELL+CELL/2);
+}
+
+function move(dr,dc) {
+  if(won) return;
+  const cell=maze[playerR][playerC];
+  const nr=playerR+dr, nc=playerC+dc;
+  if(nr<0||nr>=ROWS||nc<0||nc>=COLS) return;
+  let blocked=false;
+  if(dr===-1&&cell.top)blocked=true;
+  if(dr===1&&cell.bottom)blocked=true;
+  if(dc===-1&&cell.left)blocked=true;
+  if(dc===1&&cell.right)blocked=true;
+  if(blocked) return;
+  playerR=nr; playerC=nc;
+  steps++;
+  document.getElementById('stepCount').textContent=steps;
+  drawMaze();
+  if(playerR===ROWS-1&&playerC===COLS-1) {
+    won=true;
+    clearInterval(timerInterval);
+    document.getElementById('winMsg').style.display='block';
+    try { fetch('/api/student-stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({student_tc:user?.tc,type:'content'})}); } catch(e){}
+  }
+}
+
+document.getElementById('mazeCanvas').addEventListener('keydown',e=>{
+  e.preventDefault();
+  const map={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],w:[-1,0],s:[1,0],a:[0,-1],d:[0,1]};
+  const dir=map[e.key];
+  if(dir) move(dir[0],dir[1]);
+});
+
+document.addEventListener('keydown',e=>{
+  const map={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],w:[-1,0],s:[1,0],a:[0,-1],d:[0,1]};
+  const dir=map[e.key];
+  if(dir){e.preventDefault();move(dir[0],dir[1]);}
+});
+
+generateMaze();
+</script>
+</body>
+</html>

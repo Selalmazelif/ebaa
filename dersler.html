@@ -1,153 +1,146 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
+
 <head>
-<meta charset="UTF-8">
-<title>Dersler</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
+  <meta charset="UTF-8">
+  <title>Dersler</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
 </head>
 
 <body>
 
-<div class="sidebar">
+  <div class="sidebar">
 
-<div class="logo">EBA</div>
+    <div class="logo">EBA</div>
 
-<div class="profile">
-<div class="profile-box"></div>
-<p id="profile-name">Öğrenci</p>
-<p id="profile-school" style="font-size:13px; color:#f0d4e2; margin-top:4px;">Okul</p>
-<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#8a1550; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
-</div>
+    <div class="profile">
+      <div class="profile-img-container" onclick="document.getElementById('profilePicInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px; height:80px; background:#fff; border-radius:50%; border:3px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; overflow:hidden; margin: 0 auto 10px;">
+          <i class="fa fa-user" style="font-size:40px; color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="Profil Fotoğrafı" id="profile-img-display"
+            style="display:none; width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <div class="edit-overlay">
+          <i class="fa fa-camera"></i>
+        </div>
+        <div class="status-indicator" title="Çevrimiçi (Aktif)"></div>
+      </div>
+      <p id="profile-name" style="font-weight:600; font-size:16px; margin-bottom:2px;"></p>
+      <p id="profile-role" style="font-size:12px; opacity:0.8; margin-bottom:4px;">Rol: Öğrenci</p>
+      <p id="profile-school" style="font-size:12px; opacity:0.7;">–</p>
+      <input id="profilePicInput" type="file" accept="image/*" style="display:none;" />
+      <button id="logoutBtn"
+        style="margin-top:15px; padding:6px 12px; background:#fff; color:#284B63; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:12px;">Çıkış</button>
+    </div>
 
-<ul>
+    <ul id="sidebar-menu">
+      <li><a href="ogrenci-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+      <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    </ul>
 
-<li>
-<a href="ogrenci-panel.html">
-<i class="fa-solid fa-house"></i> Ana Sayfa
-</a>
-</li>
+  </div>
 
-<li>
-<a href="dersler.html">
-<i class="fa-solid fa-book"></i> Dersler
-</a>
-</li>
+  <div class="main">
 
-<li>
-<a href="canli-ders.html">
-<i class="fa-solid fa-video"></i> Canlı Ders
-</a>
-</li>
+    <div class="topbar">
 
-<li>
-<a href="sinavlar.html">
-<i class="fa-solid fa-pen"></i> Sınavlar
-</a>
-</li>
+      <div class="search">
+        <i class="fa fa-search"></i>
+        <input placeholder="Ara">
+      </div>
 
-<li>
-<a href="chat.html">
-<i class="fa-solid fa-comments"></i> Mesajlar
-</a>
-</li>
+      <div class="icons">
 
-</ul>
+        <i class="fa fa-bell"></i>
 
-</div>
+        <a href="chat.html">
+          <i class="fa fa-envelope"></i>
+        </a>
 
-<div class="main">
+      </div>
 
-<div class="topbar">
+    </div>
 
-<div class="search">
-<i class="fa fa-search"></i>
-<input placeholder="Ara">
-</div>
+    <div class="banner">
 
-<div class="icons">
+      <div>
+        <h2>Dersler</h2>
+        <p id="class-info">Sınıfınıza göre dersler</p>
+      </div>
 
-<i class="fa fa-bell"></i>
+    </div>
 
-<a href="chat.html">
-<i class="fa fa-envelope"></i>
-</a>
+    <div class="cards" id="dersler-grid">
 
-</div>
+      <!-- Dinamik olarak doldurulur -->
 
-</div>
+    </div>
 
-<div class="banner">
+  </div>
 
-<div>
-<h2>Dersler</h2>
-<p id="class-info">Sınıfınıza göre dersler</p>
-</div>
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-school').textContent = user.school;
+      document.getElementById('logoutBtn').addEventListener('click', logout);
 
-</div>
+      const derslerGrid = document.getElementById('dersler-grid');
+      const classInfo = document.getElementById('class-info');
 
-<div class="cards" id="dersler-grid">
+      const dersler = {
+        '9': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Üslü Sayılar', 'Köklü Sayılar', 'Faktöriyel'] },
+          { name: 'Fen Bilimleri', img: 'img/fen.jpg', topics: ['Canlılar Dünyası', 'Maddenin Halleri'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['İlk Çağ Uygarlıkları', 'Türklerin Tarih Sahnesi'] },
+          { name: 'İngilizce', img: 'img/ing.jpg', topics: ['Simple Present', 'Kelime Bilgisi'] }
+        ],
+        '10': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Edebi Sanatlar', 'Paragraf Anlamı'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Doğrusal Denklemler', 'Polinomlar'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Elektrik', 'Kuvvet'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Atom Modelleri', 'Elementler'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Hücre ve Organizasyon', 'Ekosistem'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Osmanlıda Dağılma Dönemi', 'Kurtuluş Savaşı'] }
+        ],
+        '11': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Anlatım Bozuklukları', 'Paragraf Türleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Denklem Sistemleri', 'Olasılık'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Dalga', 'Optik'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Kimyasal Enerji', 'Organik Kimya'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Genetik', 'Fizyoloji'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Çağdaş Türk ve Dünya Tarihi'] },
+          { name: 'Coğrafya', img: 'img/coğrafya.jpg', topics: ['Küresel Isınma', 'Nüfus Coğrafyası'] }
+        ],
+        '12': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Sözcük Türleri', 'Anlatım Teknikleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Türev', 'Limit', 'Permütasyon'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Elektrik-Magnetizma', 'Modern Fizik'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Asit-Baz', 'Kimyasal Denklem'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Evrim', 'Bitki Fizyolojisi'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Dünya Siyaseti', 'Soğuk Savaş'] },
+          { name: 'Coğrafya', img: 'img/coğrafya.jpg', topics: ['Doğal Kaynaklar', 'Nüfus Politikaları'] },
+          { name: 'Felsefe', img: 'img/fel.jpg', topics: ['Etik', 'Siyaset Felsefesi'] }
+        ]
+      };
 
-<!-- Dinamik olarak doldurulur -->
+      const userClass = user.class || '9';
+      classInfo.textContent = `${userClass}. Sınıf Dersleri`;
 
-</div>
-
-</div>
-
-<script src="auth-utils.js"></script>
-<script>
-const user = requireAuth();
-if (user) {
-  document.getElementById('profile-name').textContent = user.name;
-  document.getElementById('profile-school').textContent = user.school;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  const derslerGrid = document.getElementById('dersler-grid');
-  const classInfo = document.getElementById('class-info');
-
-  const dersler = {
-    '9': [
-      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri'] },
-      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Üslü Sayılar', 'Köklü Sayılar', 'Faktöriyel'] },
-      { name: 'Fen Bilimleri', img: 'img/foto3.jpeg', topics: ['Canlılar Dünyası', 'Maddenin Halleri'] },
-      { name: 'Tarih', img: 'img/foto4.jpeg', topics: ['İlk Çağ Uygarlıkları', 'Türklerin Tarih Sahnesi'] },
-      { name: 'İngilizce', img: 'img/foto1.jpg', topics: ['Simple Present', 'Kelime Bilgisi'] }
-    ],
-    '10': [
-      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Edebi Sanatlar', 'Paragraf Anlamı'] },
-      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Doğrusal Denklemler', 'Polinomlar'] },
-      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Elektrik', 'Kuvvet'] },
-      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Atom Modelleri', 'Elementler'] },
-      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Hücre ve Organizasyon', 'Ekosistem'] },
-      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Osmanlıda Dağılma Dönemi', 'Kurtuluş Savaşı'] }
-    ],
-    '11': [
-      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Anlatım Bozuklukları', 'Paragraf Türleri'] },
-      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Denklem Sistemleri', 'Olasılık'] },
-      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Dalga', 'Optik'] },
-      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Kimyasal Enerji', 'Organik Kimya'] },
-      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Genetik', 'Fizyoloji'] },
-      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Çağdaş Türk ve Dünya Tarihi'] },
-      { name: 'Coğrafya', img: 'img/foto3.jpeg', topics: ['Küresel Isınma', 'Nüfus Coğrafyası'] }
-    ],
-    '12': [
-      { name: 'Türkçe', img: 'img/foto1.jpg', topics: ['Sözcük Türleri', 'Anlatım Teknikleri'] },
-      { name: 'Matematik', img: 'img/foto2.jpeg', topics: ['Türev', 'Limit', 'Permütasyon'] },
-      { name: 'Fizik', img: 'img/foto3.jpeg', topics: ['Elektrik-Magnetizma', 'Modern Fizik'] },
-      { name: 'Kimya', img: 'img/foto4.jpeg', topics: ['Asit-Baz', 'Kimyasal Denklem'] },
-      { name: 'Biyoloji', img: 'img/foto1.jpg', topics: ['Evrim', 'Bitki Fizyolojisi'] },
-      { name: 'Tarih', img: 'img/foto2.jpeg', topics: ['Dünya Siyaseti', 'Soğuk Savaş'] },
-      { name: 'Coğrafya', img: 'img/foto3.jpeg', topics: ['Doğal Kaynaklar', 'Nüfus Politikaları'] },
-      { name: 'Felsefe', img: 'img/foto4.jpeg', topics: ['Etik', 'Siyaset Felsefesi'] }
-    ]
-  };
-
-  const userClass = user.class || '9';
-  classInfo.textContent = `${userClass}. Sınıf Dersleri`;
-
-  const classDersler = dersler[userClass] || [];
-  derslerGrid.innerHTML = classDersler.map(ders => {
-    return `
+      const classDersler = dersler[userClass] || [];
+      derslerGrid.innerHTML = classDersler.map(ders => {
+        return `
       <a href="ders-detay.html?ders=${encodeURIComponent(ders.name)}" class="card-link" style="text-decoration:none; color:inherit; display:block;">
         <div class="card">
           <img src="${ders.img}" alt="${ders.name}">
@@ -156,9 +149,10 @@ if (user) {
         </div>
       </a>
     `;
-  }).join('');
-}
-</script>
+      }).join('');
+    }
+  </script>
 
 </body>
+
 </html>
