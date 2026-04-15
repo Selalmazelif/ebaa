@@ -154,7 +154,10 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 
   <!-- Bildirim paneli -->
   <div class="notif-panel" id="notifPanel">
-    <div class="notif-panel-head">🔔 Bildirimler</div>
+    <div class="notif-panel-head" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>🔔 Bildirimler</span>
+      <button onclick="markAllRead()" style="font-size:11px; background:none; border:none; color:#4A748F; cursor:pointer; font-family:inherit;">Tümünü oku</button>
+    </div>
     <div id="notifList"></div>
   </div>
 
@@ -168,6 +171,8 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
           <button class="tab-btn" onclick="switchTab('tartisma',this)"><i class="fa fa-comments"></i> Tartışma</button>
           <button class="tab-btn" onclick="switchTab('oylama',this)"><i class="fa fa-chart-column"></i> Oylama</button>
           <button class="tab-btn" onclick="switchTab('etkinlik',this)"><i class="fa fa-calendar-check"></i> Etkinlik</button>
+          <button class="tab-btn" onclick="switchTab('quiz',this)"><i class="fa fa-pen-ruler"></i> Quiz</button>
+          <button class="tab-btn" onclick="switchTab('kaynak',this)"><i class="fa fa-book"></i> Kaynak</button>
         </div>
 
         <!-- İLETİ -->
@@ -219,6 +224,55 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
           <textarea class="post-ta" id="ta-etkinlik" placeholder="Etkinlik açıklaması..." style="width:100%;min-height:60px;box-sizing:border-box;"></textarea>
         </div>
 
+        <!-- YENİ: QUIZ MODÜLÜ -->
+        <div class="tab-panel" id="panel-quiz">
+           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+             <input class="pollinp" id="quiz-title" placeholder="Sınav Başlığı (örn: Mat-1 Ünite Sonu)">
+             <input class="pollinp" id="quiz-subj" placeholder="Ders (Matematik, vb.)">
+           </div>
+           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+             <input class="pollinp" id="quiz-limit" type="number" placeholder="Süre (dk)" value="20">
+             <select class="grp-sel" id="quiz-cls-sel" style="width:100%; height:38px;">
+               <option value="all">Tüm Sınıflar</option>
+               <option value="9-A">9-A</option><option value="10-A">10-A</option><option value="11-A">11-A</option>
+             </select>
+           </div>
+           <div id="quiz-questions-area" style="max-height:250px; overflow-y:auto; padding-right:5px;">
+              <div class="quiz-q-box" style="background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;">
+                 <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="1. Soru metni..."></textarea>
+                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                   <input class="pollinp" style="font-size:12px;" placeholder="A Şıkkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="B Şıkkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="C Şıkkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="D Şıkkı">
+                 </div>
+                 <select class="grp-sel" style="width:100%; margin-top:5px;">
+                   <option value="">Doğru Cevabı Seçin</option>
+                   <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+                 </select>
+              </div>
+           </div>
+           <button class="btn-addopt" onclick="addQuizQuestion()">+ Soru Ekle</button>
+        </div>
+
+        <!-- YENİ: KAYNAK MODÜLÜ -->
+        <div class="tab-panel" id="panel-kaynak">
+          <input class="pollinp" id="lib-title" placeholder="Kaynak Başlığı (örn: Hücre Bölünmesi Özeti)">
+          <textarea class="post-ta" id="lib-desc" placeholder="Kaynak açıklaması..." style="width:100%; min-height:50px; box-sizing:border-box; margin-bottom:10px;"></textarea>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <select class="grp-sel" id="lib-cat" style="width:100%; height:38px;">
+              <option value="Ders Notu">Ders Notu</option>
+              <option value="Video">Video</option>
+              <option value="Çalışma Kağıdı">Çalışma Kağıdı</option>
+              <option value="E-Kitap">E-Kitap</option>
+            </select>
+            <div style="padding:10px; background:#f5f5f5; border-radius:8px; font-size:12px; color:#4A748F; cursor:pointer;" onclick="document.getElementById('lib-file').click()">
+              <i class="fa fa-upload"></i> <span id="lib-fname">Dosya Seç</span>
+              <input type="file" id="lib-file" style="display:none;" onchange="document.getElementById('lib-fname').textContent=this.files[0]?.name||'Dosya Seç'">
+            </div>
+          </div>
+        </div>
+
         <!-- Footer -->
         <div class="post-footer">
           <div class="post-actions">
@@ -234,7 +288,7 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
               <option value="all">Tüm Gruplar</option>
               <option value="veliler">Tüm Veliler</option>
             </select>
-            <button class="btn-share" onclick="doShare()">PAYLAŞ</button>
+            <button class="btn-share" onclick="doShare()" id="btnMainShare">PAYLAŞ</button>
           </div>
         </div>
       </div>
@@ -303,8 +357,17 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
         <select class="assign-inp" id="aCls" style="margin-bottom:8px;">
           <option value="all">Tüm Sınıflarım</option>
         </select>
-        <button class="btn-assign" onclick="sendAssignment()">Ödev Gönder</button>
+        <button class="btn-assign" id="btnAssign" onclick="sendAssignment()">Ödev Gönder</button>
         <p id="assignMsg" style="font-size:12px;text-align:center;margin-top:8px;"></p>
+      </div>
+
+      
+      <!-- GELEN CEVAPLAR VE NOT GİRİŞİ -->
+      <div class="box">
+        <div class="box-title" style="color:#284B63;"><i class="fa fa-inbox" style="color:#4A748F;"></i> Cevaplanan Ödevler</div>
+        <div id="submissionsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
+           <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
+        </div>
       </div>
 
       <!-- GÖNDERİLEN ÖDEVLER -->
@@ -320,7 +383,7 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 <script src="auth-utils.js"></script>
 <script>
 const HOLIDAYS = {'01-01':'Yılbaşı','04-23':'Ulusal Egemenlik','05-01':'İşçi Bayramı','05-19':'Atatürk\'ü Anma','08-30':'Zafer Bayramı','10-29':'Cumhuriyet','03-21':'Nevruz'};
-let calY, calM, cu, curTab = 'ileti', attachedFile = null;
+let calY, calM, cu, notificationCache = [], curTab = 'ileti', attachedFile = null;
 
 // ─── BAŞLATICI ──────────────────────────────────────────────────────
 async function init() {
@@ -356,8 +419,60 @@ async function init() {
   await loadFeed();
   await loadNotifs();
   loadSentAssignments();
+  loadSubmissions();
   const now = new Date(); calY = now.getFullYear(); calM = now.getMonth();
   renderCal();
+}
+
+async function loadSubmissions() {
+   try {
+      const r = await fetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
+      const d = await r.json();
+      const el = document.getElementById('submissionsList');
+      if (d.success && d.submissions.length) {
+         el.innerHTML = d.submissions.map(s => `
+           <div style="border-bottom:1px solid #eee; padding:10px 0;">
+             <div style="display:flex; justify-content:space-between;">
+                <strong>${s.student_name} (${s.student_tc})</strong>
+                <span style="font-size:10px; color:#aaa;">${new Date(s.createdAt).toLocaleDateString('tr-TR')}</span>
+             </div>
+             <div style="font-size:11px; color:#5c8ead; margin-top:3px;">Ödev: ${s.title}</div>
+             <div style="background:#f9f9f9; padding:8px; border-radius:6px; margin:5px 0; color:#444; word-break:break-word;">
+               ${s.answer_text}
+             </div>
+             <div style="display:flex; gap:8px; align-items:center;">
+               ${s.isGraded ? 
+                 `<span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>` :
+                 `
+                   <input type="number" id="gradeInp_${s.id}" placeholder="Not Gir" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
+                   <button onclick="submitGrade(${s.id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Kaydet</button>
+                 `
+               }
+             </div>
+           </div>
+         `).join('');
+      } else {
+         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">Bekleyen cevap yok.</div>';
+      }
+   } catch(e) {}
+}
+
+async function submitGrade(sub_id) {
+   const gv = document.getElementById('gradeInp_'+sub_id).value;
+   if(!gv) return alert('Lütfen not giriniz!');
+   try {
+     const r = await ebaFetch('/api/assignment-grade', {
+       method: 'PUT',
+       body: JSON.stringify({sub_id, grade: gv, teacher_tc: cu.tc})
+     });
+     if(!r) return;
+     const d = await r.json();
+     if(d.success) {
+       alert('Not kaydedildi.');
+       loadSubmissions();
+       loadNotifs();
+     }
+   } catch(e) {}
 }
 
 function toggleAssignUI() {
@@ -406,6 +521,9 @@ function addPollOpt() {
 
 // ─── PAYLAŞ ─────────────────────────────────────────────────────────
 async function doShare() {
+  if (curTab === 'quiz') return doQuizShare();
+  if (curTab === 'kaynak') return doLibraryUpload();
+
   const areaMap = { ileti:'ta-ileti', tartisma:'ta-tartisma', oylama:'ta-oylama', etkinlik:'ta-etkinlik' };
   const content = (document.getElementById(areaMap[curTab])?.value || '').trim();
   const group   = document.getElementById('grpSel').value;
@@ -427,25 +545,108 @@ async function doShare() {
                  event_end: document.getElementById('event-end').value,
                  createdAt:new Date().toISOString() };
 
-  // Kaydet
   try {
-    const r = await fetch('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(post)});
-    const d = await r.json(); if(!d.success) throw new Error(d.message);
-  } catch(e) {
-    const posts=JSON.parse(localStorage.getItem('eba_posts')||'[]');
-    posts.unshift({...post,id:Date.now()});
-    localStorage.setItem('eba_posts',JSON.stringify(posts));
-  }
+    const r = await ebaFetch('/api/posts',{method:'POST',body:JSON.stringify(post)});
+    if(!r) return;
+    const d = await r.json(); 
+    if(d.success) {
+      alert('Başarıyla paylaşıldı.');
+      await sendNotifs(typeMap[curTab], content.slice(0,40), group);
+      // Temizle
+      if (document.getElementById(areaMap[curTab])) document.getElementById(areaMap[curTab]).value='';
+      document.getElementById('fileInp').value=''; document.getElementById('fileName').textContent='';
+      attachedFile=null;
+      document.querySelectorAll('.poll-opt').forEach(i=>i.value='');
+      await loadFeed();
+    }
+  } catch(e) { alert('Hata: ' + e.message); }
+}
 
-  // Bildirim
-  await sendNotifs(typeMap[curTab], content.slice(0,40), group);
+async function doQuizShare() {
+  const title = document.getElementById('quiz-title').value.trim();
+  const subj = document.getElementById('quiz-subj').value.trim();
+  const limit = parseInt(document.getElementById('quiz-limit').value) || 20;
+  const cls = document.getElementById('quiz-cls-sel').value;
+  
+  const qBoxes = document.querySelectorAll('.quiz-q-box');
+  const questions = [];
+  
+  qBoxes.forEach(box => {
+    const txt = box.querySelector('textarea').value.trim();
+    const inps = box.querySelectorAll('input');
+    const correct = box.querySelector('select').value;
+    if(txt && correct) {
+      questions.push({
+        question_text: txt,
+        opt_a: inps[0].value, opt_b: inps[1].value,
+        opt_c: inps[2].value, opt_d: inps[3].value,
+        correct_opt: correct
+      });
+    }
+  });
 
-  // Temizle
-  const ta = document.getElementById(areaMap[curTab]); if(ta) ta.value='';
-  document.getElementById('fileInp').value=''; document.getElementById('fileName').textContent='';
-  attachedFile=null;
-  document.querySelectorAll('.poll-opt').forEach(i=>i.value='');
-  await loadFeed();
+  if(!title || !questions.length) return alert('Lütfen başlık ve en az bir geçerli soru girin.');
+
+  try {
+    const res = await ebaFetch('/api/quizzes', {
+      method: 'POST',
+      body: JSON.stringify({ title, subject: subj, target_class: cls, school: cu.school, time_limit: limit, questions })
+    });
+    if(!res) return;
+    const d = await res.json();
+    if(d.success) {
+      alert('Sınav başarıyla oluşturuldu!');
+      location.reload();
+    }
+  } catch(e) { alert('Quiz oluşturulamadı.'); }
+}
+
+async function doLibraryUpload() {
+  const title = document.getElementById('lib-title').value.trim();
+  const desc = document.getElementById('lib-desc').value.trim();
+  const cat = document.getElementById('lib-cat').value;
+  const fileInp = document.getElementById('lib-file');
+  
+  if(!title || !fileInp.files[0]) return alert('Başlık ve dosya zorunludur.');
+
+  const file = fileInp.files[0];
+  const fileData = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(file); });
+
+  try {
+    const r = await ebaFetch('/api/library', {
+      method: 'POST',
+      body: JSON.stringify({ title, description: desc, file_name: file.name, file_data: fileData, category: cat, school: cu.school })
+    });
+    if(!r) return;
+    const d = await r.json();
+    if(d.success) {
+      alert('Kaynak kütüphaneye eklendi.');
+      location.reload();
+    }
+  } catch(e) { alert('Yükleme hatası.'); }
+}
+
+function addQuizQuestion() {
+  const container = document.getElementById('quiz-questions-area');
+  const index = container.querySelectorAll('.quiz-q-box').length + 1;
+  const div = document.createElement('div');
+  div.className = 'quiz-q-box';
+  div.style = 'background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;';
+  div.innerHTML = `
+     <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="${index}. Soru metni..."></textarea>
+     <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+       <input class="pollinp" style="font-size:12px;" placeholder="A Şıkkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="B Şıkkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="C Şıkkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="D Şıkkı">
+     </div>
+     <select class="grp-sel" style="width:100%; margin-top:5px;">
+       <option value="">Doğru Cevabı Seçin</option>
+       <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+     </select>
+  `;
+  container.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function sendNotifs(type, preview, group) {
@@ -534,7 +735,8 @@ async function saveGrade() {
   const msg=document.getElementById('gradeMsg');
   if(!tc||!subj||isNaN(grade)){msg.textContent='TC, ders ve not zorunludur.';msg.style.color='#e74c3c';return;}
   try {
-    const r=await fetch('/api/grades',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({student_tc:tc,teacher_tc:cu.tc,subject:subj,grade,note})});
+    const r=await ebaFetch('/api/grades',{method:'POST',body:JSON.stringify({student_tc:tc,teacher_tc:cu.tc,subject:subj,grade,note})});
+    if(!r) return;
     const d=await r.json();
     msg.textContent=d.success?`✅ Kaydedildi! Ort: ${d.avg}`:d.message||'Hata';
     msg.style.color=d.success?'#2ecc71':'#e74c3c';
@@ -555,6 +757,7 @@ async function saveGrade() {
 
 // ─── ÖDEV GÖNDER ────────────────────────────────────────────────────
 async function sendAssignment() {
+  const btn=document.getElementById('btnAssign');
   const type=document.getElementById('aType').value;
   const title=document.getElementById('aTitle').value.trim();
   const subj=document.getElementById('aSubj').value.trim();
@@ -566,39 +769,61 @@ async function sendAssignment() {
 
   if(!title||!subj){msg.textContent='Başlık ve ders zorunludur.';msg.style.color='#e74c3c';return;}
 
+  btn.disabled=true; btn.textContent='Gönderiliyor...'; msg.textContent='Ödev hazırlanıyor...'; msg.style.color='#284B63';
+
   let fileData=null, fileName=null;
-  if(fileInput.files.length > 0) {
-    const file = fileInput.files[0];
-    fileName = file.name;
-    fileData = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(file); });
-  }
-
-  const a={
-    teacher_tc:cu.tc, teacher_name:cu.name, title, subject:subj, 
-    description:desc, due_date:due, target_class:cls, school:cu.school,
-    file_name:fileName, file_data:fileData, assignment_type:type,
-    createdAt:new Date().toISOString()
-  };
-
   try {
-    const res = await fetch('/api/assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a)});
+    if(fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if(file.size > 40*1024*1024) throw new Error('Dosya boyutu çok büyük (Max 40MB)');
+      fileName = file.name;
+      fileData = await new Promise((resolve, reject) => {
+        const fr=new FileReader();
+        fr.onload=e=>resolve(e.target.result);
+        fr.onerror=e=>reject(new Error('Dosya okunamadı.'));
+        fr.readAsDataURL(file);
+      });
+    }
+
+    const a={
+      teacher_tc:cu.tc, teacher_name:cu.name, title, subject:subj, 
+      description:desc, due_date:due, target_class:cls, school:cu.school,
+      file_name:fileName, file_data:fileData, assignment_type:type,
+      createdAt:new Date().toISOString()
+    };
+
+    const res = await ebaFetch('/api/assignments',{
+      method:'POST',
+      body:JSON.stringify(a)
+    });
+    
+    if(!res.ok) {
+       const text = await res.text();
+       let errJson; try { errJson=JSON.parse(text); } catch(e){}
+       throw new Error(errJson?.message || `Sunucu hatası: ${res.status}`);
+    }
+    
     const data = await res.json();
-    if(!data.success) throw new Error(data.message);
-    msg.textContent='✅ Ödev gönderildi!';msg.style.color='#2ecc71';
+    msg.textContent='✅ Ödev başarıyla gönderildi!'; msg.style.color='#2ecc71';
+    
+    // Formu temizle
+    ['aTitle','aSubj','aDue','aDesc'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; });
+    fileInput.value=''; document.getElementById('aFileNameDisplay').textContent='Dosya Ekle (Opsiyonel)';
+    loadSentAssignments();
   } catch(e) {
-    msg.textContent='❌ Hata: ' + e.message;msg.style.color='#e74c3c';
+    console.error('Gönderim hatası:', e);
+    msg.textContent='❌ Hata: ' + e.message; msg.style.color='#e74c3c';
+  } finally {
+    btn.disabled=false; btn.textContent='Ödev Gönder';
+    setTimeout(()=>msg.textContent='',5000);
   }
-  
-  ['aTitle','aSubj','aDue','aDesc'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; });
-  fileInput.value=''; document.getElementById('aFileNameDisplay').textContent='Dosya Ekle (Opsiyonel)';
-  loadSentAssignments();
-  setTimeout(()=>msg.textContent='',4000);
 }
 
 async function loadSentAssignments() {
   let items=[];
   try {
-    const r=await fetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu?.tc||'')}`);
+    const r=await ebaFetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu?.tc||'')}`);
+    if(!r) return;
     const d=await r.json();
     if(d.success) items=d.assignments;
   } catch(e) {}
@@ -615,30 +840,70 @@ async function loadSentAssignments() {
 }
 
 // ─── BİLDİRİMLER ────────────────────────────────────────────────────
+function parseNotifText(originalText) {
+  let txt = originalText;
+  let btn = '';
+  // Sınav detayı butonu ayıklama
+  const match = txt.match(/===EXAM_DET:(.*?)===/);
+  if(match) {
+     const parts = match[1].split('|');
+     const title = parts[0];
+     const cor = parts[1];
+     const wro = parts[2];
+     const bla = parts[3];
+     const json = parts[4] || '[]';
+     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+     btn = `<br><button onclick="showExamDetails('${title}','${cor}','${wro}','${bla}','${jsonEscaped}')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>`;
+     txt = txt.replace(match[0], '');
+  }
+  return txt + btn;
+}
+
 async function loadNotifs() {
-  let notifs=[];
   try {
-    const r=await fetch(`/api/notifications?tc=${cu.tc}`);
-    const d=await r.json(); if(d.success) notifs=d.notifications;
+    const r=await ebaFetch(`/api/notifications?tc=${cu.tc}`);
+    if(!r) return;
+    const d=await r.json(); 
+    notificationCache = d.success ? d.notifications : [];
   } catch(e) {
     const all=JSON.parse(localStorage.getItem('eba_notifications')||'[]');
-    notifs=all.filter(n=>n.receiver_tc===cu.tc);
+    notificationCache = all.filter(n=>n.receiver_tc===cu.tc);
   }
-  const unread=notifs.filter(n=>!n.isRead).length;
-  const badge=document.getElementById('notifBadge');
+  renderNotifs();
+}
+
+function renderNotifs() {
+  const unread = notificationCache.filter(n=>!n.isRead).length;
+  const badge = document.getElementById('notifBadge');
   if(unread>0){badge.style.display='flex';badge.textContent=unread>9?'9+':unread;}
-  const list=document.getElementById('notifList');
-  list.innerHTML=notifs.slice(0,10).map(n=>`
+  else { badge.style.display='none'; }
+
+  const list = document.getElementById('notifList');
+  list.innerHTML = notificationCache.slice(0,10).map(n=>`
     <div class="notif-item" style="${n.isRead?'opacity:.65;':'font-weight:600;'}">
-      ${n.text}
+      ${parseNotifText(n.text)}
       <div style="font-size:10px;color:#bbb;margin-top:2px;">${n.createdAt?new Date(n.createdAt).toLocaleString('tr-TR'):''}</div>
     </div>
   `).join('') || '<div class="notif-item" style="color:#aaa;text-align:center;">Bildirim yok</div>';
 }
 
-function toggleNotif() {
+async function markAllRead() {
+  const badge = document.getElementById('notifBadge');
+  if(badge) badge.style.display = 'none';
+  
+  // Local update
+  notificationCache.forEach(n => n.isRead = true);
+  renderNotifs();
+
+  try {
+    await ebaFetch('/api/notifications/read',{method:'PUT',body:JSON.stringify({tc:cu.tc})});
+  } catch(e) {}
+}
+
+async function toggleNotif() {
   const p=document.getElementById('notifPanel');
-  p.style.display=p.style.display==='block'?'none':'block';
+  if(p.style.display==='block'){ p.style.display='none'; return; }
+  p.style.display='block';
 }
 document.addEventListener('click',e=>{
   const p=document.getElementById('notifPanel');
@@ -656,7 +921,8 @@ async function renderCal() {
   
   let asgn = [];
   try {
-    const r = await fetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu.tc)}`);
+    const r = await ebaFetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu.tc)}`);
+    if(!r) return;
     const d = await r.json(); if(d.success) asgn = d.assignments;
   } catch(e) {}
 
@@ -683,7 +949,73 @@ async function renderCal() {
 function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
 function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCal();}
 
+
+function editGrade(sub_id, current_grade) {
+  const box = document.getElementById('gradeBox_'+sub_id);
+  box.innerHTML = `
+    <input type="number" id="gradeInp_${sub_id}" value="${current_grade}" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
+    <button onclick="submitGrade(${sub_id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Güncelle</button>
+    <button onclick="loadSubmissions()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;">İptal</button>
+  `;
+}
+
+async function loadSubmissions() {
+   try {
+      const r = await ebaFetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
+      if(!r) return;
+      const d = await r.json();
+      const el = document.getElementById('submissionsList');
+      if (d.success && d.submissions.length) {
+         el.innerHTML = d.submissions.map(s => `
+           <div style="border-bottom:1px solid #eee; padding:10px 0;">
+             <div style="display:flex; justify-content:space-between;">
+                <strong>${s.student_name} (${s.student_tc})</strong>
+                <span style="font-size:10px; color:#aaa;">${new Date(s.createdAt).toLocaleDateString('tr-TR')}</span>
+             </div>
+             <div style="font-size:11px; color:#5c8ead; margin-top:3px;">Ödev: ${s.title}</div>
+             <div style="background:#f9f9f9; padding:8px; border-radius:6px; margin:5px 0; color:#444; word-break:break-word; border:1px solid #eee;">
+               ${s.answer_text}
+             </div>
+             <div style="display:flex; gap:8px; align-items:center;" id="gradeBox_${s.id}">
+               ${s.isGraded ? 
+                 `
+                  <span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>
+                  <button onclick="editGrade(${s.id}, ${s.grade})" style="background:none; border:none; color:#4A748F; cursor:pointer; font-size:12px;"><i class="fa fa-edit"></i> Düzenle</button>
+                 ` :
+                 `
+                   <input type="number" id="gradeInp_${s.id}" placeholder="Not Gir" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
+                   <button onclick="submitGrade(${s.id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Kaydet</button>
+                 `
+               }
+             </div>
+           </div>
+         `).join('');
+      } else {
+         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Bekleyen cevap yok.</div>';
+      }
+   } catch(e) {}
+}
+
+async function submitGrade(sub_id) {
+   const gv = document.getElementById('gradeInp_'+sub_id).value;
+   if(!gv) return alert('Lütfen not giriniz!');
+   try {
+     const r = await ebaFetch('/api/assignment-grade', {
+       method: 'PUT',
+       body: JSON.stringify({sub_id, grade: gv, teacher_tc: cu.tc})
+     });
+     if(!r) return;
+     const d = await r.json();
+     if(d.success) {
+       alert('Not başarıyla kaydedildi.');
+       loadSubmissions();
+       loadNotifs();
+     }
+   } catch(e) {}
+}
+
 init();
 </script>
 </body>
 </html>
+

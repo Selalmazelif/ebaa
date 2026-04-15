@@ -5,6 +5,7 @@
 <title>Veli Paneli - EBA</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="panel.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 .info-card { background:white; border-radius:12px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
 .stat-circle-sm { width:65px; height:65px; border:5px solid; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; }
@@ -98,7 +99,10 @@ body.dark-mode .pill { opacity:0.8; }
 
   <!-- Bildirim paneli -->
   <div id="notifPanel" style="display:none;position:fixed;top:60px;right:20px;width:300px;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:1000;max-height:350px;overflow-y:auto;">
-    <div style="padding:10px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:14px;">Bildirimler</div>
+    <div style="padding:10px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:14px; display:flex; justify-content:space-between; align-items:center;">
+      <span>Bildirimler</span>
+      <button onclick="markAllRead()" style="font-size:11px; background:none; border:none; color:#4A748F; cursor:pointer;">Tümünü oku</button>
+    </div>
     <div id="notifList" style="padding:8px;"></div>
   </div>
 
@@ -140,7 +144,10 @@ body.dark-mode .pill { opacity:0.8; }
               <div class="stat-circle-sm" style="border-color:#AB47BC;color:#AB47BC;" id="child-stat-time">0</div>
             </div>
           </div>
-          <p id="child-stats-info" style="font-size:10px;color:#aaa;text-align:center;margin-top:12px;margin-bottom:0;"></p>
+          <p id="child-stats-info" style="font-size:10px;color:#aaa;text-align:center;margin-top:12px;margin-bottom:10px;"></p>
+          <div style="height:150px; position:relative;">
+            <canvas id="childPerformanceChart"></canvas>
+          </div>
         </div>
 
         <!-- BEKLEYEN ÖDEVLER -->
@@ -245,7 +252,7 @@ const officialHolidays = {
   '08-30':'Zafer Bayramı','10-29':'Cumhuriyet Bayramı','03-21':'Nevruz'
 };
 
-let calYear, calMonth, currentUser, childUser;
+let calYear, calMonth, currentUser, notificationCache = [], childUser;
 let assignmentsCache = [];
 
 function scrollToSection(id) {
@@ -301,6 +308,7 @@ async function initVeliPanel() {
       loadTestResults(childUser),
       loadSettingsLog(childUser),
       loadAssignments(childUser),
+      renderChildPerformanceChart(childUser),
     ]);
     loadSchedule(childUser);
   } else {
@@ -309,15 +317,54 @@ async function initVeliPanel() {
       'Lütfen öğrenci kaydında Veli TC numaranızın girildiğinden emin olun.';
   }
 
-  await loadNotifications(user);
+  await loadNotifs(user);
   const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
   renderCalendar();
+}
+
+async function renderChildPerformanceChart(child) {
+  try {
+    const r = await ebaFetch(`/api/analytics/student-performance?tc=${child.tc}`);
+    if(!r) return;
+    const d = await r.json();
+    const canvas = document.getElementById('childPerformanceChart');
+    if(!d.success || !d.performance?.length) {
+       canvas.parentElement.innerHTML = '<div style="text-align:center; color:#ccc; font-size:12px; padding-top:40px;">Henüz performans verisi yok</div>';
+       return;
+    }
+
+    const labels = d.performance.map(p => new Date(p.date).toLocaleDateString('tr-TR', {day:'numeric', month:'short'}));
+    const data = d.performance.map(p => p.value);
+
+    new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Puan',
+          data: data,
+          borderColor: '#4FC3F7',
+          backgroundColor: 'rgba(79, 195, 247, 0.1)',
+          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { font: { size: 9 }, color: '#aaa' }, grid: { display: false } },
+          x: { ticks: { font: { size: 9 }, color: '#aaa' }, grid: { display: false } }
+        }
+      }
+    });
+  } catch(e) { console.error("Grafik hatası:", e); }
 }
 
 // ─── ÖĞRENCİ İSTATİSTİKLERİ (MSSQL) ──────────────────────────────
 async function loadChildStats(child) {
   try {
-    const r = await fetch(`/api/student-stats?student_tc=${child.tc}`);
+    const r = await ebaFetch(`/api/student-stats?student_tc=${child.tc}`);
+    if(!r) return;
     const d = await r.json();
     if(d.success && d.stats) {
       const s = d.stats;
@@ -337,7 +384,8 @@ async function loadChildStats(child) {
 // ─── BEKLEYEN ÖDEVLER (MSSQL) ──────────────────────────────────────
 async function loadPendingTasks(child) {
   try {
-    const r = await fetch(`/api/assignments?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    const r = await ebaFetch(`/api/assignments?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    if(!r) return;
     const d = await r.json();
     if(d.success) assignmentsCache = d.assignments;
   } catch(e) {}
@@ -379,7 +427,8 @@ async function loadAssignments(child) {
 // ─── CANLÜ DERSLER (MSSQL) ────────────────────────────────────────
 async function loadLiveLessons(child) {
   try {
-    const r = await fetch(`/api/live-lessons?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    const r = await ebaFetch(`/api/live-lessons?school=${encodeURIComponent(child.school)}&userClass=${encodeURIComponent(child.classNum||child.class||'')}`);
+    if(!r) return;
     const d = await r.json();
     if(!d.success || !d.lessons.length) return;
     const el = document.getElementById('live-lessons-list');
@@ -398,7 +447,8 @@ async function loadLiveLessons(child) {
 // ─── İZLENEN VİDEOLAR (MSSQL) ────────────────────────────────────
 async function loadWatchedVideos(child) {
   try {
-    const r = await fetch(`/api/watched-videos?student_tc=${child.tc}`);
+    const r = await ebaFetch(`/api/watched-videos?student_tc=${child.tc}`);
+    if(!r) return;
     const d = await r.json();
     if(!d.success || !d.videos.length) return;
     const el = document.getElementById('watched-videos-container');
@@ -421,7 +471,8 @@ async function loadWatchedVideos(child) {
 // ─── YAPILAN TESTLER (MSSQL) ─────────────────────────────────────
 async function loadTestResults(child) {
   try {
-    const r = await fetch(`/api/test-results?student_tc=${child.tc}`);
+    const r = await ebaFetch(`/api/test-results?student_tc=${child.tc}`);
+    if(!r) return;
     const d = await r.json();
     if(!d.success || !d.tests.length) return;
     const el = document.getElementById('tests-container');
@@ -449,7 +500,8 @@ async function loadTestResults(child) {
 // ─── AYARLAR DEĞİŞİKLİK LOGU (öğrencinin ayarları) ─────────────
 async function loadSettingsLog(child) {
   try {
-    const r = await fetch(`/api/settings-log?user_tc=${child.tc}`);
+    const r = await ebaFetch(`/api/settings-log?user_tc=${child.tc}`);
+    if(!r) return;
     const d = await r.json();
     if(!d.success || !d.logs.length) return;
     const el = document.getElementById('settings-log-container');
@@ -473,7 +525,8 @@ async function loadSettingsLog(child) {
 async function loadFeed(user, child) {
   try {
     const school = child?.school || user.school;
-    const r = await fetch(`/api/posts?school=${encodeURIComponent(school)}&group=veliler&userClass=veliler`);
+    const r = await ebaFetch(`/api/posts?school=${encodeURIComponent(school)}&group=veliler&userClass=veliler`);
+    if(!r) return;
     const d = await r.json();
     if(!d.success || !d.posts.length) return;
     const el = document.getElementById('veli-feed');
@@ -494,27 +547,78 @@ async function loadFeed(user, child) {
 }
 
 // ─── BİLDİRİMLER (MSSQL) ─────────────────────────────────────────
-async function loadNotifications(user) {
+function parseNotifText(originalText) {
+  let txt = originalText;
+  let btn = '';
+  const match = txt.match(/===EXAM_DET:(.*?)===/);
+  if(match) {
+     const parts = match[1].split('|');
+     const title = parts[0];
+     const cor = parts[1];
+     const wro = parts[2];
+     const bla = parts[3];
+     const json = parts[4] || '[]';
+     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+     btn = `<br><button onclick="showExamDetails('${title}','${cor}','${wro}','${bla}','${jsonEscaped}')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Detayları Gör</button>`;
+     txt = txt.replace(match[0], '');
+  }
+  return txt + btn;
+}
+
+// showExamDetails veli paneli için gerekliyse eklenebilir, şimdilik parseNotifText içindeki buton için tanım yapıyoruz
+function showExamDetails(t,c,w,b,sJson) { alert('Sınav detayı öğrenci panelinden incelenebilir: ' + t); }
+
+async function loadNotifs(user) {
+  const r = await ebaFetch(`/api/notifications?tc=${user.tc}`);
+  if(!r) return;
+  const d = await r.json();
+  notificationCache = d.success ? d.notifications : [];
+  renderNotifs();
+}
+
+function renderNotifs() {
+  const unread = notificationCache.filter(n=>!n.isRead).length;
+  const countEl = document.getElementById('notifCount');
+  if(unread>0) { countEl.style.display='flex'; countEl.textContent=unread; }
+  else countEl.style.display='none';
+
+  const list = document.getElementById('notifList');
+  if(!notificationCache.length) { list.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:13px;">Bildirim yok</div>'; return; }
+  list.innerHTML = notificationCache.slice(0,10).map(n=>`
+    <div style="padding:10px;border-bottom:1px solid #f0f0f0;font-size:13px;${n.isRead?'opacity:0.6;':'font-weight:600;'}">
+      ${parseNotifText(n.text)}
+      <div style="font-size:10px;color:#aaa;margin-top:2px;">${n.createdAt?new Date(n.createdAt).toLocaleString('tr-TR'):''}</div>
+    </div>
+  `).join('');
+}
+
+async function markAllRead() {
+  const countEl = document.getElementById('notifCount');
+  if(countEl) countEl.style.display='none';
+  
+  // Local update
+  notificationCache.forEach(n => n.isRead = true);
+  renderNotifs();
+
   try {
-    const r = await fetch(`/api/notifications?tc=${user.tc}`);
-    const d = await r.json();
-    if(!d.success) return;
-    const notifs = d.notifications;
-    const unread = notifs.filter(n=>!n.isRead).length;
-    const countEl = document.getElementById('notifCount');
-    if(unread>0) { countEl.style.display='flex'; countEl.textContent=unread; }
-    const list = document.getElementById('notifList');
-    if(!notifs.length) { list.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:12px;">Bildirim yok</div>'; return; }
-    list.innerHTML = notifs.slice(0,8).map(n=>`
-      <div style="padding:8px;border-bottom:1px solid #f0f0f0;font-size:12px;${n.isRead?'opacity:0.6;':'font-weight:600;'}">${n.text}</div>
-    `).join('');
+    await ebaFetch('/api/notifications/read',{method:'PUT',body:JSON.stringify({tc:currentUser.tc})});
   } catch(e) {}
 }
 
-function toggleNotifPanel() {
+async function toggleNotifPanel() {
   const p=document.getElementById('notifPanel');
-  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block'){ p.style.display='none'; return; }
+  p.style.display='block';
+  try {
+    await fetch('/api/notifications/read',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tc:currentUser.tc})});
+    const countEl = document.getElementById('notifCount');
+    if(countEl) countEl.style.display='none';
+  }catch(e){}
 }
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notifPanel');
+  if(p&&!e.target.closest('#notifPanel')&&!e.target.closest('span[onclick*="toggleNotifPanel"]'))p.style.display='none';
+});
 
 // ─── DERS PROGRAMI (sabit şablon) ────────────────────────────────
 function loadSchedule(child) {

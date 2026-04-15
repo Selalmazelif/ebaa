@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>EBA Online Sınav</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <style>
+    body { background: #f0f4f8; font-family: 'Inter', sans-serif; }
+    .quiz-container { max-width: 800px; margin: 40px auto; padding: 20px; }
+    .quiz-card { background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
+    .quiz-header { border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+    .timer-box { background: #f39200; color: white; padding: 8px 15px; border-radius: 12px; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+    .q-text { font-size: 20px; font-weight: 600; color: #284B63; margin-bottom: 25px; line-height: 1.4; }
+    .options-grid { display: grid; gap: 12px; }
+    .opt-btn { background: #f8fbfe; border: 2px solid #edf2f7; border-radius: 12px; padding: 15px 20px; text-align: left; cursor: pointer; transition: 0.2s; font-size: 15px; color: #444; display: flex; align-items: center; gap: 12px; }
+    .opt-btn:hover { border-color: #284B63; background: #f0f7fb; }
+    .opt-btn.selected { border-color: #284B63; background: #284B63; color: white; }
+    .opt-circle { width: 24px; height: 24px; border: 2px solid #cbd5e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+    .selected .opt-circle { border-color: white; color: white; }
+    .nav-btns { display: flex; justify-content: space-between; margin-top: 40px; }
+    .btn-nav { padding: 12px 25px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.3s; }
+    .btn-prev { background: #eee; color: #666; }
+    .btn-next { background: #284B63; color: white; }
+    .btn-submit { background: #2ecc71; color: white; }
+    .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+    .progress-inner { height: 100%; background: #284B63; transition: 0.4s; }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <div class="quiz-card" id="quiz-ui">
+      <div class="quiz-header">
+        <div>
+          <h2 id="quiz-title" style="margin:0; color:#284B63;">Yükleniyor...</h2>
+          <div class="progress-bar" style="width: 200px;"><div class="progress-inner" id="progress" style="width:0%;"></div></div>
+        </div>
+        <div class="timer-box" id="timer">
+          <i class="fa fa-clock"></i> <span id="time-val">00:00</span>
+        </div>
+      </div>
+
+      <div id="question-area">
+        <div class="q-text" id="q-text">Soru metni yükleniyor...</div>
+        <div class="options-grid" id="options-grid">
+          <!-- Seçenekler -->
+        </div>
+      </div>
+
+      <div class="nav-btns">
+        <button class="btn-nav btn-prev" id="btn-prev" onclick="move(-1)">Önceki</button>
+        <button class="btn-nav btn-next" id="btn-next" onclick="move(1)">Sonraki</button>
+      </div>
+    </div>
+
+    <div class="quiz-card" id="result-ui" style="display:none; text-align:center; padding:60px 40px;">
+      <div style="font-size:60px; color:#2ecc71; margin-bottom:20px;"><i class="fa fa-circle-check"></i></div>
+      <h2 style="color:#284B63;">Sınav Tamamlandı!</h2>
+      <p style="color:#666; font-size:16px;">Neticeniz hesaplanıyor ve puanınız hanenize ekleniyor...</p>
+      <div style="display:flex; justify-content:center; gap:20px; margin:30px 0;">
+        <div style="background:#f8fbfe; padding:20px; border-radius:15px; min-width:80px;">
+          <div style="font-size:24px; font-weight:700; color:#2ecc71;" id="res-cor">0</div>
+          <div style="font-size:12px; color:#888;">Doğru</div>
+        </div>
+        <div style="background:#f8fbfe; padding:20px; border-radius:15px; min-width:80px;">
+          <div style="font-size:24px; font-weight:700; color:#e74c3c;" id="res-wro">0</div>
+          <div style="font-size:12px; color:#888;">Yanlış</div>
+        </div>
+        <div style="background:#f8fbfe; padding:20px; border-radius:15px; min-width:80px;">
+          <div style="font-size:24px; font-weight:700; color:#f39200;" id="res-pts">0</div>
+          <div style="font-size:12px; color:#888;">Puan</div>
+        </div>
+      </div>
+      <button onclick="location.href='sinavlar.html'" style="padding:12px 30px; background:#284B63; color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Sınavlardan Çık</button>
+    </div>
+  </div>
+
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    const quizInfo = JSON.parse(sessionStorage.getItem('current_quiz') || '{}');
+    let questions = [];
+    let curIdx = 0;
+    let answers = {};
+    let timeLeft = 0;
+    let timerInt = null;
+
+    async function init() {
+      if(!quizInfo.id) { location.href='sinavlar.html'; return; }
+      document.getElementById('quiz-title').textContent = quizInfo.title;
+      timeLeft = quizInfo.limit * 60;
+      
+      try {
+        const r = await ebaFetch(`/api/quizzes/${quizInfo.id}/questions`);
+        const d = await r.json();
+        if(d.success) {
+          questions = d.questions;
+          renderQ();
+          startTimer();
+        }
+      } catch(e) { alert('Soru yükleme hatası.'); }
+    }
+
+    function renderQ() {
+      const q = questions[curIdx];
+      document.getElementById('q-text').textContent = `${curIdx + 1}. ${q.question_text}`;
+      const opts = [
+        {k:'A', v:q.opt_a}, {k:'B', v:q.opt_b}, {k:'C', v:q.opt_c}, {k:'D', v:q.opt_d}
+      ];
+      
+      document.getElementById('options-grid').innerHTML = opts.map(o => `
+        <div class="opt-btn ${answers[curIdx] === o.k ? 'selected' : ''}" onclick="selectOpt('${o.k}')">
+          <div class="opt-circle">${o.k}</div>
+          <div>${o.v}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('progress').style.width = ((curIdx + 1) / questions.length * 100) + '%';
+      document.getElementById('btn-prev').style.display = curIdx === 0 ? 'none' : 'block';
+      const nextBtn = document.getElementById('btn-next');
+      if(curIdx === questions.length - 1) {
+        nextBtn.textContent = 'Sınavı Bitir';
+        nextBtn.classList.add('btn-submit');
+      } else {
+        nextBtn.textContent = 'Sonraki';
+        nextBtn.classList.remove('btn-submit');
+      }
+    }
+
+    function selectOpt(k) {
+      answers[curIdx] = k;
+      renderQ();
+    }
+
+    function move(v) {
+      if(v === 1 && curIdx === questions.length - 1) {
+        finishQuiz();
+        return;
+      }
+      curIdx += v;
+      renderQ();
+    }
+
+    function startTimer() {
+      timerInt = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        document.getElementById('time-val').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        if(timeLeft <= 0) finishQuiz();
+      }, 1000);
+    }
+
+    async function finishQuiz() {
+      clearInterval(timerInt);
+      document.getElementById('quiz-ui').style.display = 'none';
+      
+      const payload = {
+        quiz_id: quizInfo.id,
+        student_tc: user.tc,
+        answers: questions.map((q, idx) => ({ question_id: q.id, answer: answers[idx] || null }))
+      };
+
+      try {
+        const r = await ebaFetch('/api/quizzes/submit', { method: 'POST', body: JSON.stringify(payload) });
+        const d = await r.json();
+        if(d.success) {
+          document.getElementById('res-cor').textContent = d.correctCount;
+          document.getElementById('res-wro').textContent = d.wrongCount;
+          document.getElementById('res-pts').textContent = d.points;
+          document.getElementById('result-ui').style.display = 'block';
+        }
+      } catch(e) { alert('Sonuç gönderilemedi.'); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

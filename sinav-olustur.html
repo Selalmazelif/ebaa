@@ -5,7 +5,7 @@
 <title>Sınav Oluştur</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="panel.css">
-<script src="auth-utils.js"></script><script>requireAuth();</script></head>
+</head>
 
 <body>
 
@@ -41,7 +41,21 @@
 
   <div class="topbar">
     <div class="search"><i class="fa fa-search"></i><input placeholder="Ara"></div>
-    <div class="icons"><i class="fa fa-bell"></i><a href="chat.html"><i class="fa fa-envelope"></i></a></div>
+    
+    <div class="icons" style="position:relative;">
+      <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
+        <i class="fa fa-bell"></i>
+        <span id="notifBadge" style="display:none;background:#e74c3c;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px;display:inline-flex;"></span>
+      </span>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+
+    <!-- Bildirim paneli -->
+    <div id="notifPanel" style="display:none;position:fixed;top:64px;right:20px;width:300px;max-height:360px;overflow-y:auto;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;">
+      <div style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:13px;">🔔 Bildirimler</div>
+      <div id="notifList"></div>
+    </div>
+    
   </div>
 
   <div class="banner">
@@ -53,16 +67,23 @@
 
   <div style="padding:20px;">
     <div style="background:white; padding:30px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); max-width:600px;">
-        <label style="display:block; margin-bottom:10px; font-weight:bold;">Sınav Adı</label>
-        <input type="text" id="examTitle" placeholder="Örn: 1. Dönem 1. Yazılı" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold;">Sınav Adı</label>
+        <input type="text" id="examTitle" placeholder="Örn: 1. Dönem 1. Yazılı" style="width:100%; padding:10px; margin-bottom:16px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box;">
 
-        <label style="display:block; margin-bottom:10px; font-weight:bold;">Sorular</label>
-        <textarea id="examQuestions" placeholder="Soruları buraya yazın..." style="width:100%; height:150px; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px; resize:vertical;"></textarea>
+        <label style="display:block; margin-bottom:6px; font-weight:bold;">Ders / Konu</label>
+        <input type="text" id="examSubject" placeholder="Örn: Matematik, Türkçe" style="width:100%; padding:10px; margin-bottom:16px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box;">
 
-        <label style="display:block; margin-bottom:10px; font-weight:bold;">Hangi Sınıflara (Virgülle ayırın, Örn: 9, 10)</label>
-        <input type="text" id="targetClasses" placeholder="Sınıf seviyeleri" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px;">
+        <label style="display:block; margin-bottom:6px; font-weight:bold;">Sorular / Açıklama</label>
+        <textarea id="examQuestions" placeholder="Sınav hakkında açıklama veya soruları yazın..." style="width:100%; height:150px; padding:10px; margin-bottom:16px; border:1px solid #ddd; border-radius:6px; resize:vertical; box-sizing:border-box;"></textarea>
 
-        <button id="saveExamBtn" style="background:#4A748F; color:white; border:none; padding:12px 25px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:15px;"><i class="fa fa-save"></i> Sınavı Kaydet ve Bildir</button>
+        <label style="display:block; margin-bottom:6px; font-weight:bold;">Hedef Sınıflar <span style="font-weight:normal;color:#888;">(virgülle ayırın: 9, 10, 11)</span></label>
+        <input type="text" id="targetClasses" placeholder="Örn: 10" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ddd; border-radius:6px; box-sizing:border-box;">
+
+        <button id="saveExamBtn" style="background:#4A748F; color:white; border:none; padding:12px 25px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:15px;">
+          <i class="fa fa-save"></i> Sınavı Kaydet ve Bildir
+        </button>
+
+        <div id="saveResult" style="margin-top:14px; font-size:13px;"></div>
     </div>
   </div>
 
@@ -83,42 +104,153 @@ if (user && user.role === 'ogretmen') {
       profileImg.style.display = 'block';
   }
 
-  document.getElementById('saveExamBtn').addEventListener('click', () => {
+  document.getElementById('saveExamBtn').addEventListener('click', async () => {
       const title = document.getElementById('examTitle').value.trim();
-      const q = document.getElementById('examQuestions').value.trim();
+      const questions = document.getElementById('examQuestions').value.trim();
       const classesStr = document.getElementById('targetClasses').value.trim();
+      const subject = document.getElementById('examSubject').value.trim() || 'Genel';
+      const resultEl = document.getElementById('saveResult');
 
-      if(!title || !q || !classesStr) {
-          alert('Lütfen tüm alanları doldurun!');
+      if (!title || !classesStr) {
+          resultEl.style.color = '#e74c3c';
+          resultEl.textContent = '⚠️ Lütfen sınav adı ve hedef sınıfları doldurun!';
           return;
       }
 
-      const targetClasses = classesStr.split(',').map(s => s.trim());
+      const btn = document.getElementById('saveExamBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Kaydediliyor...';
+      resultEl.textContent = '';
 
-      // Sınavı kaydet (mock)
-      alert(`"${title}" başarıyla kaydedildi!`);
+      try {
+        // 1) Quiz'i kaydet
+        const res = await ebaFetch('/api/quizzes', {
+          method: 'POST',
+          body: JSON.stringify({
+            teacher_tc:   user.tc,
+            teacher_name: user.name,
+            title,
+            subject,
+            target_class: classesStr,
+            school:       user.school,
+            time_limit:   20
+          })
+        });
 
-      // Öğrencilere bildirim gönder
-      const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      let notifiedCount = 0;
-      
-      allUsers.forEach(u => {
-          if (u.role === 'ogrenci' && targetClasses.includes(u.class)) {
-              addNotification(u.tc, `Öğretmeniniz yeni bir sınav oluşturdu: ${title}`);
-              notifiedCount++;
-          }
-      });
+        if (!res) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
+          return;
+        }
 
-      alert(`${notifiedCount} öğrenciye bildirim gönderildi.`);
-      
-      // Temizle
-      document.getElementById('examTitle').value = '';
-      document.getElementById('examQuestions').value = '';
-      document.getElementById('targetClasses').value = '';
+        const data = await res.json();
+
+        if (!data.success) {
+          resultEl.style.color = '#e74c3c';
+          resultEl.textContent = '❌ Hata: ' + (data.message || 'Bilinmeyen hata');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
+          return;
+        }
+
+        // 2) Başarı mesajı
+        resultEl.style.color = '#27ae60';
+        resultEl.textContent = `✅ "${title}" başarıyla kaydedildi! Öğrencilere bildirim gönderildi.`;
+
+        // Formu temizle
+        document.getElementById('examTitle').value = '';
+        document.getElementById('examSubject').value = '';
+        document.getElementById('examQuestions').value = '';
+        document.getElementById('targetClasses').value = '';
+
+      } catch(e) {
+        resultEl.style.color = '#e74c3c';
+        resultEl.textContent = '❌ Bir hata oluştu: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
+      }
+
+        document.getElementById('examTitle').value = '';
+        document.getElementById('examSubject').value = '';
+        document.getElementById('examQuestions').value = '';
+        document.getElementById('targetClasses').value = '';
+
+      } catch(e) {
+        resultEl.style.color = '#e74c3c';
+        resultEl.textContent = '❌ Bir hata oluştu: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
+      }
   });
+
 } else {
     window.location.href = 'index.html';
 }
+</script>
+
+<script>
+function parseNotifText(originalText) {
+  let txt = originalText;
+  let btn = '';
+  const match = txt.match(/===EXAM_DET:(.*?)===/);
+  if(match) {
+     const parts = match[1].split('|');
+     const title = parts[0], cor = parts[1], wro = parts[2], bla = parts[3], json = parts[4] || '[]';
+     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+     btn = '<br><button onclick="showExamDetails(\''+title+'\',\''+cor+'\',\''+wro+'\',\''+bla+'\',\''+jsonEscaped+'\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
+     txt = txt.replace(match[0], '');
+  }
+  return txt + btn;
+}
+
+async function loadNotifs() {
+  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
+  if (!cu || !cu.tc) return;
+  try {
+    const r = await ebaFetch('/api/notifications?tc=' + cu.tc);
+    if (!r) return;
+    const d = await r.json(); 
+    if (!d.success) return;
+    const notifs = d.notifications;
+    const unread = notifs.filter(n => !n.isRead).length;
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+      if (unread > 0) { badge.style.display = 'inline-flex'; badge.textContent = unread; }
+      else badge.style.display = 'none';
+    }
+    const list = document.getElementById('notifList');
+    if (list) {
+      list.innerHTML = notifs.slice(0, 10).map(n => `
+        <div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5;${n.isRead ? 'opacity:.65;' : 'font-weight:600;'}">
+          ${parseNotifText(n.text)}
+          <div style="font-size:10px;color:#bbb;margin-top:2px;">${new Date(n.createdAt).toLocaleString('tr-TR')}</div>
+        </div>
+      `).join('') || '<div style="padding:10px 16px;color:#aaa;text-align:center;font-size:12px;">Bildirim yok</div>';
+    }
+  } catch (e) {}
+}
+
+async function toggleNotif() {
+  const p = document.getElementById('notifPanel');
+  if (!p) return;
+  if (p.style.display === 'block') { p.style.display = 'none'; return; }
+  p.style.display = 'block';
+  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
+  if (cu && cu.tc) {
+    try {
+      await ebaFetch('/api/notifications/read', { method: 'PUT', body: JSON.stringify({ tc: cu.tc }) });
+      const b = document.getElementById('notifBadge');
+      if (b) b.style.display = 'none';
+    } catch (e) {}
+  }
+}
+document.addEventListener('click', e => {
+  const p = document.getElementById('notifPanel');
+  if(p && !e.target.closest('#notifPanel') && !e.target.closest('span[onclick*="toggleNotif"]')) p.style.display = 'none';
+});
+setTimeout(() => { loadNotifs(); }, 1000);
 </script>
 
 </body>

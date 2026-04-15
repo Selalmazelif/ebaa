@@ -22,7 +22,9 @@ function getCurrentUser() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const token = localStorage.getItem('authToken');
     
-    if (currentUser && token && currentUser.token === token) {
+    // JWT formatındaysa veya eski token ise currentUser ile eşleşmeli
+    if (currentUser && token && (currentUser.token === token || !currentUser.token)) {
+      currentUser.token = token; // Senkronize et
       return currentUser;
     }
     
@@ -51,15 +53,57 @@ async function logout() {
     try {
       await fetch('/api/logout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
         body: JSON.stringify({ tc: user.tc })
       });
     } catch(e) {}
   }
   localStorage.removeItem('currentUser');
   localStorage.removeItem('authToken');
-  localStorage.removeItem('eba_device_theme'); // Opsiyonel: Cihaz temasını sıfırlamak isterseniz
+  localStorage.removeItem('eba_device_theme');
   window.location.href = 'index.html';
+}
+
+/**
+ * Güvenli Fetch Yardımcısı: JWT token'ı otomatik ekler ve 401/403 hatalarını yönetir.
+ */
+async function ebaFetch(url, options = {}) {
+  const token = localStorage.getItem('authToken');
+  const defaultHeaders = {
+    'Content-Type': 'application/json'
+  };
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
+  options.headers = {
+    ...defaultHeaders,
+    ...(options.headers || {})
+  };
+
+  try {
+    const response = await fetch(url, options);
+    
+    if (response.status === 401) {
+      alert("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
+      logout();
+      return null;
+    }
+    
+    if (response.status === 403) {
+      const data = await response.json().catch(() => ({}));
+      alert("Bu işlem için yetkiniz yok! " + (data.message || ""));
+      return response;
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("ebaFetch Hatası:", error);
+    throw error;
+  }
 }
 
 function startHeartbeat() {
@@ -184,104 +228,48 @@ function initSearch() {
   }
 }
 
-// --- NOTIFICATION FUNCTIONALITY ---
-function getNotifications(tc) {
-  const allNotifications = JSON.parse(localStorage.getItem('notifications') || '{}');
-  return allNotifications[tc] || [];
-}
-
-function addNotification(tc, text) {
-  const allNotifications = JSON.parse(localStorage.getItem('notifications') || '{}');
-  if (!allNotifications[tc]) allNotifications[tc] = [];
-  allNotifications[tc].unshift({
-    text: text,
-    date: new Date().toISOString(),
-    read: false
-  });
-  localStorage.setItem('notifications', JSON.stringify(allNotifications));
-}
-
+// --- NOTIFICATION FUNCTIONALITY (DEVRE DIŞI - MSSQL KULLANILIYOR) ---
+function getNotifications(tc) { return []; }
+function addNotification(tc, text) { }
 function initNotifications() {
-  const bellIcon = document.querySelector('.fa-bell');
-  if (!bellIcon) return;
+  // Bu fonksiyon artık MSSQL tabanlı toggleNotif ve loadNotifs (fix-notifications.js) tarafından karşılanıyor.
+}
 
+// ─── GLOBAL TERCİHLERİ UYGULA ────────────────────────────────────
+async function applyGlobalPrefs() {
   const user = getCurrentUser();
-  if (!user) return;
-
-  let container = bellIcon.parentElement;
-  if (!container.classList.contains('notification-container')) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'notification-container';
-    bellIcon.parentNode.insertBefore(wrapper, bellIcon);
-    wrapper.appendChild(bellIcon);
-    container = wrapper;
-  }
-
-  let badge = container.querySelector('.notification-badge');
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.className = 'notification-badge';
-    container.appendChild(badge);
-  }
-
-  let dropdown = container.querySelector('.notification-dropdown');
-  if (!dropdown) {
-    dropdown = document.createElement('div');
-    dropdown.className = 'notification-dropdown';
-    container.appendChild(dropdown);
-  }
-
-  const notifs = getNotifications(user.tc);
-  const unreadCount = notifs.filter(n => !n.read).length;
-
-  if (unreadCount > 0) {
-    badge.style.display = 'block';
-    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-  } else {
-    badge.style.display = 'none';
-  }
-
-  if (notifs.length === 0) {
-    dropdown.innerHTML = '<div class="notification-empty">Bildiriminiz yok</div>';
-  } else {
-    dropdown.innerHTML = notifs.map(n => `
-      <div class="notification-item" style="${n.read ? 'opacity: 0.7;' : 'font-weight: bold;'}">
-        ${n.text} <br>
-        <small style="color:#888; font-size:10px;">${new Date(n.date).toLocaleDateString('tr-TR')}</small>
-      </div>
-    `).join('');
-  }
-
-  bellIcon.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isVisible = dropdown.style.display === 'block';
-    dropdown.style.display = isVisible ? 'none' : 'block';
-    
-    if (!isVisible && unreadCount > 0) {
-      const allNotifications = JSON.parse(localStorage.getItem('notifications') || '{}');
-      if (allNotifications[user.tc]) {
-        allNotifications[user.tc].forEach(n => n.read = true);
-        localStorage.setItem('notifications', JSON.stringify(allNotifications));
+  if(!user) return;
+  try {
+    const r = await fetch('/api/prefs?tc=' + user.tc);
+    const d = await r.json();
+    if(d.success && d.prefs) {
+      const p = d.prefs;
+      // Tema
+      if(p.theme === 'dark') document.body.classList.add('dark-mode');
+      else document.body.classList.remove('dark-mode');
+      
+      // Bildirim çanı görünürlüğü
+      const badge = document.getElementById('notifBadge');
+      const count = document.getElementById('notifCount');
+      if(p.notifications === false || p.notifications === 0) {
+        if(badge) badge.style.opacity = '0';
+        if(count) count.style.opacity = '0';
       }
-      badge.style.display = 'none';
-      const items = dropdown.querySelectorAll('.notification-item');
-      items.forEach(item => { item.style.fontWeight = 'normal'; item.style.opacity = '0.7'; });
+      
+      // LocalStorage senkronize et (çevrimdışı/hızlı yükleme için)
+      localStorage.setItem('eba_prefs_' + user.tc, JSON.stringify(p));
     }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!container.contains(e.target)) {
-      dropdown.style.display = 'none';
-    }
-  });
+  } catch(e) {}
 }
 
 // Init when DOM loads
 document.addEventListener('DOMContentLoaded', () => {
   initSearch();
-  initNotifications();
+  // initNotifications(); // Devre dışı
   
-  if (getCurrentUser()) {
+  const user = getCurrentUser();
+  if (user) {
     startHeartbeat();
+    applyGlobalPrefs();
   }
 });

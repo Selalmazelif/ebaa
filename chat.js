@@ -168,12 +168,35 @@ function setActiveConversation(id) {
   if (conversation.type === 'group') {
     elements.chatSubtitle.textContent = `Grup sohbeti · ${conversation.members.length} kişi`;
     elements.chatSubtitle.style.color = 'var(--muted)';
+    renderMessages(conversation.messages);
   } else {
     elements.chatSubtitle.textContent = conversation.isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
     elements.chatSubtitle.style.color = conversation.isOnline ? '#2ecc71' : 'var(--muted)';
+    // Backend'den mesajları çek
+    fetchMessages(conversation.id);
   }
+}
 
-  renderMessages(conversation.messages);
+async function fetchMessages(withTc) {
+  try {
+    const res = await fetch(`/api/messages?with_tc=${withTc}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('eba_token')}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      const conv = getConversationById(withTc);
+      if (conv) {
+        conv.messages = data.messages.map(m => ({
+          from: m.sender_tc === getCurrentUser().tc ? 'me' : 'them',
+          text: m.content,
+          time: formatTime(m.sentAt)
+        }));
+        if (state.activeConversationId === withTc) {
+          renderMessages(conv.messages);
+        }
+      }
+    }
+  } catch (e) { console.error("Message fetch failed:", e); }
 }
 
 function renderMessages(messages) {
@@ -210,23 +233,41 @@ function scrollToBottom() {
   });
 }
 
-function sendMessage(text) {
+async function sendMessage(text) {
   const conversation = getConversationById(state.activeConversationId);
   if (!conversation || !text.trim()) return;
 
+  const currentText = text.trim();
+  elements.messageInput.value = '';
+
+  // Local state update for immediate feedback
   const newMessage = {
     from: 'me',
-    text: text.trim(),
+    text: currentText,
     time: formatTime(),
   };
-
   conversation.messages.push(newMessage);
   conversation.lastMessage = newMessage.text;
   conversation.lastTime = newMessage.time;
-
   renderMessages(conversation.messages);
   renderConversationLists(elements.conversationSearch.value);
-  elements.messageInput.value = '';
+
+  // Send to Backend
+  if (conversation.type === 'individual') {
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('eba_token')}`
+        },
+        body: JSON.stringify({
+          receiver_tc: conversation.id,
+          content: currentText
+        })
+      });
+    } catch (e) { console.error("Message send failed:", e); }
+  }
 }
 
 function toggleSidebar() {
