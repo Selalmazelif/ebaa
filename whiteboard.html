@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>EBA Etkileşimli Akıllı Tahta</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body { margin: 0; overflow: hidden; background: #e0e5ec; font-family: 'Inter', sans-serif; }
+    #toolbar {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex; gap: 15px; align-items: center; z-index: 10;
+    }
+    .tool-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      color: #555; background: #f0f0f0; transition: 0.2s;
+    }
+    .tool-btn:hover { background: #e0e0e0; }
+    .tool-btn.active { background: #1C98C3; color: white; }
+    .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    canvas { display: block; background: #ffffff; cursor: crosshair; }
+    
+    #statusBadge {
+      position: absolute; top: 15px; left: 20px; background: rgba(0,0,0,0.6); color: white;
+      padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; z-index: 10;
+    }
+    
+    #exitBtn {
+      position: absolute; top: 15px; right: 20px; background: #e74c3c; color: white; border: none;
+      padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="statusBadge"><i class="fa fa-sync fa-spin"></i> Bağlanıyor...</div>
+  <button id="exitBtn" onclick="history.back()"><i class="fa fa-times"></i> Çıkış</button>
+
+  <div id="toolbar" style="display:none;">
+    <button class="tool-btn active" id="btnPen" onclick="setTool('pen')" title="Kalem"><i class="fa fa-pen"></i></button>
+    <button class="tool-btn" id="btnEraser" onclick="setTool('eraser')" title="Silgi"><i class="fa fa-eraser"></i></button>
+    <div style="width: 1px; height: 20px; background: #ddd; margin: 0 5px;"></div>
+    
+    <div class="color-btn" style="background:#2c3e50;" onclick="setColor('#2c3e50')"></div>
+    <div class="color-btn" style="background:#e74c3c;" onclick="setColor('#e74c3c')"></div>
+    <div class="color-btn" style="background:#2ecc71;" onclick="setColor('#2ecc71')"></div>
+    <div class="color-btn" style="background:#f39200;" onclick="setColor('#f39200')"></div>
+    <div class="color-btn" style="background:#3498db;" onclick="setColor('#3498db')"></div>
+    
+    <div style="width: 1px; height: 20px; background: #ddd; margin: 0 5px;"></div>
+    <input type="range" id="sizeRange" min="2" max="20" value="4" style="width: 80px;" onchange="setSize(this.value)">
+    
+    <button class="tool-btn" id="btnClear" onclick="clearBoard()" style="background:#fff0f0; color:#e74c3c;" title="Tahtayı Temizle"><i class="fa fa-trash"></i></button>
+  </div>
+
+  <canvas id="board"></canvas>
+
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    
+    let isTeacher = (user.role === 'ogretmen');
+    
+    if(isTeacher) {
+       document.getElementById('toolbar').style.display = 'flex';
+       document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower"></i> Yayın Yapılıyor';
+       document.getElementById('statusBadge').style.background = '#e67e22';
+    } else {
+       document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye"></i> İzleyici Modu';
+       canvas.style.cursor = 'default';
+    }
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      redrawAll();
+    }
+    window.addEventListener('resize', resize);
+
+    let drawing = false;
+    let currentStroke = [];
+    let allStrokes = [];
+    
+    let brushColor = '#2c3e50';
+    let brushSize = 4;
+    let isEraser = false;
+
+    function setTool(tool) {
+      isEraser = (tool === 'eraser');
+      document.getElementById('btnPen').classList.toggle('active', !isEraser);
+      document.getElementById('btnEraser').classList.toggle('active', isEraser);
+    }
+    
+    function setColor(color) {
+      if(!isEraser) brushColor = color;
+    }
+    
+    function setSize(size) {
+      brushSize = size;
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      if(!isTeacher) return;
+      drawing = true;
+      currentStroke = { color: isEraser ? '#ffffff' : brushColor, size: isEraser ? brushSize * 4 : brushSize, points: [] };
+      addPoint(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if(!drawing || !isTeacher) return;
+      addPoint(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      if(!drawing || !isTeacher) return;
+      drawing = false;
+      allStrokes.push(currentStroke);
+      sendStroke(currentStroke);
+    });
+
+    function addPoint(x, y) {
+      currentStroke.points.push({ x: x / canvas.width, y: y / canvas.height }); // Normalize
+      drawStroke(currentStroke);
+    }
+
+    function drawStroke(stroke) {
+      if(stroke.points.length < 2) return;
+      ctx.beginPath();
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      const p0 = stroke.points[0];
+      ctx.moveTo(p0.x * canvas.width, p0.y * canvas.height);
+      for(let i=1; i<stroke.points.length; i++) {
+         const p = stroke.points[i];
+         ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
+      }
+      ctx.stroke();
+    }
+
+    function redrawAll() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(let s of allStrokes) {
+        drawStroke(s);
+      }
+    }
+
+    // ─── SENKRONİZASYON (Polling) ────────────────────────
+    let lastStrokeCount = 0;
+
+    async function sendStroke(stroke) {
+      await ebaFetch('/api/whiteboard', {
+         method: 'POST', body: JSON.stringify({ stroke })
+      });
+    }
+
+    async function clearBoard() {
+      if(!isTeacher) return;
+      if(!confirm('Tüm tahtayı silmek istediğinize emin misiniz?')) return;
+      allStrokes = [];
+      redrawAll();
+      await ebaFetch('/api/whiteboard/clear', { method: 'POST' });
+    }
+
+    async function syncBoard() {
+      try {
+        const r = await ebaFetch('/api/whiteboard');
+        if(!r) return;
+        const d = await r.json();
+        if(d.success && d.strokes) {
+           if(d.strokes.length !== allStrokes.length) {
+              allStrokes = d.strokes;
+              redrawAll();
+           }
+        }
+      } catch(e) {}
+    }
+
+    setInterval(syncBoard, 1500); // Her 1.5 saniyede bir güncelle
+    resize();
+  </script>
+</body>
+</html>

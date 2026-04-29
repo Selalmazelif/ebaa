@@ -199,16 +199,6 @@ body.dark-mode .btn-change-pic { border-color: #7ec8e3 !important; color: #7ec8e
         </label>
       </div>
 
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label"><i class="fa fa-bell" style="color:#f39200;margin-right:6px;"></i>Bildirimler</div>
-          <div class="toggle-desc">Yeni görev ve paylaşım bildirimleri</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="togNotif" checked onchange="savePref('notifications',this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
 
       <div class="toggle-row">
         <div>
@@ -221,16 +211,7 @@ body.dark-mode .btn-change-pic { border-color: #7ec8e3 !important; color: #7ec8e
         </label>
       </div>
 
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label"><i class="fa fa-eye" style="color:#4caf50;margin-right:6px;"></i>Profil Görünürlüğü</div>
-          <div class="toggle-desc">Profiliniz okul içinden görünür olsun</div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="togVis" checked onchange="savePref('visible',this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
+
 
       <p style="font-size:12px;color:#aaa;margin-top:14px;"><i class="fa fa-circle-info" style="margin-right:4px;"></i>Tercihler kaydedildiğinde anında uygulanır.</p>
     </div>
@@ -300,9 +281,7 @@ async function init() {
     if (d.success && d.prefs) {
       const p = d.prefs;
       document.getElementById('togDark').checked  = p.theme === 'dark';
-      document.getElementById('togNotif').checked = !!p.notifications;
       document.getElementById('togSound').checked = !!p.sound;
-      document.getElementById('togVis').checked   = !!p.visible;
       if (p.theme === 'dark') document.body.classList.add('dark-mode');
     }
   } catch(e) {
@@ -385,9 +364,7 @@ async function savePref(key, val) {
   payload[key] = val;
   // Diğer değerleri de ekle
   payload.theme         = document.getElementById('togDark').checked  ? 'dark' : 'light';
-  payload.notifications = document.getElementById('togNotif').checked;
   payload.sound         = document.getElementById('togSound').checked;
-  payload.visible       = document.getElementById('togVis').checked;
   payload[key] = val; // override
 
   try {
@@ -413,45 +390,7 @@ function showMsg(el, text, type) {
   setTimeout(() => el.className = 'msg', 5000);
 }
 
-async function loadNotifs() {
-  let notifs=[];
-  try {
-    const r=await fetch(`/api/notifications?tc=${cu.tc}`);
-    const d=await r.json(); if(d.success) notifs=d.notifications;
-  } catch(e) {
-    notifs = JSON.parse(localStorage.getItem('eba_notifications')||'[]').filter(n=>n.receiver_tc===cu.tc);
-  }
-  const unread=notifs.filter(n=>!n.isRead).length;
-  const badge=document.getElementById('notifBadge');
-  if(unread>0){
-    badge.style.display='inline-flex';
-    badge.textContent=unread>9?'9+':unread;
-  } else {
-    badge.style.display='none';
-  }
-  const list=document.getElementById('notifList');
-  list.innerHTML=notifs.slice(0,10).map(n=>`
-    <div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5;${n.isRead?'opacity:.65;':'font-weight:600;'}">
-      ${n.text}
-      <div style="font-size:10px;color:#bbb;margin-top:2px;">${n.createdAt?new Date(n.createdAt).toLocaleString('tr-TR'):''}</div>
-    </div>
-  `).join('') || '<div style="padding:10px 16px;color:#aaa;text-align:center;font-size:12px;">Bildirim yok</div>';
-}
 
-async function toggleNotif() {
-  const p=document.getElementById('notifPanel');
-  if(p.style.display==='block'){ p.style.display='none'; return; }
-  p.style.display='block';
-  try {
-    await fetch('/api/notifications/read',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tc:cu.tc})});
-    const b = document.getElementById('notifBadge');
-    if(b) b.style.display='none';
-  }catch(e){}
-}
-document.addEventListener('click',e=>{
-  const p=document.getElementById('notifPanel');
-  if(p&&!e.target.closest('#notifPanel')&&!e.target.closest('span[onclick*="toggleNotif"]'))p.style.display='none';
-});
 
 init();
 </script>
@@ -509,65 +448,12 @@ function parseNotifText(originalText) {
   return txt + btn;
 }
 
-async function loadNotifs() {
-  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
-  if (!cu || !cu.tc) return;
-  
-  try {
-    // Ödev durum kontrolünü tetikle
-    ebaFetch('/api/check-homework-status', {
-      method: 'POST',
-      body: JSON.stringify({ tc: cu.tc, role: cu.role, school: cu.school, classNum: cu.classNum || cu.class || '' })
-    }).catch(() => {});
 
-    const r = await ebaFetch('/api/notifications?tc=' + cu.tc);
-    if (!r) return;
-    const d = await r.json(); 
-    if (!d.success) return;
-    const notifs = d.notifications;
-    const unread = notifs.filter(n => !n.isRead).length;
-    const badge = document.getElementById('notifBadge');
-    if (badge) {
-      if (unread > 0) { badge.style.display = 'inline-flex'; badge.textContent = unread; }
-      else badge.style.display = 'none';
-    }
-    const list = document.getElementById('notifList');
-    if (list) {
-      list.innerHTML = notifs.slice(0, 10).map(n => `
-        <div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5;${n.isRead ? 'opacity:.65;' : 'font-weight:600;'}">
-          ${parseNotifText(n.text)}
-          <div style="font-size:10px;color:#bbb;margin-top:2px;">${new Date(n.createdAt).toLocaleString('tr-TR')}</div>
-        </div>
-      `).join('') || '<div style="padding:10px 16px;color:#aaa;text-align:center;font-size:12px;">Bildirim yok</div>';
-    }
-  } catch (e) {}
-}
-
-async function toggleNotif() {
-  const p = document.getElementById('notifPanel');
-  if (!p) return;
-  if (p.style.display === 'block') { p.style.display = 'none'; return; }
-  p.style.display = 'block';
-  
-  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
-  if (cu && cu.tc) {
-    try {
-      await ebaFetch('/api/notifications/read', {
-        method: 'PUT',
-        body: JSON.stringify({ tc: cu.tc })
-      });
-      const b = document.getElementById('notifBadge');
-      if (b) b.style.display = 'none';
-    } catch (e) {}
-  }
-}
-document.addEventListener('click',e=>{
-  const p=document.getElementById('notifPanel');
-  if(p&&!e.target.closest('#notifPanel')&&!e.target.closest('span[onclick*="toggleNotif"]'))p.style.display='none';
-});
 setTimeout(() => { loadNotifs(); }, 1000);
 </script>
 
 
+  <script src="fix-notifications.js"></script>
+  <script src="ai-bot.js"></script>
 </body>
 </html>

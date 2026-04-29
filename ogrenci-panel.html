@@ -4,6 +4,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="panel.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     .class-card {
       flex: 1;
@@ -325,6 +327,9 @@
           <i class="fa fa-gem" style="color:#f39200;"></i> <span id="user-points">0</span> Puan
         </div>
       </div>
+      <div id="cert-btn-container" style="text-align:center; margin-top:10px; display:none;">
+        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:6px 14px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
+      </div>
       <div id="user-badges-container"
         style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
         <!-- Rozetler buraya gelecek -->
@@ -338,6 +343,7 @@
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
       <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
       <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
     </ul>
@@ -347,9 +353,9 @@
     <div class="topbar" style="height:50px; min-height:50px;">
       <div></div>
       <div class="icons" style="position:relative;">
-        <span style="position:relative;cursor:pointer;" onclick="toggleNotifPanel()">
+        <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
           <i class="fa fa-bell" id="bellIcon"></i>
-          <span id="notifCount" class="notification-badge" style="display:none;"></span>
+          <span id="notifBadge" class="notification-badge" style="display:none;"></span>
         </span>
         <a href="chat.html"><i class="fa fa-envelope"></i></a>
       </div>
@@ -536,6 +542,19 @@
             <div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadı</div>
           </div>
         </div>
+        
+        <!-- LİDERLİK TABLOSU -->
+        <div class="panel-card"
+          style="width:100%; padding:15px; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05); box-sizing:border-box;">
+          <h4
+            style="margin:0 0 10px; color:#284B63; font-size:14px; border-bottom:1px solid #f0f0f0; padding-bottom:8px; display:flex; justify-content:space-between;">
+            <span><i class="fa fa-trophy" style="color:#f1c40f;"></i> Şampiyonlar</span>
+            <span style="font-size:10px; color:#aaa; font-weight:normal;">Top 10</span>
+          </h4>
+          <div id="leaderboardList" style="font-size:12px;">
+            <div style="text-align:center;color:#ccc;padding:10px;"><i class="fa fa-spinner fa-spin"></i> Yükleniyor...</div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -555,7 +574,7 @@
       '03-21': 'Nevruz',
     };
 
-    let calYear, calMonth, currentPostTab = 'ileti', currentUser, attachedFile = null;
+    let calYear = new Date().getFullYear(), calMonth = new Date().getMonth(), currentPostTab = 'ileti', currentUser, attachedFile = null;
     let assignmentsCache = [], notificationCache = [];
 
     async function initStudentPanel() {
@@ -597,15 +616,16 @@
         reader.readAsDataURL(this.files[0]);
       });
 
+      await loadGrades(user);
       await loadStats(user);
       await loadPendingTasks(user);
-      await loadGrades(user);
       await loadFeed(user);
-      await loadNotifications(user);
+      await loadNotifs();
 
       // YENİ ÖZELLİKLER
       await loadGamification(user);
       await renderPerformanceChart(user);
+      await loadLeaderboard();
 
       // Günlük bonus bildirimi (localStorage'de dailyBonus varsa göster)
       const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -665,6 +685,10 @@
           el.style.color = '#f39200';
           setTimeout(() => { el.style.transform = 'scale(1)'; el.style.color = ''; }, 500);
         }
+        if (points >= 100) {
+           const btnContainer = document.getElementById('cert-btn-container');
+           if(btnContainer) btnContainer.style.display = 'block';
+        }
 
         // Rozet verisini çek
         const rBadge = await ebaFetch(`/api/user-badges?tc=${user.tc}`);
@@ -681,6 +705,45 @@
           container.innerHTML = '<span style="font-size:10px; color:rgba(255,255,255,0.4);">Henüz rozet yok</span>';
         }
       } catch (e) { console.error("Oyunlaştırma hatası:", e); }
+    }
+
+    async function downloadCertificate() {
+       const { jsPDF } = window.jspdf;
+       const certDiv = document.createElement('div');
+       certDiv.style.cssText = `
+         width: 800px; height: 600px; background: linear-gradient(135deg, #1e2d3d, #4A748F);
+         position: fixed; top: -9999px; left: -9999px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+         color: white; font-family: 'Arial', sans-serif; border: 20px solid #f39200; box-sizing: border-box; text-align: center;
+       `;
+       const name = currentUser.name || 'Öğrenci';
+       const points = document.getElementById('user-points').innerText;
+       
+       certDiv.innerHTML = `
+         <i class="fa-solid fa-award" style="font-size: 80px; color: #f39200; margin-bottom: 20px;"></i>
+         <h1 style="font-size: 50px; margin: 0; text-transform: uppercase; letter-spacing: 4px; color: #f39200;">Üstün Başarı Belgesi</h1>
+         <p style="font-size: 24px; margin: 20px 0; color: #e0e0e0;">Bu belge, platformumuzdaki üstün gayreti ve başarısı sonucunda</p>
+         <h2 style="font-size: 60px; margin: 10px 0; color: white; border-bottom: 2px solid #f39200; padding-bottom: 10px;">${name}</h2>
+         <p style="font-size: 24px; margin: 20px 0; color: #e0e0e0;">isimli öğrenciye <strong>${points} Puan</strong> barajını aştığı için verilmiştir.</p>
+         <div style="margin-top: 40px; display: flex; justify-content: space-between; width: 80%; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 20px;">
+            <div><p style="margin:0; font-size:18px;">${new Date().toLocaleDateString('tr-TR')}</p><p style="margin:0; font-size:14px; opacity:0.7;">Tarih</p></div>
+            <div><p style="margin:0; font-size:18px; font-weight:bold; color:#f39200;">EBA Dijital Sistem</p><p style="margin:0; font-size:14px; opacity:0.7;">Onay</p></div>
+         </div>
+       `;
+       document.body.appendChild(certDiv);
+       
+       showToast('Sertifikanız hazırlanıyor, lütfen bekleyin...', 'info');
+       
+       try {
+         const canvas = await html2canvas(certDiv, { scale: 2 });
+         const imgData = canvas.toDataURL('image/png');
+         const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [800, 600] });
+         pdf.addImage(imgData, 'PNG', 0, 0, 800, 600);
+         pdf.save('Basari_Sertifikasi_' + name.replace(/\\s+/g, '_') + '.pdf');
+         showToast('Sertifikanız başarıyla indirildi!', 'success');
+       } catch(e) {
+         showToast('Sertifika oluşturulurken bir hata oluştu.', 'error');
+       }
+       document.body.removeChild(certDiv);
     }
 
     // ─── PERFORMANS GRAFİĞİ (Chart.js) ───────────────────────────────
@@ -719,6 +782,48 @@
           }
         });
       } catch (e) { console.error("Grafik hatası:", e); }
+    }
+
+    // ─── LİDERLİK TABLOSU ───────────────────────────────────────────
+    async function loadLeaderboard() {
+      try {
+        const r = await ebaFetch('/api/leaderboard');
+        if (!r) return;
+        const d = await r.json();
+        const el = document.getElementById('leaderboardList');
+        if(d.success && d.leaderboard && d.leaderboard.length) {
+          el.innerHTML = d.leaderboard.map((u, i) => {
+            if (!u || !u.name) return '';
+            let medal = '';
+            if(i === 0) medal = '<i class="fa fa-medal" style="color:#f1c40f;"></i>';
+            else if(i === 1) medal = '<i class="fa fa-medal" style="color:#bdc3c7;"></i>';
+            else if(i === 2) medal = '<i class="fa fa-medal" style="color:#cd7f32;"></i>';
+            else medal = `<span style="color:#aaa; font-size:11px; width:14px; display:inline-block; text-align:center;">${i+1}</span>`;
+            
+            const isMe = currentUser && currentUser.name === u.name;
+            const bg = isMe ? 'background:#f0f8ff; border-radius:6px; padding:2px 4px;' : 'padding:2px 4px;';
+            const fw = isMe ? 'font-weight:bold; color:#1C98C3;' : 'color:#555;';
+            
+            const points = u.points || 0;
+            const displayName = u.name.split(' ')[0] + (u.name.split(' ').length > 1 ? ' ' + u.name.split(' ').slice(1).map(n=>n[0]+'.').join('') : '');
+            
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; ${bg}">
+                <div style="display:flex; gap:8px; align-items:center;">
+                  ${medal}
+                  <span style="${fw} font-size:12px;">${displayName}</span>
+                </div>
+                <div style="font-weight:bold; color:#f39200; font-size:11px;">${points}</div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          el.innerHTML = '<div style="text-align:center;color:#aaa;font-size:11px;">Veri yok veya sunucu hatası.</div>';
+        }
+      } catch(e) { 
+        document.getElementById('leaderboardList').innerHTML = `<div style="text-align:center;color:#e74c3c;font-size:11px;">Hata: ${e.message}</div>`;
+        console.error("Leaderboard load error:", e); 
+      }
     }
 
     // ─── İSTATİSTİKLER (MSSQL) ───────────────────────────────────────
@@ -808,27 +913,34 @@
     }
 
     async function loadGrades(user) {
+      const gList = document.getElementById('studentGradesList');
       try {
         const r = await ebaFetch(`/api/student-grades?student_tc=${user.tc}`);
         if (!r) return;
         const d = await r.json();
-        if (d.success) {
-          const gList = document.getElementById('studentGradesList');
+        if (d.success && d.grades) {
           if (!d.grades.length) {
             gList.innerHTML = '<div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadı</div>';
             return;
           }
           gList.innerHTML = d.grades.map(g => `
-        <div style="padding:8px 0; border-bottom:1px solid #f5f5f5;">
-          <div style="font-size:12px; font-weight:600; color:#284B63;">${g.title}</div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:11px; color:#888;">${g.type}</span>
-            <span style="font-size:13px; font-weight:bold; color:#f39200;">${g.score}</span>
-          </div>
-        </div>
-      `).join('');
+            <div style="padding:8px 0; border-bottom:1px solid #f5f5f5;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="font-size:12px; font-weight:600; color:#284B63;">${g.title}</div>
+                <span style="font-size:13px; font-weight:bold; color:#f39200;">${g.score}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                <span style="font-size:10px; color:#888;">${g.type} · ${g.teacher || ''}</span>
+                <span style="font-size:9px; color:#bbb;">${new Date(g.date).toLocaleDateString('tr-TR')}</span>
+              </div>
+            </div>
+          `).join('');
+        } else {
+           gList.innerHTML = '<div style="text-align:center;color:#e74c3c;font-size:11px;">Veri çekilemedi.</div>';
         }
-      } catch (e) { }
+      } catch (e) { 
+        gList.innerHTML = '<div style="text-align:center;color:#e74c3c;font-size:11px;">Bağlantı hatası.</div>';
+      }
     }
 
     // ─── FEED (MSSQL) ─────────────────────────────────────────────────
@@ -994,71 +1106,6 @@
       document.getElementById('examDetailModal').style.display='flex';
     }
 
-    async function loadNotifications(user) {
-      if (!user) return;
-      try {
-        // Ödev durum kontrolünü tetikle
-        fetch('/api/check-homework-status', {
-          method: 'POST',
-          headers: { 
-            'Authorization': `Bearer ${localStorage.getItem('eba_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }).catch(e => {});
-
-        const r = await ebaFetch(`/api/notifications?tc=${user.tc}`);
-        if (!r) return;
-        const d = await r.json();
-        notificationCache = d.success ? d.notifications : [];
-        renderNotifications();
-      } catch(e) {}
-    }
-
-    function renderNotifications() {
-      const notifs = notificationCache;
-      const unread = notifs.filter(n => !n.isRead).length;
-      const countEl = document.getElementById('notifCount');
-      if (countEl) {
-        if (unread > 0) { countEl.style.display = 'flex'; countEl.textContent = unread; }
-        else countEl.style.display = 'none';
-      }
-
-      const list = document.getElementById('notifList');
-      if (!list) return;
-      if (!notifs.length) { list.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px;">Bildirim yok</div>'; return; }
-      list.innerHTML = notifs.slice(0, 10).map(n => `
-    <div style="padding:10px;border-bottom:1px solid #f0f0f0;font-size:13px;${n.isRead ? 'opacity:0.6;' : 'font-weight:600;'}">
-      ${parseNotifText(n.text)}
-      <div style="font-size:10px;color:#aaa;margin-top:2px;">${n.createdAt ? new Date(n.createdAt).toLocaleString('tr-TR') : ''}</div>
-    </div>
-  `).join('');
-    }
-
-    async function markAllRead() {
-      const countEl = document.getElementById('notifCount');
-      if (countEl) countEl.style.display = 'none';
-
-      // Anlık UI güncelle (Local)
-      notificationCache.forEach(n => n.isRead = true);
-      renderNotifications();
-
-      // Backend güncelle
-      try {
-        await ebaFetch('/api/notifications/read', { method: 'PUT', body: JSON.stringify({ tc: currentUser.tc }) });
-      } catch (e) { }
-    }
-
-    async function toggleNotifPanel() {
-      const p = document.getElementById('notifPanel');
-      if (p.style.display === 'block') { p.style.display = 'none'; return; }
-      p.style.display = 'block';
-    }
-    document.addEventListener('click', e => {
-      if (!e.target.closest('#notifPanel') && !e.target.closest('#bellIcon') && !e.target.closest('[onclick*="toggleNotifPanel"]')) {
-        const p = document.getElementById('notifPanel');
-        if (p) p.style.display = 'none';
-      }
-    });
 
     // ─── TAKVİM ───────────────────────────────────────────────────────
     function renderCalendar() {
@@ -1156,6 +1203,8 @@
       </div>
     </div>
   </div>
+  <script src="fix-notifications.js"></script>
+  <script src="ai-bot.js"></script>
 </body>
 
 </html>

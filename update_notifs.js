@@ -1,21 +1,19 @@
-// --- GLOBAL TOAST BİLDİRİM FONKSİYONU ---
-let userPrefsCache = { sound: true };
-let prefsLoaded = false;
-let knownNotifs = new Set();
-let isFirstLoad = true;
+const fs = require('fs');
+const files = fs.readdirSync('.').filter(f => f.endsWith('.html'));
 
+const newFunc = `// --- GLOBAL TOAST BİLDİRİM FONKSİYONU ---
 function showGlobalToast(msg, type='info', targetUrl='#') {
   let toast = document.getElementById('toast-notif-global');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'toast-notif-global';
-    toast.style.cssText = `
+    toast.style.cssText = \`
       position:fixed; bottom:24px; right:24px; z-index:99999;
       padding:14px 22px; border-radius:12px; font-size:14px; font-weight:600;
       color:white; box-shadow:0 4px 20px rgba(0,0,0,0.2);
       transition:all 0.4s; opacity:0; transform:translateY(20px);
       max-width:320px; line-height:1.4; cursor:pointer;
-    `;
+    \`;
     document.body.appendChild(toast);
   }
   toast.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#284B63';
@@ -27,9 +25,8 @@ function showGlobalToast(msg, type='info', targetUrl='#') {
   toast.style.opacity = '1';
   toast.style.transform = 'translateY(0)';
   
-  if (userPrefsCache.sound) {
-    try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
-  }
+  // Bildirim sesi
+  try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
   
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => {
@@ -38,48 +35,16 @@ function showGlobalToast(msg, type='info', targetUrl='#') {
   }, 6000);
 }
 
-function showExamDetails(t,c,w,b,sJson) {
-  document.getElementById('examTitleSpan').textContent=t;
-  document.getElementById('exCor').textContent=c;
-  document.getElementById('exWro').textContent=w;
-  document.getElementById('exBla').textContent=b;
-  const el = document.getElementById('wrongQuestionsList');
-  if(!sJson || sJson==='[]' || sJson==='null') {
-    if(el) el.innerHTML='<div style="text-align:center;color:#aaa;padding:10px;">Yanlış soru detayı yok.</div>';
-  } else {
-    try {
-      const arr = JSON.parse(sJson);
-      if(el) el.innerHTML = arr.map(q => `<div style="border:1px solid #ffcccc;background:#fff5f5;padding:10px;border-radius:6px;margin-top:10px;"><b>Soru:</b> \${q.q}<br><span style="color:#e74c3c">Cevabınız: \${q.ans||'Boş'}</span><br><span style="color:#2ecc71">Doğru: \${q.corr}</span>
-        <div style="margin-top:8px; text-align:right;">
-          <button onclick="if(typeof askAIBot==='function'){askAIBot('\${q.q.replace(/'/g, \\\\\\'')}', '\${q.corr.replace(/'/g, \\\\\\'')}', '\${(q.ans||'Boş').replace(/'/g, \\\\\\'')}')}else{alert('AI Asistan aktif değil')}" style="background:linear-gradient(135deg, #00C9FF, #92FE9D); color:#1e2d3d; border:none; padding:5px 12px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 2px 5px rgba(0,201,255,0.2);"><i class="fa-solid fa-robot"></i> Yapay Zeka Analizi İste</button>
-        </div>
-      </div>`).join('');
-    } catch(e){ if(el) el.innerHTML='Hata: '+e.message; }
-  }
-  const modal = document.getElementById('examDetailModal');
-  if(modal) modal.style.display='flex';
-}
+let knownNotifs = new Set();
+let isFirstLoad = true;
 
 async function loadNotifs() {
   const cu = typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : JSON.parse(localStorage.getItem('currentUser') || 'null'));
   if (!cu || !cu.tc) return;
   
-  // Sesi kapatma/açma ayarını al
-  if (!prefsLoaded) {
-     try {
-       const pr = await (typeof ebaFetch !== 'undefined' ? ebaFetch : fetch)('/api/prefs?tc='+cu.tc, {
-         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
-       });
-       const pd = await pr.json();
-       if(pd.success && pd.prefs) {
-          userPrefsCache.sound = !!pd.prefs.sound;
-       }
-     } catch(e) {}
-     prefsLoaded = true;
-  }
-  
   let notifs=[];
   try {
+    // BURASI ÇOK ÖNEMLİ: ebaFetch kullanarak 401 yetkisiz hatasını önlüyoruz
     const r = await (typeof ebaFetch !== 'undefined' ? ebaFetch : fetch)('/api/notifications?tc='+cu.tc, {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') }
     });
@@ -96,7 +61,6 @@ async function loadNotifs() {
       badge.style.display='none';
     }
   }
-  
   const list=document.getElementById('notifList');
   if(list) {
     list.innerHTML=notifs.slice(0,10).map(n=>{
@@ -116,6 +80,7 @@ async function loadNotifs() {
          targetUrl = cu.role === 'ogretmen' ? 'ogretmen-canli-ders.html' : 'canli-ders.html';
       }
       
+      // Dinamik Bildirim Kontrolü (TOAST)
       if (!isFirstLoad && !n.isRead && !knownNotifs.has(n.id)) {
           showGlobalToast(n.text.replace(/===EXAM_DET:.*?===/, ''), 'info', targetUrl);
       }
@@ -131,14 +96,14 @@ async function loadNotifs() {
          const wro = parts[2];
          const bla = parts[3];
          const jsonEscaped = (parts[4] || '[]').replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-         btn = '<br><button onclick="event.stopPropagation(); showExamDetails(\''+title+'\',\''+cor+'\',\''+wro+'\',\''+bla+'\',\''+jsonEscaped+'\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
+         btn = '<br><button onclick="event.stopPropagation(); showExamDetails(\\''+title+'\\',\\''+cor+'\\',\\''+wro+'\\',\\''+bla+'\\',\\''+jsonEscaped+'\\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
          parsedText = parsedText.replace(match[0], '');
       }
       
-      return `<div onclick="window.location.href='${targetUrl}'" style="cursor:pointer; padding:10px 16px; border-bottom:1px solid #f0f0f0; font-size:12px; line-height:1.5; ${n.isRead?'opacity:.65;':'font-weight:600;'} transition:background 0.2s;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='transparent'">
-        ${parsedText} ${btn}
-        <div style="font-size:10px;color:#bbb;margin-top:2px;">${n.createdAt?new Date(n.createdAt).toLocaleString('tr-TR'):''}</div>
-      </div>`;
+      return \`<div onclick="window.location.href='\${targetUrl}'" style="cursor:pointer; padding:10px 16px; border-bottom:1px solid #f0f0f0; font-size:12px; line-height:1.5; \${n.isRead?'opacity:.65;':'font-weight:600;'} transition:background 0.2s;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='transparent'">
+        \${parsedText} \${btn}
+        <div style="font-size:10px;color:#bbb;margin-top:2px;">\${n.createdAt?new Date(n.createdAt).toLocaleString('tr-TR'):''}</div>
+      </div>\`;
     }).join('') || '<div style="padding:10px 16px;color:#aaa;text-align:center;font-size:12px;">Bildirim yok</div>';
   }
   isFirstLoad = false;
@@ -159,19 +124,30 @@ async function markAllRead() {
   }catch(e){}
 }
 
+// 5 saniyede bir bildirimleri dinamik olarak güncelle
 setInterval(loadNotifs, 5000);
-setTimeout(loadNotifs, 1000);
 
-async function toggleNotif() {
-  const p=document.getElementById('notifPanel');
-  if(!p) return;
-  if(p.style.display==='block'){ p.style.display='none'; return; }
-  p.style.display='block';
-}
+async function toggleNotif() {`;
 
-document.addEventListener('click', e => {
-  const p = document.getElementById('notifPanel');
-  if (p && !e.target.closest('#notifPanel') && !e.target.closest('[onclick*="toggleNotif"]')) {
-    p.style.display = 'none';
+let count = 0;
+for (const f of files) {
+  let content = fs.readFileSync(f, 'utf8');
+  
+  // replace regex adjusted to match from "// --- GLOBAL TOAST" or "async function loadNotifs" 
+  // We'll just replace the whole block if it exists
+  if (content.includes('async function loadNotifs()')) {
+    // Temizleme: Eğer önceki scriptte toast tanımlanmışsa onu da al, yoksa sadece loadNotifs'den başla
+    let startStr = content.includes('// --- GLOBAL TOAST') ? '// --- GLOBAL TOAST' : 'async function loadNotifs() {';
+    
+    // Regex'i manuel yapmak yerine string split kullanmak daha güvenli olabilir
+    let startIndex = content.indexOf(startStr);
+    let endIndex = content.indexOf('async function toggleNotif() {');
+    
+    if(startIndex !== -1 && endIndex !== -1) {
+       const updated = content.substring(0, startIndex) + newFunc + content.substring(endIndex + 'async function toggleNotif() {'.length);
+       fs.writeFileSync(f, updated, 'utf8');
+       count++;
+    }
   }
-});
+}
+console.log('Updated ' + count + ' files.');

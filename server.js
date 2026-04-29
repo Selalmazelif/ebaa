@@ -4,6 +4,9 @@ const helmet  = require('helmet');
 const express = require('express');
 const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
+const http    = require('http');
+const { Server } = require('socket.io');
+
 
 const JWT_SECRET = 'eba-secret-2026'; // Güvenli bir anahtar
 
@@ -543,7 +546,7 @@ app.post('/api/login', async (req, res) => {
         user.dailyBonus = true; // frontend'e bildir
       }
     } catch(e) {}
-
+    
     console.log(`✅ Login: ${tc} (${role})`);
     res.json({ success: true, user, token });
   } catch(err) {
@@ -815,6 +818,18 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
       .input('txt', sql.NVarChar, notifText)
       .query('INSERT INTO Notifications(receiver_tc, text, isRead) VALUES(@rtc, @txt, 0)');
       
+    // Real-time ilet (Socket.io)
+    if(typeof io !== 'undefined') {
+      const receiverSocketId = onlineUsers.get(String(receiver_tc));
+      if(receiverSocketId) {
+        io.to(receiverSocketId).emit('new_message', {
+          sender_tc,
+          content,
+          sentAt: new Date().toISOString()
+        });
+      }
+    }
+      
     res.json({ success: true });
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 });
@@ -1022,44 +1037,10 @@ app.get('/api/live-lessons', async (req, res) => {
 });
 
 // ─── NOTLAR ───────────────────────────────────────────────────────
-app.post('/api/grades', async (req, res) => {
-  const { student_tc, teacher_tc, subject, grade, note } = req.body;
-  try {
-    const p = await getPool();
-    await p.request()
-      .input('stc',   sql.NVarChar, student_tc  || '')
-      .input('ttc',   sql.NVarChar, teacher_tc  || '')
-      .input('subj',  sql.NVarChar, subject     || '')
-      .input('grade', sql.Float,    grade       || 0)
-      .input('note',  sql.NVarChar, note        || '')
-      .query('INSERT INTO Grades(student_tc,teacher_tc,subject,grade,note) VALUES(@stc,@ttc,@subj,@grade,@note)');
+// Eski Not Sistemi Kaldırıldı
 
-    // Ortalama güncelle
-    const avgRes = await p.request()
-      .input('tc', sql.NVarChar, student_tc || '')
-      .query('SELECT AVG(grade) as avg FROM Grades WHERE student_tc=@tc');
-    const avg = Math.round((avgRes.recordset[0]?.avg || 0) * 10) / 10;
-    await p.request()
-      .input('tc',  sql.NVarChar, student_tc || '')
-      .input('avg', sql.Float,    avg)
-      .query('UPDATE Users SET grade_avg=@avg WHERE tc=@tc');
 
-    await logActivity(p, teacher_tc, 'GRADE_ENTRY', `Not girildi: ${student_tc} → ${subject}: ${grade}`);
 
-    res.json({ success: true, avg });
-  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
-});
-
-app.get('/api/grades', async (req, res) => {
-  const { student_tc } = req.query;
-  try {
-    const p = await getPool();
-    const result = await p.request()
-      .input('tc', sql.NVarChar, student_tc || '')
-      .query('SELECT * FROM Grades WHERE student_tc=@tc ORDER BY createdAt DESC');
-    res.json({ success: true, grades: result.recordset });
-  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
-});
 
 // ─── ÖDEVLER ──────────────────────────────────────────────────────
 app.post('/api/assignments', async (req, res) => {
@@ -1528,15 +1509,11 @@ app.get('/api/student-grades', async (req, res) => {
       SELECT a.title as title, a.teacher_name as teacher, s.grade as score, 'Ödev' as type, s.createdAt as date
       FROM AssignmentSubmissions s
       JOIN Assignments a ON s.assignment_id = a.id
-      WHERE s.student_tc = @tc AND s.isGraded = 1
+      WHERE s.student_tc = @tc AND s.grade IS NOT NULL
       UNION ALL
       SELECT title, subject as teacher, score, 'Sınav' as type, takenAt as date
       FROM TestResults
       WHERE student_tc = @tc
-      UNION ALL
-      SELECT g.subject as title, '' as teacher, g.grade as score, 'Not' as type, g.createdAt as date
-      FROM Grades g
-      WHERE g.student_tc = @tc
       ORDER BY date DESC
     `;
     const r = await p.request().input('tc', sql.NVarChar, student_tc).query(q);
@@ -1604,6 +1581,18 @@ app.get('/api/quizzes', authenticateToken, async (req, res) => {
     const r = await reqQ.query(q);
     res.json({ success: true, quizzes: r.recordset });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ─── LEADERBOARD API ──────────────────────────────────────────────────
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const p = await getPool();
+    if (!p) return res.json({ success: true, leaderboard: [] });
+    const r = await p.request().query('SELECT TOP 10 name, points, school, [class] FROM Users WHERE role=\'ogrenci\' ORDER BY points DESC');
+    res.json({ success: true, leaderboard: r.recordset });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
 app.post('/api/quizzes', authenticateToken, async (req, res) => {
@@ -1732,13 +1721,8 @@ app.get('/api/user-badges', authenticateToken, async (req, res) => {
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-app.get('/api/points-leaderboard', authenticateToken, async (req, res) => {
-  try {
-    const p = await getPool();
-    const r = await p.request().query('SELECT TOP 10 name, points FROM Users WHERE role=\'ogrenci\' ORDER BY points DESC');
-    res.json({ success: true, leaderboard: r.recordset });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
-});
+// Leaderboard API (Dosya sonundaki /api/leaderboard kullanılıyor)
+
 
 // ─── ANALITIK / CHART VERISI ─────────────────────────────────────
 app.get('/api/analytics/student-performance', authenticateToken, async (req, res) => {
@@ -1752,7 +1736,200 @@ app.get('/api/analytics/student-performance', authenticateToken, async (req, res
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-app.listen(PORT, () => {
+// Sunucu Başlatma Bloğu (Dosyanın sonuna taşındı)
+
+
+
+// ─── FORUM API ────────────────────────────────────────────────────────
+app.get('/api/forum', async (req, res) => {
+  try {
+    const p = await getPool();
+    if (!p) return res.json({ success: true, questions: [] });
+    const r = await p.request().query('SELECT * FROM ForumQuestions ORDER BY is_solved ASC, upvotes DESC, createdAt DESC');
+    res.json({ success: true, questions: r.recordset });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/forum', authenticateToken, async (req, res) => {
+  try {
+    const { title, content, category } = req.body;
+    const u = req.user;
+    const p = await getPool();
+    if (!p) return res.json({ success: true });
+    
+    await p.request()
+      .input('tc', sql.NVarChar, u.tc)
+      .input('name', sql.NVarChar, u.name)
+      .input('title', sql.NVarChar, title)
+      .input('content', sql.NVarChar, content)
+      .input('category', sql.NVarChar, category || 'Genel')
+      .input('school', sql.NVarChar, u.school || '')
+      .query('INSERT INTO ForumQuestions (author_tc, author_name, title, content, category, school) VALUES (@tc, @name, @title, @content, @category, @school)');
+      
+    // Puan ver
+    await p.request().input('tc', sql.NVarChar, u.tc).query('UPDATE Users SET points = points + 5 WHERE tc=@tc');
+    
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.get('/api/forum/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const p = await getPool();
+    if (!p) return res.json({ success: false });
+    
+    await p.request().input('id', sql.Int, id).query('UPDATE ForumQuestions SET views = views + 1 WHERE id=@id');
+    
+    const rQ = await p.request().input('id', sql.Int, id).query('SELECT * FROM ForumQuestions WHERE id=@id');
+    const rA = await p.request().input('id', sql.Int, id).query('SELECT * FROM ForumAnswers WHERE question_id=@id ORDER BY is_accepted DESC, upvotes DESC, createdAt ASC');
+    
+    res.json({ success: true, question: rQ.recordset[0], answers: rA.recordset });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/forum/:id/answer', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { content } = req.body;
+    const u = req.user;
+    const p = await getPool();
+    if (!p) return res.json({ success: true });
+    
+    await p.request()
+      .input('qid', sql.Int, id)
+      .input('tc', sql.NVarChar, u.tc)
+      .input('name', sql.NVarChar, u.name)
+      .input('content', sql.NVarChar, content)
+      .query('INSERT INTO ForumAnswers (question_id, author_tc, author_name, content) VALUES (@qid, @tc, @name, @content)');
+      
+    // Puan ver
+    await p.request().input('tc', sql.NVarChar, u.tc).query('UPDATE Users SET points = points + 10 WHERE tc=@tc');
+    
+    // Soru sahibine bildirim yolla
+    const rQ = await p.request().input('id', sql.Int, id).query('SELECT author_tc, title FROM ForumQuestions WHERE id=@id');
+    if(rQ.recordset.length > 0) {
+       const qAuthor = rQ.recordset[0].author_tc;
+       const qTitle = rQ.recordset[0].title;
+       if(qAuthor !== u.tc) {
+          const notifMsg = `Forumda sorduğunuz "${qTitle}" sorusuna ${u.name} cevap yazdı.===FORUM_ANS|${id}===`;
+          await p.request()
+            .input('rtc', sql.NVarChar, qAuthor)
+            .input('txt', sql.NVarChar, notifMsg)
+            .query('INSERT INTO Notifications (receiver_tc, text) VALUES (@rtc, @txt)');
+       }
+    }
+    
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/forum/:id/upvote', authenticateToken, async (req, res) => {
+  try {
+    const p = await getPool();
+    if (!p) return res.json({ success: true });
+    await p.request().input('id', sql.Int, req.params.id).query('UPDATE ForumQuestions SET upvotes = upvotes + 1 WHERE id=@id');
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/forum/answer/:id/upvote', authenticateToken, async (req, res) => {
+  try {
+    const p = await getPool();
+    if (!p) return res.json({ success: true });
+    await p.request().input('id', sql.Int, req.params.id).query('UPDATE ForumAnswers SET upvotes = upvotes + 1 WHERE id=@id');
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+app.post('/api/forum/:id/solve', authenticateToken, async (req, res) => {
+  try {
+    const { answer_id } = req.body;
+    const p = await getPool();
+    if (!p) return res.json({ success: true });
+    await p.request().input('id', sql.Int, req.params.id).query('UPDATE ForumQuestions SET is_solved = 1 WHERE id=@id');
+    if(answer_id) {
+       await p.request().input('aid', sql.Int, answer_id).query('UPDATE ForumAnswers SET is_accepted = 1 WHERE id=@aid');
+       // Kabul edilen cevabın sahibine +50 puan
+       const rA = await p.request().input('aid', sql.Int, answer_id).query('SELECT author_tc FROM ForumAnswers WHERE id=@aid');
+       if(rA.recordset.length > 0) {
+          await p.request().input('tc', sql.NVarChar, rA.recordset[0].author_tc).query('UPDATE Users SET points = points + 50 WHERE tc=@tc');
+       }
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, message: e.message });
+  }
+});
+
+
+// ─── WHITEBOARD API ──────────────────────────────────────────────────
+let whiteboardStrokes = [];
+
+app.get('/api/whiteboard', (req, res) => {
+  res.json({ success: true, strokes: whiteboardStrokes });
+});
+
+app.post('/api/whiteboard', authenticateToken, (req, res) => {
+  if (req.user.role !== 'ogretmen') return res.status(403).json({ success: false, message: 'Yetkisiz' });
+  const { stroke } = req.body;
+  if(stroke) whiteboardStrokes.push(stroke);
+  // Sınırla (Çok dolmasın)
+  if(whiteboardStrokes.length > 5000) whiteboardStrokes = whiteboardStrokes.slice(whiteboardStrokes.length - 5000);
+  res.json({ success: true });
+});
+
+app.post('/api/whiteboard/clear', authenticateToken, (req, res) => {
+  if (req.user.role !== 'ogretmen') return res.status(403).json({ success: false, message: 'Yetkisiz' });
+  whiteboardStrokes = [];
+  res.json({ success: true });
+});
+
+
+// Leaderboard API (Yukarıya taşındı)
+
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
+
+const onlineUsers = new Map(); // tc -> socket.id
+
+io.on('connection', (socket) => {
+  console.log('⚡ Bir kullanıcı bağlandı:', socket.id);
+
+  socket.on('login', (tc) => {
+    if(tc) {
+      onlineUsers.set(String(tc), socket.id);
+      console.log(`👤 Kullanıcı giriş yaptı: ${tc} (Socket: ${socket.id})`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    for (let [tc, id] of onlineUsers.entries()) {
+      if (id === socket.id) {
+        onlineUsers.delete(tc);
+        console.log(`🔌 Kullanıcı ayrıldı: ${tc}`);
+        break;
+      }
+    }
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`🚀 Sunucu http://localhost:${PORT} üzerinde çalışıyor.`);
   console.log(`🗄️  Veritabanı: MSSQL (sa@localhost/EBA_DB) — Yerel fallback YOK.`);
 }).on('error', (err) => {

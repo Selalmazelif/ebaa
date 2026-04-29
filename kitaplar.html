@@ -119,19 +119,18 @@
 
       const grid = document.getElementById('kitaplar-grid');
       grid.innerHTML = kitaplar.map(kitap => `
-    <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;" onclick="readBook('\${kitap.title}')">
+    <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;" onclick="readBook('${kitap.title}')">
       <div>
         <div style="background:#eee; height:150px; border-radius:8px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-            ${kitap.img ?\`<img src="\${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">\` : \`<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>\`}
+            ${kitap.img ?`<img src="${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">` : `<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>`}
         </div>
-        <h3 style="font-size:16px; margin-bottom:5px;">\${kitap.title}</h3>
-        <p style="font-size:13px; color:#666;">\${kitap.author}</p>
+        <h3 style="font-size:16px; margin-bottom:5px;">${kitap.title}</h3>
+        <p style="font-size:13px; color:#666;">${kitap.author}</p>
       </div>
       <div style="margin-top:15px; display:inline-block; padding:4px 10px; background:#DDE7EC; color:#4A748F; font-size:11px; font-weight:bold; border-radius:12px; align-self:flex-start;">
-        \${kitap.type}
+        ${kitap.type}
       </div>
-    </div>\`).join('');
-  `)
+    </div>`).join('');
 
       document.getElementById('logoutBtn').addEventListener('click', logout);
     }
@@ -190,66 +189,13 @@ function parseNotifText(originalText) {
   return txt + btn;
 }
 
-async function loadNotifs() {
-  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
-  if (!cu || !cu.tc) return;
-  
-  try {
-    // Ödev durum kontrolünü tetikle
-    ebaFetch('/api/check-homework-status', {
-      method: 'POST',
-      body: JSON.stringify({ tc: cu.tc, role: cu.role, school: cu.school, classNum: cu.classNum || cu.class || '' })
-    }).catch(() => {});
 
-    const r = await ebaFetch('/api/notifications?tc=' + cu.tc);
-    if (!r) return;
-    const d = await r.json(); 
-    if (!d.success) return;
-    const notifs = d.notifications;
-    const unread = notifs.filter(n => !n.isRead).length;
-    const badge = document.getElementById('notifBadge');
-    if (badge) {
-      if (unread > 0) { badge.style.display = 'inline-flex'; badge.textContent = unread; }
-      else badge.style.display = 'none';
-    }
-    const list = document.getElementById('notifList');
-    if (list) {
-      list.innerHTML = notifs.slice(0, 10).map(n => `
-        <div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5;${n.isRead ? 'opacity:.65;' : 'font-weight:600;'}">
-          ${parseNotifText(n.text)}
-          <div style="font-size:10px;color:#bbb;margin-top:2px;">${new Date(n.createdAt).toLocaleString('tr-TR')}</div>
-        </div>
-      `).join('') || '<div style="padding:10px 16px;color:#aaa;text-align:center;font-size:12px;">Bildirim yok</div>';
-    }
-  } catch (e) {}
-}
-
-async function toggleNotif() {
-  const p = document.getElementById('notifPanel');
-  if (!p) return;
-  if (p.style.display === 'block') { p.style.display = 'none'; return; }
-  p.style.display = 'block';
-  
-  const cu = typeof currentUser !== 'undefined' ? currentUser : (JSON.parse(localStorage.getItem('currentUser') || '{}'));
-  if (cu && cu.tc) {
-    try {
-      await ebaFetch('/api/notifications/read', {
-        method: 'PUT',
-        body: JSON.stringify({ tc: cu.tc })
-      });
-      const b = document.getElementById('notifBadge');
-      if (b) b.style.display = 'none';
-    } catch (e) {}
-  }
-}
-document.addEventListener('click',e=>{
-  const p=document.getElementById('notifPanel');
-  if(p&&!e.target.closest('#notifPanel')&&!e.target.closest('span[onclick*="toggleNotif"]'))p.style.display='none';
-});
 setTimeout(() => { loadNotifs(); }, 1000);
 </script>
 
 
+  <script src="fix-notifications.js"></script>
+  <script src="ai-bot.js"></script>
 </body>
 
 </html>

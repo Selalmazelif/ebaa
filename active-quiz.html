@@ -91,7 +91,7 @@
       timeLeft = quizInfo.limit * 60;
       
       try {
-        const r = await ebaFetch(`/api/quizzes/${quizInfo.id}/questions`);
+        const r = await ebaFetch(`/api/quiz-questions?quiz_id=${quizInfo.id}`);
         const d = await r.json();
         if(d.success) {
           questions = d.questions;
@@ -157,17 +157,26 @@
       
       const payload = {
         quiz_id: quizInfo.id,
-        student_tc: user.tc,
-        answers: questions.map((q, idx) => ({ question_id: q.id, answer: answers[idx] || null }))
+        quiz_title: quizInfo.title,
+        answers: answers // answers zaten { index: 'A' } formatında, ama server { q_id: 'A' } bekliyor olabilir.
       };
+      
+      // answers nesnesini { question_id: answer } formatına dönüştürelim
+      const formattedAnswers = {};
+      questions.forEach((q, idx) => {
+        if (answers[idx]) {
+          formattedAnswers[q.id] = answers[idx];
+        }
+      });
+      payload.answers = formattedAnswers;
 
       try {
-        const r = await ebaFetch('/api/quizzes/submit', { method: 'POST', body: JSON.stringify(payload) });
+        const r = await ebaFetch('/api/quiz-submit', { method: 'POST', body: JSON.stringify(payload) });
         const d = await r.json();
         if(d.success) {
-          document.getElementById('res-cor').textContent = d.correctCount;
-          document.getElementById('res-wro').textContent = d.wrongCount;
-          document.getElementById('res-pts').textContent = d.points;
+          document.getElementById('res-cor').textContent = d.correct || 0;
+          document.getElementById('res-wro').textContent = d.wrong || 0;
+          document.getElementById('res-pts').textContent = d.score || 0;
           document.getElementById('result-ui').style.display = 'block';
         }
       } catch(e) { alert('Sonuç gönderilemedi.'); }
@@ -175,5 +184,7 @@
 
     init();
   </script>
+  <script src="fix-notifications.js"></script>
+  <script src="ai-bot.js"></script>
 </body>
 </html>

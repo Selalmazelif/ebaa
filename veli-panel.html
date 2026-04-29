@@ -80,7 +80,8 @@ body.dark-mode .pill { opacity:0.8; }
     <li><a href="#" onclick="scrollToSection('section-videos')"><i class="fa-solid fa-play-circle"></i> İzlenen Videolar</a></li>
     <li><a href="#" onclick="scrollToSection('section-tests')"><i class="fa-solid fa-pen"></i> Yapılan Testler</a></li>
     <li><a href="#" onclick="scrollToSection('section-settings-log')"><i class="fa-solid fa-history"></i> Ayarlar Log</a></li>
-    <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+    
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
     <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
   </ul>
 </div>
@@ -89,9 +90,9 @@ body.dark-mode .pill { opacity:0.8; }
   <div class="topbar">
     <div></div>
     <div class="icons" style="position:relative;">
-      <span style="position:relative;cursor:pointer;" onclick="toggleNotifPanel()">
+      <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
         <i class="fa fa-bell" id="bellIcon"></i>
-        <span id="notifCount" class="notification-badge" style="display:none;"></span>
+        <span id="notifBadge" class="notification-badge" style="display:none;"></span>
       </span>
       <a href="chat.html"><i class="fa fa-envelope"></i></a>
     </div>
@@ -605,7 +606,7 @@ async function markAllRead() {
   } catch(e) {}
 }
 
-async function toggleNotifPanel() {
+async function toggleNotif() {
   const p=document.getElementById('notifPanel');
   if(p.style.display==='block'){ p.style.display='none'; return; }
   p.style.display='block';
@@ -680,5 +681,7 @@ function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalend
 
 initVeliPanel();
 </script>
+  <script src="fix-notifications.js"></script>
+  <script src="ai-bot.js"></script>
 </body>
 </html>

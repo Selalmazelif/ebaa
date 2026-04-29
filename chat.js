@@ -4,6 +4,7 @@ const state = {
   activeConversationId: null,
   conversations: [],
   users: [],
+  socket: null, // Socket bağlantısı için
 };
 
 const elements = {
@@ -81,9 +82,42 @@ async function createDummyData() {
       }
     });
 
-    renderConversationLists();
+    renderConversationLists(elements.conversationSearch.value);
     if (state.conversations.length > 0 && !state.activeConversationId) {
       setActiveConversation(state.conversations[0].id);
+    }
+    
+    // Geçmiş mesajları çekerek sol menüdeki "Son mesaj" bilgisini eksiksiz güncelle
+    individualConvs.forEach(conv => fetchMessages(conv.id));
+
+    // Socket Bağlantısını Kur (Sadece 1 kez)
+    if(!state.socket) {
+      state.socket = io();
+      state.socket.on('connect', () => {
+        state.socket.emit('login', user.tc);
+        console.log('✅ Real-time bağlantısı kuruldu.');
+      });
+
+      state.socket.on('new_message', (data) => {
+        const conv = getConversationById(data.sender_tc);
+        if(conv) {
+          const msg = {
+            from: 'them',
+            text: data.content,
+            time: formatTime(data.sentAt),
+            rawTime: data.sentAt
+          };
+          conv.messages.push(msg);
+          conv.lastMessage = msg.text;
+          conv.lastTime = msg.time;
+          conv.lastTimestamp = new Date(msg.rawTime).getTime();
+          
+          if(state.activeConversationId === data.sender_tc) {
+            renderMessages(conv.messages);
+          }
+          renderConversationLists(elements.conversationSearch.value);
+        }
+      });
     }
   } catch(e) {
     console.error("User fetch failed:", e);
@@ -130,10 +164,23 @@ function renderConversationItem(conversation) {
 
 function renderConversationLists(filterValue = '') {
   const normalized = filterValue.trim().toLowerCase();
+  
+  // En son mesaja göre sıralama (en yeni en üstte)
+  state.conversations.sort((a, b) => {
+    const timeA = a.lastTimestamp || 0;
+    const timeB = b.lastTimestamp || 0;
+    return timeB - timeA;
+  });
+
   const filtered = state.conversations.filter((c) => c.name.toLowerCase().includes(normalized));
 
   elements.individualList.innerHTML = '';
   elements.groupList.innerHTML = '';
+
+  if (filtered.length === 0) {
+    elements.individualList.innerHTML = '<div style="text-align:center;color:#aaa;font-size:11px;padding:10px;">Sonuç bulunamadı.</div>';
+    return;
+  }
 
   filtered.forEach((conv) => {
     const item = renderConversationItem(conv);
@@ -180,7 +227,7 @@ function setActiveConversation(id) {
 async function fetchMessages(withTc) {
   try {
     const res = await fetch(`/api/messages?with_tc=${withTc}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('eba_token')}` }
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
     });
     const data = await res.json();
     if (data.success) {
@@ -189,8 +236,25 @@ async function fetchMessages(withTc) {
         conv.messages = data.messages.map(m => ({
           from: m.sender_tc === getCurrentUser().tc ? 'me' : 'them',
           text: m.content,
-          time: formatTime(m.sentAt)
+          time: formatTime(m.sentAt),
+          rawTime: m.sentAt
         }));
+        
+        // Son mesajı ve zamanı güncelle (Mesaj listeleme mantığı eksiksiz)
+        if (conv.messages.length > 0) {
+          const lastMsg = conv.messages[conv.messages.length - 1];
+          conv.lastMessage = lastMsg.from === 'me' ? 'Siz: ' + lastMsg.text : lastMsg.text;
+          conv.lastTime = lastMsg.time;
+          conv.lastTimestamp = lastMsg.rawTime ? new Date(lastMsg.rawTime).getTime() : new Date().getTime();
+        } else {
+          conv.lastMessage = 'Henüz mesaj yok';
+          conv.lastTime = '';
+          conv.lastTimestamp = 0;
+        }
+        
+        // Arayüzü güncelle
+        renderConversationLists(elements.conversationSearch.value);
+        
         if (state.activeConversationId === withTc) {
           renderMessages(conv.messages);
         }
@@ -245,28 +309,43 @@ async function sendMessage(text) {
     from: 'me',
     text: currentText,
     time: formatTime(),
+    rawTime: new Date().toISOString()
   };
   conversation.messages.push(newMessage);
-  conversation.lastMessage = newMessage.text;
+  conversation.lastMessage = 'Siz: ' + newMessage.text;
   conversation.lastTime = newMessage.time;
+  conversation.lastTimestamp = new Date(newMessage.rawTime).getTime();
   renderMessages(conversation.messages);
   renderConversationLists(elements.conversationSearch.value);
 
   // Send to Backend
   if (conversation.type === 'individual') {
     try {
+      // 1. Backend API'ye kaydet (HTTP üzerinden)
       await fetch('/api/messages', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('eba_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           receiver_tc: conversation.id,
           content: currentText
         })
       });
+
     } catch (e) { console.error("Message send failed:", e); }
+  } else if (conversation.type === 'group') {
+    // Geçici veri kullanımı (localStorage) ile grup mesajını kaydet
+    const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
+    const groupIndex = allGroups.findIndex(g => g.id === conversation.id);
+    if (groupIndex !== -1) {
+      allGroups[groupIndex].messages.push(newMessage);
+      allGroups[groupIndex].lastMessage = 'Siz: ' + newMessage.text;
+      allGroups[groupIndex].lastTime = newMessage.time;
+      allGroups[groupIndex].lastTimestamp = conversation.lastTimestamp;
+      localStorage.setItem('chatGroups', JSON.stringify(allGroups));
+    }
   }
 }
 
@@ -419,15 +498,15 @@ function createGroup() {
   setActiveConversation(newGroup.id);
 }
 
-function init() {
+async function init() {
   const user = requireAuth();
   if (!user) return;
 
-  createDummyData();
-  renderConversationLists();
+  await createDummyData();
+  renderConversationLists(elements.conversationSearch.value);
 
   // Varsayılan olarak ilk konuşmayı seç
-  if (state.conversations.length) {
+  if (state.conversations.length && !state.activeConversationId) {
     setActiveConversation(state.conversations[0].id);
   }
 
@@ -464,6 +543,14 @@ function init() {
       if(elements.chatSidebar) elements.chatSidebar.classList.remove('hidden');
     }
   });
+
+  // Arayüz ve API iletişimi: Gerçek zamanlı mesajlaşma için polling
+  setInterval(() => {
+    // Karşı tarafa mesaj gitmesi ve görebilmesi için tüm bireysel sohbetleri yokla
+    state.conversations.filter(c => c.type === 'individual').forEach(c => {
+      fetchMessages(c.id);
+    });
+  }, 3000);
 }
 
 init();
