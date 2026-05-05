@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <title>Şifre Sıfırla</title>
 <link rel="stylesheet" href="login.css">
-<script src="auth-utils.js"></script><script>requireAuth();</script></head>
+<script src="auth-utils.js"></script></head>
 <body>
 
 <header>
@@ -175,35 +175,48 @@ function recoverByPhone() {
 
 function saveNewPassword() {
     const tc = document.getElementById("tc").value.trim();
-    const newPassword = document.getElementById("newPasswordInput").value;
+    const newPassword = document.getElementById("newPasswordInput").value.trim();
 
-    if (!newPassword || newPassword.length < 3) {
-        messageDiv.innerHTML = "<p style='color:red;'>Lütfen en az 3 haneli bir şifre giriniz.</p>";
+    if (!newPassword || newPassword.length < 4) {
+        messageDiv.innerHTML = "<p style='color:red;'>Lütfen en az 4 haneli bir şifre giriniz.</p>";
         return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const userIndex = users.findIndex(u => u.tc === tc && u.role === "ogrenci");
+    // Call MSSQL API
+    fetch('/api/public/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tc, newPassword })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Also update local storage just in case for older parts of the app
+            const users = JSON.parse(localStorage.getItem("users") || "[]");
+            const userIndex = users.findIndex(u => u.tc === tc);
+            if (userIndex !== -1) {
+                users[userIndex].password = newPassword;
+                localStorage.setItem("users", JSON.stringify(users));
+            }
 
-    if (userIndex !== -1) {
-        // Şifreyi güncelle
-        users[userIndex].password = newPassword;
-        localStorage.setItem("users", JSON.stringify(users));
+            // Consume request
+            const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
+            const updatedRequests = requests.filter(r => !(r.studentTc === tc && r.status === "approved"));
+            localStorage.setItem("passwordRequests", JSON.stringify(updatedRequests));
 
-        // İsteği onaylandıktan sonra sistemden temizle (consume)
-        const requests = JSON.parse(localStorage.getItem("passwordRequests") || "[]");
-        const updatedRequests = requests.filter(r => !(r.studentTc === tc && r.status === "approved"));
-        localStorage.setItem("passwordRequests", JSON.stringify(updatedRequests));
-
-        messageDiv.innerHTML = "<p style='color:green;'>🎉 Şifreniz başarıyla kaydedildi! Giriş ekranına yönlendiriliyorsunuz...</p>";
-        document.getElementById("newPasswordSection").style.display = "none";
-        
-        setTimeout(() => {
-            window.location.href = "öğrenci-login.html";
-        }, 3000);
-    } else {
-         messageDiv.innerHTML = "<p style='color:red;'>Hata: Kullanıcı sistemde bulunamadı.</p>";
-    }
+            messageDiv.innerHTML = "<p style='color:green;'>🎉 Şifreniz MSSQL veritabanında başarıyla güncellendi! Giriş ekranına yönlendiriliyorsunuz...</p>";
+            document.getElementById("newPasswordSection").style.display = "none";
+            
+            setTimeout(() => {
+                window.location.href = "öğrenci-login.html";
+            }, 2500);
+        } else {
+            messageDiv.innerHTML = "<p style='color:red;'>❌ Hata: " + data.message + "</p>";
+        }
+    })
+    .catch(err => {
+        messageDiv.innerHTML = "<p style='color:red;'>❌ Sunucu hatası oluştu.</p>";
+    });
 }
 </script>
 

@@ -6,9 +6,31 @@ const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
 const http    = require('http');
 const { Server } = require('socket.io');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+require('dotenv').config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 
-const JWT_SECRET = 'eba-secret-2026'; // Güvenli bir anahtar
+const JWT_SECRET = 'eba-secret-2026';
+
+// ─── MODERASYON & OYUNLAŞTIRMA YARDIMCILARI ────────────────────────
+const badWords = ['küfür1', 'küfür2', 'argo1', 'uygunsuz']; // Örnek liste
+function censorText(text) {
+  let censored = text;
+  badWords.forEach(word => {
+    const reg = new RegExp(word, 'gi');
+    censored = censored.replace(reg, '***');
+  });
+  return censored;
+}
+
+async function awardPoints(p, tc, amount) {
+  try {
+    await p.request().input('tc', sql.NVarChar, tc).input('pts', sql.Int, amount)
+      .query('UPDATE Users SET points = points + @pts WHERE tc = @tc');
+  } catch(e) { console.error('Puan hatası:', e); }
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -29,6 +51,15 @@ app.use(helmet({
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Geliştirme kolaylığı: Tarayıcı önbelleğini devre dışı bırak (F5 yapınca güncel gelsin)
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.use(express.static(__dirname));
 
 // ─── MSSQL KONFİGÜRASYON ──────────────────────────────────────────
@@ -52,17 +83,22 @@ let pool = null;
 let isMockMode = false;
 
 async function getPool() {
-  if (isMockMode) return null; // Fallback modu aktifse null döner API'ler bunu kontrol etmeli
   if (pool) {
-    try { await pool.request().query('SELECT 1'); return pool; } catch(e) { pool = null; }
+    try {
+      await pool.request().query('SELECT 1');
+      return pool;
+    } catch (e) {
+      console.warn('⚠️ Mevcut havuz bozulmuş, yeniden bağlanılıyor...');
+      pool = null;
+    }
   }
   try {
     pool = await sql.connect(DB_CONFIG);
+    console.log('✅ MSSQL Bağlantısı Başarılı');
     isMockMode = false;
     return pool;
-  } catch(e) {
-    console.warn('⚠️ MSSQL Bağlantısı KRİTİK HATA: ', e.message);
-    console.warn('⚠️ Sunucu YEDEK MOD (Mock Mode) üzerinde çalışmaya devam ediyor...');
+  } catch (e) {
+    console.error('❌ MSSQL Bağlantı Hatası: ', e.message);
     isMockMode = true;
     return null;
   }
@@ -355,6 +391,27 @@ async function setupTables() {
        grade        FLOAT DEFAULT 0,
        note         NVARCHAR(MAX),
        createdAt    DATETIME DEFAULT GETDATE()
+     )`,
+
+    // 24. CHAT GROUPS
+    `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatGroups' AND xtype='U')
+     CREATE TABLE ChatGroups (
+       id         NVARCHAR(50) PRIMARY KEY,
+       name       NVARCHAR(100) NOT NULL,
+       created_by NVARCHAR(11) NOT NULL,
+       members    NVARCHAR(MAX),
+       createdAt  DATETIME DEFAULT GETDATE()
+     )`,
+
+    // 25. GROUP MESSAGES
+    `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GroupMessages' AND xtype='U')
+     CREATE TABLE GroupMessages (
+       id         INT IDENTITY(1,1) PRIMARY KEY,
+       group_id   NVARCHAR(50) NOT NULL,
+       sender_tc  NVARCHAR(11) NOT NULL,
+       sender_name NVARCHAR(100),
+       content    NVARCHAR(MAX) NOT NULL,
+       sentAt     DATETIME DEFAULT GETDATE()
      )`
   ];
 
@@ -639,7 +696,7 @@ app.put('/api/update-profile', authenticateToken, async (req, res) => {
       .input('name',   sql.NVarChar, name   || '')
       .input('school', sql.NVarChar, school || '')
       .input('cls',    sql.NVarChar, cls    || '')
-      .input('pic',    sql.NVarChar, profilePic || '')
+      .input('pic',    sql.NVarChar(sql.MAX), profilePic || '')
       .query('UPDATE Users SET name=@name, school=@school, class=@cls, profilePic=@pic WHERE tc=@tc');
 
     // --- CASCADING UPDATES FOR NAME CONSISTENCY ---
@@ -706,6 +763,32 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+// ─── ŞİFRE SIFIRLA (PUBLIC - TC İLE) ───────────────────────────────
+app.post('/api/public/reset-password', async (req, res) => {
+  const { tc, newPassword } = req.body;
+  if (!tc || !newPassword) return res.status(400).json({ success: false, message: 'TC ve yeni şifre zorunludur.' });
+  
+  try {
+    const p = await getPool();
+    if (!p) return res.status(503).json({ success: false, message: 'Veritabanı bağlantısı yok.' });
+    
+    // Şifreyi Hashle
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const result = await p.request()
+      .input('tc',  sql.NVarChar, tc)
+      .input('pwd', sql.NVarChar, hashedPassword)
+      .query('UPDATE Users SET password=@pwd WHERE tc=@tc');
+
+    if (result.rowsAffected[0] === 0)
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
+
+    await logActivity(p, tc, 'RESET_PASSWORD', 'Şifre sıfırlandı');
+    res.json({ success: true, message: 'Şifre başarıyla sıfırlandı.' });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 // ─── POSTS ────────────────────────────────────────────────────────
 app.post('/api/posts', authenticateToken, async (req, res) => {
   const { author_tc, author_name, type, content, file_name, file_data, target_group, school, poll_options, event_title, event_start, event_end } = req.body;
@@ -715,12 +798,12 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
       .input('atc',   sql.NVarChar, author_tc   || '')
       .input('aname', sql.NVarChar, author_name || '')
       .input('type',  sql.NVarChar, type        || 'İleti')
-      .input('cont',  sql.NVarChar, content     || '')
+      .input('cont',  sql.NVarChar(sql.MAX), content     || '')
       .input('fname', sql.NVarChar, file_name   || '')
-      .input('fdata', sql.NVarChar, file_data   || '')
+      .input('fdata', sql.NVarChar(sql.MAX), file_data   || '')
       .input('tg',    sql.NVarChar, target_group|| 'all')
       .input('school',sql.NVarChar, school      || '')
-      .input('poll',  sql.NVarChar, JSON.stringify(poll_options||[]))
+      .input('poll',  sql.NVarChar(sql.MAX), JSON.stringify(poll_options||[]))
       .input('etitle',sql.NVarChar, event_title  || '')
       .input('estart',sql.NVarChar, event_start  || '')
       .input('eend',  sql.NVarChar, event_end    || '')
@@ -800,9 +883,13 @@ app.get('/api/messages', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/messages', authenticateToken, async (req, res) => {
-  const { receiver_tc, content } = req.body;
+  let { receiver_tc, content } = req.body;
   const sender_tc = req.user.tc;
   const sender_name = req.user.name;
+
+  if (!content) return res.status(400).json({ success: false });
+  content = censorText(content);
+
   try {
     const p = await getPool();
     await p.request()
@@ -811,6 +898,8 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
       .input('cont', sql.NVarChar, content)
       .query('INSERT INTO Messages(sender_tc, receiver_tc, content) VALUES(@sender, @receiver, @cont)');
     
+    await awardPoints(p, sender_tc, 1);
+
     // Bildirim gönder
     const notifText = `📩 ${sender_name}: ${content.slice(0, 50)}${content.length > 50 ? '...' : ''}`;
     await p.request()
@@ -830,7 +919,139 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
       }
     }
       
+    res.json({ success: true, content }); // Sansürlü halini dön
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ─── GRUP SOHBET API ──────────────────────────────────────────────
+app.get('/api/chat-groups', authenticateToken, async (req, res) => {
+  const my_tc = req.user.tc;
+  try {
+    const p = await getPool();
+    const result = await p.request().query('SELECT * FROM ChatGroups');
+    const myGroups = result.recordset.filter(g => {
+      try {
+        const members = JSON.parse(g.members || '[]');
+        return members.includes(String(my_tc));
+      } catch(e) { return false; }
+    });
+    res.json({ success: true, groups: myGroups });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+app.post('/api/chat-groups', authenticateToken, async (req, res) => {
+  const { name, members } = req.body;
+  const my_tc = req.user.tc;
+  try {
+    const p = await getPool();
+    const groupId = 'grp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    const allMembers = Array.from(new Set([...(members || []), String(my_tc)]));
+    await p.request()
+      .input('id',    sql.NVarChar, groupId)
+      .input('name',  sql.NVarChar, name)
+      .input('creator', sql.NVarChar, my_tc)
+      .input('members', sql.NVarChar, JSON.stringify(allMembers))
+      .query('INSERT INTO ChatGroups(id, name, created_by, members) VALUES(@id, @name, @creator, @members)');
     res.json({ success: true });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+app.get('/api/chat-groups/:id/messages', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const p = await getPool();
+    const result = await p.request()
+      .input('gid', sql.NVarChar, id)
+      .query('SELECT * FROM GroupMessages WHERE group_id=@gid ORDER BY sentAt ASC');
+    res.json({ success: true, messages: result.recordset });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+app.post('/api/chat-groups/:id/messages', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+  const sender_tc = req.user.tc;
+  const sender_name = req.user.name;
+  try {
+    const p = await getPool();
+    await p.request()
+      .input('gid', sql.NVarChar, id)
+      .input('sender', sql.NVarChar, sender_tc)
+      .input('name', sql.NVarChar, sender_name)
+      .input('cont', sql.NVarChar, content)
+      .query('INSERT INTO GroupMessages(group_id, sender_tc, sender_name, content) VALUES(@gid, @sender, @name, @cont)');
+    
+    // Real-time ilet
+    if(typeof io !== 'undefined') {
+      io.to(`group_${id}`).emit('group_message', {
+        group_id: id,
+        sender_tc,
+        sender_name,
+        content,
+        sentAt: new Date().toISOString()
+      });
+    }
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+app.get('/api/chat-groups/:id/members', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const p = await getPool();
+    const gRes = await p.request().input('id', sql.NVarChar, id).query('SELECT members FROM ChatGroups WHERE id=@id');
+    if(!gRes.recordset.length) return res.status(404).json({ success: false, message: 'Grup bulunamadı' });
+    
+    const members = JSON.parse(gRes.recordset[0].members || '[]');
+    if (!members.length) return res.json({ success: true, members: [] });
+    
+    const result = await p.request().query(`SELECT tc, name FROM Users WHERE tc IN ('${members.join("','")}')`);
+    res.json({ success: true, members: result.recordset });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+app.delete('/api/chat-groups/:id/leave', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const my_tc = req.user.tc;
+  try {
+    const p = await getPool();
+    const gRes = await p.request().input('id', sql.NVarChar, id).query('SELECT members FROM ChatGroups WHERE id=@id');
+    if(!gRes.recordset.length) return res.status(404).json({ success: false });
+    
+    let members = JSON.parse(gRes.recordset[0].members || '[]');
+    members = members.filter(m => String(m) !== String(my_tc));
+    
+    await p.request()
+      .input('id', sql.NVarChar, id)
+      .input('m', sql.NVarChar, JSON.stringify(members))
+      .query('UPDATE ChatGroups SET members=@m WHERE id=@id');
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ─── SOHBET LİSTESİ (SON MESAJLARLA) ─────────────────────────────
+app.get('/api/chat-conversations', authenticateToken, async (req, res) => {
+  const my_tc = req.user.tc;
+  const { school } = req.query;
+  try {
+    const p = await getPool();
+    // Okuldaki tüm kullanıcıları getir (kendimiz hariç)
+    const uRes = await p.request()
+      .input('sch', sql.NVarChar, school || '')
+      .input('me', sql.NVarChar, my_tc)
+      .query(`
+        SELECT tc, name, role, 
+        (SELECT TOP 1 content FROM Messages 
+         WHERE (sender_tc=@me AND receiver_tc=Users.tc) OR (sender_tc=Users.tc AND receiver_tc=@me)
+         ORDER BY sentAt DESC) as lastMessage,
+        (SELECT TOP 1 sentAt FROM Messages 
+         WHERE (sender_tc=@me AND receiver_tc=Users.tc) OR (sender_tc=Users.tc AND receiver_tc=@me)
+         ORDER BY sentAt DESC) as lastMessageAt
+        FROM Users 
+        WHERE school=@sch AND tc<>@me
+        ORDER BY lastMessageAt DESC, name ASC
+      `);
+    res.json({ success: true, conversations: uRes.recordset });
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
@@ -923,19 +1144,28 @@ app.get('/api/student-grades', async (req, res) => {
   } catch(err) { res.status(500).json({ success: false, grades: [], message: err.message }); }
 });
 
-app.get('/api/posts', async (req, res) => {
+app.get('/api/posts', authenticateToken, async (req, res) => {
   const { school, group, userClass } = req.query;
+  const user = req.user;
   try {
     const p = await getPool();
-    const result = await p.request()
-      .input('school', sql.NVarChar, school    || '')
-      .input('group',  sql.NVarChar, group     || '')
-      .input('cls',    sql.NVarChar, userClass || '')
-      .query(`SELECT * FROM Posts
-              WHERE school=@school
-              AND (target_group='all' OR target_group=@group OR target_group=@cls OR target_group='veliler')
-              ORDER BY createdAt DESC`);
-    // poll_options JSON parse
+    if (!p) return res.status(503).json({ success: false, message: 'Veritabanı bağlantısı yok.' });
+
+    const req2 = p.request();
+    req2.input('school', sql.NVarChar, school || user.school || '');
+    
+    let query = "SELECT * FROM Posts WHERE school=@school";
+    
+    // Öğretmenler kendi okullarındaki tüm paylaşımları görebilir
+    if (user.role !== 'ogretmen') {
+      req2.input('group',  sql.NVarChar, group     || 'all');
+      req2.input('cls',    sql.NVarChar, userClass || user.classNum || user.class || '');
+      query += " AND (target_group='all' OR target_group=@group OR target_group=@cls OR target_group='veliler')";
+    }
+    
+    query += " ORDER BY createdAt DESC";
+    
+    const result = await req2.query(query);
     const posts = result.recordset.map(p => {
       if (typeof p.poll_options === 'string' && p.poll_options) {
         try { p.poll_options = JSON.parse(p.poll_options); } catch(e) { p.poll_options = []; }
@@ -944,6 +1174,29 @@ app.get('/api/posts', async (req, res) => {
     });
     res.json({ success: true, posts });
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+// --- SINAV SONUÇLARINI ÖĞRETMENE GÖSTERME ---
+app.get('/api/quizzes/results', authenticateToken, async (req, res) => {
+  if(req.user.role !== 'ogretmen') return res.status(403).json({ success: false });
+  const { quiz_id } = req.query;
+  try {
+    const p = await getPool();
+    let query = `
+      SELECT qr.*, q.title as quiz_title 
+      FROM QuizResults qr
+      JOIN Quizzes q ON qr.quiz_id = q.id
+      WHERE q.teacher_tc = @tc
+    `;
+    const request = p.request().input('tc', sql.NVarChar, req.user.tc);
+    if (quiz_id) {
+      query += " AND qr.quiz_id = @qid";
+      request.input('qid', sql.Int, quiz_id);
+    }
+    query += " ORDER BY qr.takenAt DESC";
+    const r = await request.query(query);
+    res.json({ success: true, results: r.recordset });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 // ─── BİLDİRİMLER ─────────────────────────────────────────────────
@@ -1270,11 +1523,12 @@ app.post('/api/test-results', async (req, res) => {
       .query(`INSERT INTO TestResults(student_tc,title,subject,score,total,duration,correct_cnt,wrong_cnt,blank_cnt,wrong_questions) 
               VALUES(@tc,@title,@subject,@score,@total,@dur,@cc,@wc,@bc,@wq)`);
 
-    // Sınav istatistiği güncelle
+    // 🏆 ÖDÜL: Sınav tamamlama = +20 puan + 20 Coin
     try {
       await p.request().input('tc', sql.NVarChar, student_tc)
         .query(`IF EXISTS(SELECT 1 FROM StudentStats WHERE student_tc=@tc)
-                UPDATE StudentStats SET exam_count=exam_count+1, updatedAt=GETDATE() WHERE student_tc=@tc`);
+                UPDATE StudentStats SET exam_count=exam_count+1, updatedAt=GETDATE() WHERE student_tc=@tc;
+                UPDATE Users SET points = ISNULL(points,0) + 20, coins = ISNULL(coins,0) + 20 WHERE tc=@tc;`);
     } catch(e) {}
 
     // Kendi hocasına veya velisine bildirim gönderebilir (öğretmene atayalım)
@@ -1415,11 +1669,11 @@ app.post('/api/assignment-submit', async (req, res) => {
        }
     } catch(e) {}
 
-    // 🏆 PUAN: Ödev teslim = +20 puan
+    // 🏆 ÖDÜL: Ödev teslim = +20 puan + 15 Coin
     try {
       await p.request()
         .input('tc', sql.NVarChar, student_tc)
-        .query('UPDATE Users SET points = ISNULL(points,0) + 20 WHERE tc=@tc');
+        .query('UPDATE Users SET points = ISNULL(points,0) + 20, coins = ISNULL(coins,0) + 15 WHERE tc=@tc');
       // Ödev Uzmanı rozeti kontrolü (500 puan)
       const pts = await p.request().input('tc', sql.NVarChar, student_tc).query('SELECT points FROM Users WHERE tc=@tc');
       const userPoints = pts.recordset[0]?.points || 0;
@@ -1572,8 +1826,8 @@ app.get('/api/quizzes', authenticateToken, async (req, res) => {
   const { school, target_class } = req.query;
   try {
     const p = await getPool();
-    let q = 'SELECT * FROM Quizzes WHERE school=@sch';
-    const reqQ = p.request().input('sch', sql.NVarChar, school);
+    let q = 'SELECT * FROM Quizzes WHERE school=@sch AND id NOT IN (SELECT quiz_id FROM QuizResults WHERE student_tc=@utc)';
+    const reqQ = p.request().input('sch', sql.NVarChar, school).input('utc', sql.NVarChar, req.user.tc);
     if(target_class && target_class !== 'all') {
       q += " AND (target_class LIKE '%' + @cls + '%' OR @cls LIKE '%' + target_class + '%' OR target_class='all')";
       reqQ.input('cls', sql.NVarChar, target_class);
@@ -1691,20 +1945,29 @@ app.post('/api/quiz-submit', authenticateToken, async (req, res) => {
       .query(`INSERT INTO QuizResults (student_tc, student_name, quiz_id, quiz_title, score, total_score, correct_count, wrong_count)
               VALUES (@stc, @sname, @qid, @qtitle, @score, @total, @corr, @wrng)`);
 
-    // Puan ekle
+    // 🏆 ÖDÜL: Quiz bitirme = Puan + 20 Coin
     await p.request().input('tc', sql.NVarChar, req.user.tc).input('pts', sql.Int, score)
-           .query('UPDATE Users SET points = points + @pts WHERE tc=@tc');
+           .query('UPDATE Users SET points = points + @pts, coins = ISNULL(coins,0) + 20 WHERE tc=@tc');
     
     // Rozet Kontrolü (Basit örnek: Her sınav bitirene ilk sınav rozeti verilebilir veya belli puanda)
-    if(score >= total * 0.9) {
-       // Quiz Şampiyonu Rozeti kontrolü
-       const badge = await p.request().query('SELECT id FROM Badges WHERE name=\'Quiz Şampiyonu\'');
-       if(badge.recordset.length) {
-         const bid = badge.recordset[0].id;
-         await p.request().input('tc', req.user.tc).input('bid', bid)
-                .query('IF NOT EXISTS(SELECT 1 FROM UserBadges WHERE user_tc=@tc AND badge_id=@bid) INSERT INTO UserBadges(user_tc, badge_id) VALUES(@tc,@bid)');
-       }
-    }
+    // 📈 İSTATİSTİK: EBA'da ne yaptın kısmını güncelle
+    try {
+      await p.request().input('tc', sql.NVarChar, req.user.tc)
+        .query(`IF EXISTS(SELECT 1 FROM StudentStats WHERE student_tc=@tc)
+                UPDATE StudentStats SET exam_count=exam_count+1, updatedAt=GETDATE() WHERE student_tc=@tc
+                ELSE
+                INSERT INTO StudentStats(student_tc, exam_count) VALUES(@tc, 1)`);
+      
+      // Rozet Kontrolü (Geri eklendi)
+      if(score >= total * 0.9) {
+        const badge = await p.request().query("SELECT id FROM Badges WHERE name='Quiz Şampiyonu'");
+        if(badge.recordset.length) {
+          const bid = badge.recordset[0].id;
+          await p.request().input('tc', req.user.tc).input('bid', bid)
+                 .query('IF NOT EXISTS(SELECT 1 FROM UserBadges WHERE user_tc=@tc AND badge_id=@bid) INSERT INTO UserBadges(user_tc, badge_id) VALUES(@tc,@bid)');
+        }
+      }
+    } catch(e) {}
 
     res.json({ success: true, score, total, correct, wrong });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
@@ -1766,7 +2029,8 @@ app.post('/api/forum', authenticateToken, async (req, res) => {
       .input('content', sql.NVarChar, content)
       .input('category', sql.NVarChar, category || 'Genel')
       .input('school', sql.NVarChar, u.school || '')
-      .query('INSERT INTO ForumQuestions (author_tc, author_name, title, content, category, school) VALUES (@tc, @name, @title, @content, @category, @school)');
+      .query(`INSERT INTO ForumQuestions (author_tc, author_name, title, content, category, school) VALUES (@tc, @name, @title, @content, @category, @school);
+              UPDATE Users SET points = ISNULL(points,0) + 5, coins = ISNULL(coins,0) + 5 WHERE tc=@tc;`);
       
     // Puan ver
     await p.request().input('tc', sql.NVarChar, u.tc).query('UPDATE Users SET points = points + 5 WHERE tc=@tc');
@@ -1898,7 +2162,155 @@ app.post('/api/whiteboard/clear', authenticateToken, (req, res) => {
 });
 
 
-// Leaderboard API (Yukarıya taşındı)
+// ─── AI ASSISTANT API ────────────────────────────────────────────────
+app.post('/api/ai/chat', authenticateToken, async (req, res) => {
+  try {
+    const { message, context } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'BURAYA_GEMINI_API_KEY_YAZIN' || apiKey === 'your_api_key_here') {
+      return res.json({ success: true, response: "⚠️ Yapay Zeka (Gemini) API anahtarı ayarlanmamış. Lütfen .env dosyasındaki GEMINI_API_KEY alanına geçerli bir anahtar girin." });
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const prompt = `Sen bir EBA (Eğitim Bilişim Ağı) asistanısın. Adın "EBA Asistan". 
+    Öğrencilere, öğretmenlere ve velilere yardımcı oluyorsun.
+    Kullanıcı Rolü: ${req.user.role}
+    Kullanıcı Adı: ${req.user.name}
+    Bağlam (Context): ${context || "Genel yardım"}
+    
+    Kullanıcı Mesajı: ${message}
+    
+    Lütfen arkadaş canlısı, teşvik edici ve eğitici bir dille cevap ver. Cevapların çok uzun olmasın.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    res.json({ success: true, response: response.text() });
+  } catch (e) {
+    console.error("AI Error:", e);
+    res.status(500).json({ success: false, message: "Yapay zeka yanıt veremedi." });
+  }
+});
+
+// ─── GAMIFICATION & SHOP API ─────────────────────────────────────────
+app.get('/api/user/gamification-status', authenticateToken, async (req, res) => {
+  try {
+    const p = await getPool();
+    const r = await p.request().input('tc', sql.NVarChar, req.user.tc)
+           .query('SELECT points, coins, streak, last_login, badges, avatar_items, selected_avatar FROM Users WHERE tc=@tc');
+    
+    if (r.recordset.length === 0) return res.status(404).json({ success: false });
+    
+    const user = r.recordset[0];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const lastLogin = user.last_login ? new Date(user.last_login) : null;
+    const lastLoginStr = lastLogin ? lastLogin.toISOString().split('T')[0] : null;
+    
+    let newStreak = user.streak || 0;
+    
+    if (lastLoginStr !== todayStr) {
+      // Yeni bir gün girişi
+      const oneDay = 24 * 60 * 60 * 1000;
+      const lastLoginDate = lastLoginStr ? new Date(lastLoginStr) : null;
+      const todayDate = new Date(todayStr);
+      
+      if (lastLoginDate && (todayDate - lastLoginDate) === oneDay) {
+        newStreak += 1; // Ardışık gün
+      } else {
+        newStreak = 1; // İlk gün veya ara verildi
+      }
+      
+      // Veritabanını güncelle
+      await p.request()
+        .input('tc', sql.NVarChar, req.user.tc)
+        .input('s', sql.Int, newStreak)
+        .query('UPDATE Users SET coins = coins + 10, last_login = GETDATE(), streak = @s WHERE tc=@tc');
+    }
+
+    res.json({ 
+      success: true, 
+      points: user.points, 
+      coins: user.coins, 
+      streak: newStreak, 
+      badges: JSON.parse(user.badges || '[]'),
+      avatar_items: JSON.parse(user.avatar_items || '[]'),
+      selected_avatar: user.selected_avatar ? JSON.parse(user.selected_avatar) : null
+    });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/shop/items', (req, res) => {
+  const items = [
+    // ŞAPKALAR
+    { id: 'hat_cool', name: 'Havalı Şapka', price: 50, category: 'hat', img: '/assets/hat_cool.png' },
+    { id: 'hat_crown', name: 'Altın Taç', price: 500, category: 'hat', img: '/assets/hat_crown.png' },
+    { id: 'hat_chef', name: 'Aşçı Şapkası', price: 120, category: 'hat', img: '/assets/hat_chef.png' },
+    { id: 'hat_viking', name: 'Viking Miğferi', price: 250, category: 'hat', img: '/assets/hat_viking.png' },
+    { id: 'hat_ninja', name: 'Ninja Bandana', price: 180, category: 'hat', img: '/assets/hat_ninja.png' },
+    { id: 'hat_magic', name: 'Sihirbaz Şapkası', price: 300, category: 'hat', img: '/assets/hat_magic.png' },
+    { id: 'hat_cowboy', name: 'Kovboy Şapkası', price: 150, category: 'hat', img: '/assets/hat_cowboy.png' },
+    { id: 'hat_pirate', name: 'Korsan Şapkası', price: 280, category: 'hat', img: '/assets/hat_pirate.png' },
+    
+    // GÖZLÜKLER
+    { id: 'glasses_gold', name: 'Altın Gözlük', price: 100, category: 'glasses', img: '/assets/glasses_gold.png' },
+    { id: 'glasses_sun', name: 'Güneş Gözlüğü', price: 60, category: 'glasses', img: '/assets/glasses_sun.png' },
+    { id: 'glasses_monocle', name: 'Monokl', price: 200, category: 'glasses', img: '/assets/glasses_monocle.png' },
+    { id: 'glasses_3d', name: '3D Gözlük', price: 150, category: 'glasses', img: '/assets/glasses_3d.png' },
+    { id: 'glasses_nerd', name: 'İnek Gözlüğü', price: 80, category: 'glasses', img: '/assets/glasses_nerd.png' },
+    { id: 'glasses_vr', name: 'VR Gözlük', price: 350, category: 'glasses', img: '/assets/glasses_vr.png' },
+    { id: 'glasses_heart', name: 'Kalp Gözlük', price: 120, category: 'glasses', img: '/assets/glasses_heart.png' },
+    
+    // ARKA PLANLAR
+    { id: 'bg_space', name: 'Uzay Arka Planı', price: 150, category: 'background', img: '/assets/bg_space.png' },
+    { id: 'bg_beach', name: 'Plaj Teması', price: 220, category: 'background', img: '/assets/bg_beach.png' },
+    { id: 'bg_matrix', name: 'Dijital Matrix', price: 400, category: 'background', img: '/assets/bg_matrix.png' },
+    { id: 'bg_gold', name: 'Lüks Altın', price: 1000, category: 'background', img: '/assets/bg_gold.png' },
+    { id: 'bg_forest', name: 'Mistik Orman', price: 300, category: 'background', img: '/assets/bg_forest.png' },
+    { id: 'bg_fire', name: 'Alevler', price: 450, category: 'background', img: '/assets/bg_fire.png' },
+    { id: 'bg_underwater', name: 'Sualtı Dünyası', price: 280, category: 'background', img: '/assets/bg_underwater.png' },
+    
+    // EVCİL HAYVANLAR
+    { id: 'pet_cat', name: 'Robot Kedi', price: 300, category: 'pet', img: '/assets/pet_cat.png' },
+    { id: 'pet_dragon', name: 'Yavru Ejderha', price: 800, category: 'pet', img: '/assets/pet_dragon.png' },
+    { id: 'pet_owl', name: 'Bilge Baykuş', price: 450, category: 'pet', img: '/assets/pet_owl.png' },
+    { id: 'pet_dog', name: 'Sadık Köpek', price: 350, category: 'pet', img: '/assets/pet_dog.png' },
+    { id: 'pet_phoenix', name: 'Zümrüdüanka', price: 1200, category: 'pet', img: '/assets/pet_phoenix.png' },
+    { id: 'pet_dinosaur', name: 'Mini Dinozor', price: 600, category: 'pet', img: '/assets/pet_dinosaur.png' }
+  ];
+  res.json({ success: true, items });
+});
+
+app.post('/api/shop/buy', authenticateToken, async (req, res) => {
+  const { itemId, price } = req.body;
+  try {
+    const p = await getPool();
+    const userR = await p.request().input('tc', req.user.tc).query('SELECT coins, avatar_items FROM Users WHERE tc=@tc');
+    const user = userR.recordset[0];
+    
+    if (user.coins < price) return res.status(400).json({ success: false, message: 'Yetersiz EBA Coin!' });
+    
+    let items = JSON.parse(user.avatar_items || '[]');
+    if (items.includes(itemId)) return res.status(400).json({ success: false, message: 'Bu eşyaya zaten sahipsiniz.' });
+    
+    items.push(itemId);
+    await p.request()
+      .input('tc', sql.NVarChar, req.user.tc)
+      .input('price', sql.Int, price)
+      .input('items', sql.NVarChar(sql.MAX), JSON.stringify(items))
+      .query('UPDATE Users SET coins = coins - @price, avatar_items = @items WHERE tc=@tc');
+      
+    res.json({ success: true, message: 'Başarıyla satın alındı!' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.post('/api/user/update-avatar', authenticateToken, async (req, res) => {
+  const { avatar } = req.body; // { hat, glasses, background, etc }
+  try {
+    const p = await getPool();
+    await p.request().input('tc', sql.NVarChar, req.user.tc).input('av', sql.NVarChar(sql.MAX), JSON.stringify(avatar)).query('UPDATE Users SET selected_avatar = @av WHERE tc=@tc');
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
 
 
 const server = http.createServer(app);
@@ -1916,6 +2328,28 @@ io.on('connection', (socket) => {
       onlineUsers.set(String(tc), socket.id);
       console.log(`👤 Kullanıcı giriş yaptı: ${tc} (Socket: ${socket.id})`);
     }
+  });
+
+  socket.on('join_group', (groupId) => {
+    socket.join(`group_${groupId}`);
+    console.log(`👥 Socket ${socket.id} gruba katıldı: group_${groupId}`);
+  });
+
+  // ─── WHITEBOARD SOCKET EVENTS ───
+  socket.on('join_whiteboard', () => {
+    socket.join('whiteboard_room');
+  });
+
+  socket.on('draw', (data) => {
+    // data: { stroke }
+    socket.to('whiteboard_room').emit('draw', data);
+    whiteboardStrokes.push(data.stroke);
+    if(whiteboardStrokes.length > 5000) whiteboardStrokes.shift();
+  });
+
+  socket.on('clear_board', () => {
+    socket.to('whiteboard_room').emit('clear_board');
+    whiteboardStrokes = [];
   });
 
   socket.on('disconnect', () => {

@@ -3,10 +3,8 @@
   const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')); } catch(e) { return null; } })();
   const tc = user?.tc;
   
-  // Önce kullanıcı tercihini, yoksa cihaz genelindeki tercihi kontrol et
   const userPrefs = tc ? JSON.parse(localStorage.getItem('eba_prefs_' + tc) || '{}') : {};
   const deviceTheme = localStorage.getItem('eba_device_theme');
-  
   const theme = userPrefs.theme || deviceTheme;
 
   if (theme === 'dark') {
@@ -21,13 +19,10 @@ function getCurrentUser() {
   try {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const token = localStorage.getItem('authToken');
-    
-    // JWT formatındaysa veya eski token ise currentUser ile eşleşmeli
     if (currentUser && token && (currentUser.token === token || !currentUser.token)) {
-      currentUser.token = token; // Senkronize et
+      currentUser.token = token;
       return currentUser;
     }
-    
     return null;
   } catch {
     localStorage.removeItem('currentUser');
@@ -72,33 +67,23 @@ async function logout() {
  */
 async function ebaFetch(url, options = {}) {
   const token = localStorage.getItem('authToken');
-  const defaultHeaders = {
-    'Content-Type': 'application/json'
-  };
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`;
-  }
+  const defaultHeaders = { 'Content-Type': 'application/json' };
+  if (token) defaultHeaders['Authorization'] = `Bearer ${token}`;
 
-  options.headers = {
-    ...defaultHeaders,
-    ...(options.headers || {})
-  };
+  options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
   try {
     const response = await fetch(url, options);
-    
     if (response.status === 401) {
       alert("Oturum süreniz doldu, lütfen tekrar giriş yapın.");
       logout();
       return null;
     }
-    
     if (response.status === 403) {
       const data = await response.json().catch(() => ({}));
       alert("Bu işlem için yetkiniz yok! " + (data.message || ""));
       return response;
     }
-    
     return response;
   } catch (error) {
     console.error("ebaFetch Hatası:", error);
@@ -120,12 +105,11 @@ function startHeartbeat() {
     } catch(e) {}
   };
 
-  // Hemen gönder ve sonra her 60 sn'de bir tekrarla
   sendPing();
   setInterval(sendPing, 60000);
 }
 
-// Pencere kapanırken çıkış yap (best effort)
+// Pencere kapanırken çıkış yap
 window.addEventListener('beforeunload', () => {
   const user = getCurrentUser();
   if (user) {
@@ -133,9 +117,6 @@ window.addEventListener('beforeunload', () => {
     navigator.sendBeacon('/api/logout', data);
   }
 });
-
-// LocalStorage tabanlı eski fonksiyonlar temizlendi.
-// updateOnlineStatus(true/false) artık kullanılmıyor, yerine heartbeat ve logout geldi.
 
 function deleteCurrentUser() {
   const currentUser = getCurrentUser();
@@ -155,13 +136,10 @@ function deleteCurrentUser() {
 function isSessionValid() {
   const currentUser = getCurrentUser();
   if (!currentUser) return false;
-  
-  // XSS koruması: currentUser'ın type'ı kontrol et
   if (typeof currentUser !== 'object' || !currentUser.id || !currentUser.tc) {
     localStorage.removeItem('currentUser');
     return false;
   }
-  
   return true;
 }
 
@@ -172,7 +150,7 @@ function redirectByRole(role) {
   return 'ogrenci-panel.html';
 }
 
-// --- SEARCH FUNCTIONALITY ---
+// --- ARAMA FONKSİYONALİTESİ ---
 function handleSearch(query) {
   if (!query) return;
   query = query.toLowerCase().trim();
@@ -215,9 +193,7 @@ function initSearch() {
   
   if (searchInput) {
     searchInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        handleSearch(e.target.value);
-      }
+      if (e.key === 'Enter') handleSearch(e.target.value);
     });
   }
   
@@ -228,12 +204,10 @@ function initSearch() {
   }
 }
 
-// --- NOTIFICATION FUNCTIONALITY (DEVRE DIŞI - MSSQL KULLANILIYOR) ---
+// --- BİLDİRİM (DEVRE DIŞI - MSSQL KULLANILIYOR) ---
 function getNotifications(tc) { return []; }
 function addNotification(tc, text) { }
-function initNotifications() {
-  // Bu fonksiyon artık MSSQL tabanlı toggleNotif ve loadNotifs (fix-notifications.js) tarafından karşılanıyor.
-}
+function initNotifications() {}
 
 // ─── GLOBAL TERCİHLERİ UYGULA ────────────────────────────────────
 async function applyGlobalPrefs() {
@@ -244,11 +218,9 @@ async function applyGlobalPrefs() {
     const d = await r.json();
     if(d.success && d.prefs) {
       const p = d.prefs;
-      // Tema
       if(p.theme === 'dark') document.body.classList.add('dark-mode');
       else document.body.classList.remove('dark-mode');
       
-      // Bildirim çanı görünürlüğü
       const badge = document.getElementById('notifBadge');
       const count = document.getElementById('notifCount');
       if(p.notifications === false || p.notifications === 0) {
@@ -256,20 +228,80 @@ async function applyGlobalPrefs() {
         if(count) count.style.opacity = '0';
       }
       
-      // LocalStorage senkronize et (çevrimdışı/hızlı yükleme için)
       localStorage.setItem('eba_prefs_' + user.tc, JSON.stringify(p));
     }
   } catch(e) {}
 }
 
-// Init when DOM loads
+// DOMContentLoaded — Tüm sayfalarda çalışır
 document.addEventListener('DOMContentLoaded', () => {
   initSearch();
-  // initNotifications(); // Devre dışı
-  
+
   const user = getCurrentUser();
   if (user) {
     startHeartbeat();
     applyGlobalPrefs();
+
+    if (user.role === 'ogrenci') {
+      loadGamificationAvatar(user);
+    }
+
+    const pName = document.getElementById('profile-name');
+    if(pName) pName.textContent = user.name || '';
+    const pSchool = document.getElementById('profile-school');
+    if(pSchool) pSchool.textContent = user.school || '';
+    const pImg = document.getElementById('profile-img-display');
+    const defaultIcon = document.getElementById('default-avatar-icon');
+    
+    if(pImg && user.profilePic && user.profilePic.length > 10) {
+      pImg.src = user.profilePic;
+      pImg.style.display = 'block';
+      if(defaultIcon) defaultIcon.style.display = 'none';
+    } else {
+      if(pImg) pImg.style.display = 'none';
+      if(defaultIcon) defaultIcon.style.display = 'block';
+    }
+
+    // Çıkış butonu
+    const lBtn = document.getElementById('logoutBtn');
+    if(lBtn) lBtn.onclick = logout;
   }
 });
+
+// ─── GAMİFİKASYON & AVATAR ────────────────────────────────────────
+async function loadGamificationAvatar(user) {
+  try {
+    const res = await fetch('/api/user/gamification-status', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (data.selected_avatar) applySidebarAvatar(data.selected_avatar);
+      const pointsEl = document.getElementById('user-points');
+      if (pointsEl) pointsEl.textContent = data.points || 0;
+      const coinsEl = document.getElementById('user-coins');
+      if (coinsEl) coinsEl.textContent = data.coins || 0;
+      const streakEl = document.getElementById('user-streak');
+      if (streakEl) streakEl.textContent = data.streak || 0;
+
+      // 100+ puan varsa sertifika butonunu göster
+      if ((data.points || 0) >= 100) {
+        const btnContainer = document.getElementById('cert-btn-container');
+        if (btnContainer) btnContainer.style.display = 'block';
+      }
+    }
+  } catch(e) {}
+}
+
+function applySidebarAvatar(av) {
+  if(!av) return;
+  const sHat = document.getElementById('sidebar-hat');
+  const sGlasses = document.getElementById('sidebar-glasses');
+  const sPet = document.getElementById('sidebar-pet');
+  const sBg = document.getElementById('sidebar-bg');
+  
+  if(sHat && av.hat) { sHat.src = av.hat; sHat.style.display = 'block'; }
+  if(sGlasses && av.glasses) { sGlasses.src = av.glasses; sGlasses.style.display = 'block'; }
+  if(sPet && av.pet) { sPet.src = av.pet; sPet.style.display = 'block'; }
+  if(sBg && av.background) { sBg.style.background = `url(${av.background}) center/cover`; }
+}

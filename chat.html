@@ -4,139 +4,88 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EBA Chat Sistemi</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="chat.css">
-<script src="auth-utils.js"></script><script>requireAuth();</script></head>
-
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
+</head>
 <body>
   <header class="chat-header">
     <div class="chat-header-left">
-      <button class="icon-btn" id="toggleSidebar" title="Sohbet Listesini Göster/Gizle">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="chat-logo">
-        <span class="chat-logo-icon"><i class="fa-solid fa-comments"></i></span>
-        <span class="chat-logo-text">EBA Chat</span>
-      </div>
+      <button class="icon-btn" id="toggleSidebar"><i class="fa-solid fa-bars"></i></button>
+      <div class="chat-logo">EBA Chat</div>
     </div>
-
     <div class="chat-header-right">
-      <button class="icon-btn" id="openContactsBtn" title="Kişiler">
-        <i class="fa-solid fa-address-book"></i>
-      </button>
-      <button class="icon-btn" id="openGroupModal" title="Yeni Grup Oluştur">
-        <i class="fa-solid fa-users"></i>
-      </button>
-      <button class="icon-btn" onclick="logout()" title="Çıkış Yap">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
-      <a class="icon-btn" href="#" onclick="goToPanel()" title="Paneli Aç">
-        <i class="fa-solid fa-house"></i>
-      </a>
+      <button class="icon-btn" id="openGroupModal" title="Grup Oluştur"><i class="fa-solid fa-users"></i></button>
+      <button class="icon-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
+      <a class="icon-btn" href="#" onclick="goToPanel()"><i class="fa-solid fa-house"></i></a>
     </div>
   </header>
 
   <div class="chat-app">
-    <aside class="chat-sidebar" id="chatSidebar">
+    <aside class="chat-sidebar">
       <div class="sidebar-search">
-        <input id="conversationSearch" placeholder="Konuşma ara..." autocomplete="off">
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="conversationSearch" placeholder="Ara...">
       </div>
-
       <div class="sidebar-segment">
-        <div class="segment-header">
-          <span>Bireysel</span>
-        </div>
+        <div class="segment-header">Bireysel</div>
         <div class="conversation-list" id="individualList"></div>
       </div>
-
       <div class="sidebar-segment">
-        <div class="segment-header">
-          <span>Gruplar</span>
-        </div>
+        <div class="segment-header">Gruplar</div>
         <div class="conversation-list" id="groupList"></div>
       </div>
-
-      <button class="primary-btn" id="createGroupBtn">
-        <i class="fa-solid fa-plus"></i> Grup Oluştur
-      </button>
+      <button class="primary-btn" id="createGroupBtn" style="width:90%; margin:10px auto; display:block;">+ Grup Oluştur</button>
     </aside>
 
     <main class="chat-main">
-      <div class="chat-top" id="chatTop">
-        <div>
-          <h2 id="chatTitle">Hoşgeldiniz!</h2>
-          <p id="chatSubtitle">Bir konuşma seçerek devam edin.</p>
-        </div>
+      <div class="chat-top" id="chatTop" style="cursor:pointer; padding:15px; border-bottom:1px solid #ddd;">
+        <h2 id="chatTitle" style="margin:0;">Sohbet Seçin</h2>
+        <p id="chatSubtitle" style="margin:0; font-size:12px; color:#666;">Mesajlaşmaya başlayın</p>
       </div>
-
-      <div class="chat-messages" id="chatMessages">
-        <div class="empty-state">
-          <i class="fa-regular fa-message"></i>
-          <p>Sol taraftan bir konuşma seçin veya yeni bir grup oluşturun.</p>
-        </div>
-      </div>
-
+      <div class="chat-messages" id="chatMessages"></div>
       <form class="chat-input" id="chatForm">
-        <input id="messageInput" type="text" placeholder="Mesajını yaz..." autocomplete="off" />
-        <button type="submit" class="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+        <button type="button" class="icon-btn" id="voiceBtn" title="Sesli Mesaj"><i class="fa-solid fa-microphone"></i></button>
+        <input id="messageInput" type="text" placeholder="Mesajınızı yazın..." autocomplete="off">
+        <button type="submit" class="send-btn">Gönder</button>
       </form>
     </main>
   </div>
 
-  <div class="modal" id="groupModal" aria-hidden="true">
-    <div class="modal-backdrop" id="modalBackdrop"></div>
+  <!-- Grup Oluşturma Modalı -->
+  <div class="modal" id="groupModal">
+    <div class="modal-backdrop" onclick="closeModal('groupModal')"></div>
     <div class="modal-content">
       <div class="modal-header">
-        <h3>Yeni Grup Oluştur</h3>
-        <button class="icon-btn" id="closeModal" aria-label="Kapat">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <h3>Grup Oluştur</h3>
+        <button class="icon-btn" onclick="closeModal('groupModal')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
-        <label class="field">
-          <span>Grup Adı</span>
-          <input id="groupName" type="text" placeholder="Örn. 8A Matematik" />
-        </label>
-
-        <div class="field">
-          <span>Üyeler</span>
-          <div class="user-grid" id="userList">
-            <!-- Dinamik olarak doldurulur -->
-          </div>
-        </div>
+        <input id="groupName" type="text" placeholder="Grup Adı" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:15px;">
+        <div id="userList" class="user-grid"></div>
       </div>
       <div class="modal-footer">
-        <button class="secondary-btn" id="cancelGroup">İptal</button>
-        <button class="primary-btn" id="saveGroup">Oluştur</button>
+        <button class="secondary-btn" onclick="closeModal('groupModal')">İptal</button>
+        <button id="saveGroup" class="primary-btn">Grubu Oluştur</button>
       </div>
     </div>
   </div>
 
-  <!-- CONTACTS MODAL -->
-  <div class="modal" id="contactsModal" aria-hidden="true">
-    <div class="modal-backdrop" id="contactsBackdrop"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Kişiler (Okuldaşlarım)</h3>
-        <button class="icon-btn" id="closeContacts" aria-label="Kapat">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="user-grid" id="contactsList">
-          <!-- Dinamik olarak doldurulur -->
+  <!-- Grup Detay Modalı -->
+  <div class="modal" id="groupDetailsModal">
+    <div class="modal-backdrop" onclick="closeModal('groupDetailsModal')"></div>
+    <div class="modal-content" style="text-align:center;">
+        <h3 id="groupDetailsName">Grup Detayları</h3>
+        <p id="groupDetailsMemberCount" style="color:#666; margin-top:5px;">0 Üye</p>
+        <div id="groupMembersList" class="user-grid" style="text-align:left; margin:20px 0;"></div>
+        <div class="modal-footer" style="flex-direction:column; gap:10px;">
+            <button id="leaveGroupBtn" style="background:#e53e3e; color:white;" class="primary-btn">Gruptan Ayrıl</button>
+            <button class="secondary-btn" onclick="closeModal('groupDetailsModal')">Kapat</button>
         </div>
-      </div>
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-  <script src="auth-utils.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="chat.js"></script>
-  <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>
-

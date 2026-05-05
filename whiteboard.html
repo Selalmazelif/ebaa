@@ -56,14 +56,18 @@
 
   <canvas id="board"></canvas>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="auth-utils.js"></script>
   <script>
     const user = requireAuth();
+    const socket = io();
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
     
     let isTeacher = (user.role === 'ogretmen');
     
+    socket.emit('join_whiteboard');
+
     if(isTeacher) {
        document.getElementById('toolbar').style.display = 'flex';
        document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower"></i> Yayın Yapılıyor';
@@ -118,7 +122,7 @@
       if(!drawing || !isTeacher) return;
       drawing = false;
       allStrokes.push(currentStroke);
-      sendStroke(currentStroke);
+      socket.emit('draw', { stroke: currentStroke });
     });
 
     function addPoint(x, y) {
@@ -150,38 +154,33 @@
       }
     }
 
-    // ─── SENKRONİZASYON (Polling) ────────────────────────
-    let lastStrokeCount = 0;
+    // ─── SOCKET EVENTS ───
+    socket.on('draw', (data) => {
+      allStrokes.push(data.stroke);
+      drawStroke(data.stroke);
+    });
 
-    async function sendStroke(stroke) {
-      await ebaFetch('/api/whiteboard', {
-         method: 'POST', body: JSON.stringify({ stroke })
-      });
-    }
+    socket.on('clear_board', () => {
+      allStrokes = [];
+      redrawAll();
+    });
+
+    // Initial sync
+    fetch('/api/whiteboard').then(r => r.json()).then(d => {
+      if(d.success && d.strokes) {
+        allStrokes = d.strokes;
+        redrawAll();
+      }
+    });
 
     async function clearBoard() {
       if(!isTeacher) return;
       if(!confirm('Tüm tahtayı silmek istediğinize emin misiniz?')) return;
       allStrokes = [];
       redrawAll();
-      await ebaFetch('/api/whiteboard/clear', { method: 'POST' });
+      socket.emit('clear_board');
     }
 
-    async function syncBoard() {
-      try {
-        const r = await ebaFetch('/api/whiteboard');
-        if(!r) return;
-        const d = await r.json();
-        if(d.success && d.strokes) {
-           if(d.strokes.length !== allStrokes.length) {
-              allStrokes = d.strokes;
-              redrawAll();
-           }
-        }
-      } catch(e) {}
-    }
-
-    setInterval(syncBoard, 1500); // Her 1.5 saniyede bir güncelle
     resize();
   </script>
 </body>

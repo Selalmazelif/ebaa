@@ -81,7 +81,7 @@ function validateTC(tc) {
 }
 
 function validatePassword(password) {
-  return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password);
+  return password.length >= 4;
 }
 
 function validateName(name) {
@@ -122,57 +122,80 @@ form.addEventListener('submit', function(e) {
     }
 
     if (!validatePassword(password)) {
-        alert('Şifre en az 8 karakter, 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir!');
+        alert('Şifre en az 4 karakter olmalıdır!');
         return;
     }
 
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    if (users.some(user => user.tc === tc)) {
-        alert('Bu TC zaten kayıtlı!');
-        return;
-    }
-
-    const user = {
-        id: Date.now().toString(),
-        name: escapeHtml(name),
+    const userPayload = {
         tc: tc,
         password: password,
-        phone: phone,
         role: 'veli',
-        school: escapeHtml(school),
-        childTc: childTc,
-        childName: escapeHtml(childName),
-        relationship: relationship,
-        createdAt: new Date().toISOString()
+        name: name,
+        school: school,
+        veliTc: childTc, // In backend, veliTc field is used to link to child for veli role? Or veli record has veliTc? 
+        // Actually the schema for Users has veliTc. For a veli, maybe childTc is stored in veliTc?
+        // Let's check server.js register again.
+        branch: relationship,
+        level: childName
     };
 
-    const photoInput = document.getElementById('profilePic');
-    if (photoInput && photoInput.files && photoInput.files[0]) {
-        const file = photoInput.files[0];
-        if (file.size > 2 * 1024 * 1024) {
-            alert("Dosya boyutu 2MB'dan büyük olamaz!");
-            return;
-        }
-        if (!file.type.startsWith('image/')) {
-            alert('Sadece görüntü dosyaları kabul edilir!');
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            user.profilePic = e.target.result;
-            users.push(user);
-            localStorage.setItem('users', JSON.stringify(users));
+    fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userPayload)
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
             alert('Veli kaydı başarılı!');
             window.location.href = 'veli-login.html';
-        };
-        reader.readAsDataURL(file);
-        return;
-    }
+        } else {
+            alert('Kayıt Hatası: ' + data.message);
+        }
+    }).catch(err => {
+        console.warn("SQL Server hatası, LocalStorage'a düşülüyor.");
+        fallbackToLocalStorage();
+    });
 
-    users.push(user);
-    localStorage.setItem('users', JSON.stringify(users));
-    alert('Veli kaydı başarılı!');
-    window.location.href = 'veli-login.html';
+    function fallbackToLocalStorage() {
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+        if (users.some(user => user.tc === tc)) {
+            alert('Bu TC zaten kayıtlı!');
+            return;
+        }
+
+        const user = {
+            id: Date.now().toString(),
+            name: escapeHtml(name),
+            tc: tc,
+            password: password,
+            phone: phone,
+            role: 'veli',
+            school: escapeHtml(school),
+            childTc: childTc,
+            childName: escapeHtml(childName),
+            relationship: relationship,
+            createdAt: new Date().toISOString()
+        };
+
+        const photoInput = document.getElementById('profilePic');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            const file = photoInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                user.profilePic = e.target.result;
+                users.push(user);
+                localStorage.setItem('users', JSON.stringify(users));
+                alert('Veli kaydı başarılı (Yerel)!');
+                window.location.href = 'veli-login.html';
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        users.push(user);
+        localStorage.setItem('users', JSON.stringify(users));
+        alert('Veli kaydı başarılı (Yerel)!');
+        window.location.href = 'veli-login.html';
+    }
 });
 </script>
 

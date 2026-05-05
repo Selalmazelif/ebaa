@@ -77,28 +77,67 @@
 
 <script>
 
-let dersler = JSON.parse(localStorage.getItem("dersler")) || []
+async function yukle() {
+    const dersadi = document.getElementById("dersadi").value;
+    const dosyaInput = document.getElementById("dosya");
+    const dosya = dosyaInput.files[0];
 
-function yukle(){
+    if (!dersadi || !dosya) {
+        alert("Lütfen tüm alanları doldurun.");
+        return;
+    }
 
-let dersadi = document.getElementById("dersadi").value
-let dosya = document.getElementById("dosya").files[0]
-
-let ders = {
-ad: dersadi,
-dosya: dosya.name
+    try {
+        const res = await ebaFetch('/api/library', {
+            method: 'POST',
+            body: JSON.stringify({
+                title: dersadi,
+                category: 'Ders Materyali',
+                file_name: dosya.name,
+                school: user.school
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("Dosya başarıyla yüklendi.");
+            document.getElementById("dersadi").value = "";
+            dosyaInput.value = "";
+            goster();
+        } else {
+            alert("Yükleme hatası: " + data.message);
+        }
+    } catch (err) {
+        console.error("Yükleme hatası:", err);
+        alert("Dosya yüklenirken bir hata oluştu.");
+    }
 }
 
-dersler.push(ders)
-
-localStorage.setItem("dersler", JSON.stringify(dersler))
-
-goster()
-
+async function goster() {
+    const liste = document.getElementById("liste");
+    try {
+        const res = await ebaFetch(`/api/library?school=${encodeURIComponent(user.school)}`);
+        const data = await res.json();
+        
+        if (data.success) {
+            const materials = data.materials.filter(m => m.teacher_tc === user.tc);
+            liste.innerHTML = materials.map(m => `
+                <div class="card" style="background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                    <i class="fa fa-file-pdf" style="font-size:30px; color:#e74c3c; margin-bottom:10px;"></i>
+                    <h3 style="margin:0 0 5px; font-size:16px; color:#284B63;">${m.title}</h3>
+                    <p style="font-size:12px; color:#888;">${m.file_name}</p>
+                    <div style="margin-top:10px; font-size:11px; color:#aaa;">Yüklenme: ${new Date(m.createdAt).toLocaleDateString('tr-TR')}</div>
+                </div>
+            `).join('');
+            if (materials.length === 0) {
+                liste.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#aaa;">Henüz ders materyali yüklemediniz.</p>';
+            }
+        }
+    } catch (err) {
+        console.error("Dersler yüklenemedi:", err);
+    }
 }
 
 function initCommon() {
-    const user = getCurrentUser();
     if(user) {
         document.getElementById('profile-name').textContent = user.name;
         document.getElementById('profile-school').textContent = user.school;
@@ -108,10 +147,12 @@ function initCommon() {
             img.src = user.profilePic;
             img.style.display = 'block';
         }
+        goster();
     }
 }
+
+const user = getCurrentUser();
 initCommon();
-goster()
 </script>
 
 

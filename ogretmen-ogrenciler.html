@@ -89,24 +89,39 @@
 
       const ogrencilerGrid = document.getElementById('ogrenciler-grid');
 
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const students = users.filter(u => u.role === 'ogrenci' && u.school === user.school && user.authorizedClasses.includes(u.class));
+      async function loadStudents() {
+        try {
+          const res = await ebaFetch(`/api/users?school=${encodeURIComponent(user.school)}&role=ogrenci`);
+          if (!res) return;
+          const data = await res.json();
+          
+          if (data.success) {
+            const students = data.users.filter(u => user.authorizedClasses.includes(u.classNum));
 
-      ogrencilerGrid.innerHTML = students.map((student, index) => {
-        // Öğrencilerin aktiflik durumunu simüle et (bazıları çevrimiçi bazıları çevrimdışı)
-        const isOnline = parseInt(student.tc.slice(-1)) % 2 !== 0; // Tek TC'ler online
-        const statusColor = isOnline ? '#4caf50' : '#bbb';
-        const statusText = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+            ogrencilerGrid.innerHTML = students.map((student, index) => {
+              // Öğrencilerin aktiflik durumunu simüle et (bazıları çevrimiçi bazıları çevrimdışı)
+              const isOnline = student.isOnline || (parseInt(student.tc.slice(-1)) % 2 !== 0); // Tek TC'ler online (fallback)
+              const statusColor = isOnline ? '#4caf50' : '#bbb';
+              const statusText = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
 
-        return `
-    <div class="card" style="position:relative; text-align:center; padding:25px 15px;">
-      <div style="position:absolute; top:15px; right:15px; width:16px; height:16px; background-color:${statusColor}; border-radius:50%; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.2);" title="${statusText}"></div>
-      <i class="fa-solid fa-user-graduate" style="font-size:40px; color:#4A748F; margin-bottom:15px; display:block;"></i>
-      <h3 style="margin-bottom:5px;">${student.name}</h3>
-      <p style="color:#555; margin-bottom:8px;">${student.class}. Sınıf</p>
-      <span style="font-size:12px; font-weight:600; padding:4px 8px; border-radius:12px; background-color:${isOnline ? '#e8f5e9' : '#f5f5f5'}; color:${isOnline ? '#2e7d32' : '#757575'};">${statusText}</span>
-    </div>
-  `}).join('');
+              return `
+                <div class="card" style="position:relative; text-align:center; padding:25px 15px;">
+                  <div style="position:absolute; top:15px; right:15px; width:16px; height:16px; background-color:${statusColor}; border-radius:50%; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.2);" title="${statusText}"></div>
+                  <i class="fa-solid fa-user-graduate" style="font-size:40px; color:#4A748F; margin-bottom:15px; display:block;"></i>
+                  <h3 style="margin-bottom:5px;">${student.name}</h3>
+                  <p style="color:#555; margin-bottom:8px;">${student.classNum}. Sınıf</p>
+                  <span style="font-size:12px; font-weight:600; padding:4px 8px; border-radius:12px; background-color:${isOnline ? '#e8f5e9' : '#f5f5f5'}; color:${isOnline ? '#2e7d32' : '#757575'};">${statusText}</span>
+                </div>
+              `;
+            }).join('');
+          }
+        } catch (err) {
+          console.error("Öğrenci yükleme hatası:", err);
+          ogrencilerGrid.innerHTML = '<p style="text-align:center; color:red;">Öğrenci verileri yüklenemedi.</p>';
+        }
+      }
+
+      loadStudents();
     }
   </script>
 

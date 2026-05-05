@@ -116,17 +116,22 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
     <div class="profile-img-container" onclick="document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
       <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);
                   display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;">
-        <i class="fa fa-user" id="av-icon" style="font-size:40px;color:#ccc;"></i>
-        <img id="av-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <i class="fa fa-user" id="default-avatar-icon" style="font-size:40px;color:#ccc;"></i>
+        <img id="profile-img-display" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
       </div>
       <div class="edit-overlay"><i class="fa fa-camera"></i></div>
       <div class="status-indicator"></div>
     </div>
-    <p id="sb-name"  style="font-weight:600;font-size:15px;margin-bottom:2px;"></p>
-    <p id="sb-role"  style="font-size:12px;opacity:.8;margin-bottom:3px;">Öğretmen</p>
-    <p id="sb-school"style="font-size:12px;opacity:.7;"></p>
+    <p id="profile-name"  style="font-weight:600;font-size:15px;margin-bottom:2px;"></p>
+    <p id="profile-role"  style="font-size:12px;opacity:.8;margin-bottom:3px;">Öğretmen</p>
+    <p id="profile-school"style="font-size:12px;opacity:.7;"></p>
     <input id="picInput" type="file" accept="image/*" style="display:none;">
     <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
+    <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+      <button onclick="toggleDarkMode()" class="icon-btn" style="background:rgba(255,255,255,0.1); color:white; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer;" title="Karanlık Mod">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
   </div>
   <ul>
     <li><a href="ogretmen-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
@@ -134,6 +139,8 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
     <li><a href="ogretmen-canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
     <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
     <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+    <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
+    <li id="ai-sidebar-btn"><a href="#" onclick="openAiBot()"><i class="fa-solid fa-robot"></i> EBA Asistan (AI)</a></li>
     
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
     <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
@@ -368,6 +375,14 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
         <div id="sentList" style="font-size:12px;color:#aaa;text-align:center;padding:10px;">Henüz ödev gönderilmedi.</div>
       </div>
 
+      <!-- SINAV SONUÇLARI -->
+      <div class="box">
+        <div class="box-title" style="color:#284B63;"><i class="fa fa-award" style="color:#f39200;"></i> Sınav Sonuçları</div>
+        <div id="quizResultsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
+           <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -383,14 +398,24 @@ async function init() {
   if (!cu || cu.role !== 'ogretmen') { logout(); return; }
 
   // Sidebar & Profil
-  document.getElementById('sb-name').textContent   = cu.name;
-  document.getElementById('sb-school').textContent = cu.school;
+  const pName = document.getElementById('profile-name');
+  if(pName) pName.textContent = cu.name;
+  const pSchool = document.getElementById('profile-school');
+  if(pSchool) pSchool.textContent = cu.school;
+  
   if (cu.profilePic) {
-    document.getElementById('av-icon').style.display  = 'none';
-    document.getElementById('pav-icon').style.display = 'none';
-    ['av-img','pav-img'].forEach(id => { const el=document.getElementById(id); el.src=cu.profilePic; el.style.display='block'; });
+    const dIcon = document.getElementById('default-avatar-icon');
+    if(dIcon) dIcon.style.display = 'none';
+    const pavIcon = document.getElementById('pav-icon');
+    if(pavIcon) pavIcon.style.display = 'none';
+    
+    const pImg = document.getElementById('profile-img-display');
+    if(pImg) { pImg.src = cu.profilePic; pImg.style.display = 'block'; }
+    const pavImg = document.getElementById('pav-img');
+    if(pavImg) { pavImg.src = cu.profilePic; pavImg.style.display = 'block'; }
   }
-  document.getElementById('logoutBtn').onclick = logout;
+  const lBtn = document.getElementById('logoutBtn');
+  if(lBtn) lBtn.onclick = logout;
   document.getElementById('picInput').addEventListener('change', handlePicChange);
 
   // Dinamik Grupları Doldur
@@ -412,13 +437,14 @@ async function init() {
   await loadNotifs();
   loadSentAssignments();
   loadSubmissions();
+  loadQuizResults();
   const now = new Date(); calY = now.getFullYear(); calM = now.getMonth();
   renderCal();
 }
 
 async function loadSubmissions() {
    try {
-      const r = await fetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
+      const r = await ebaFetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
       const d = await r.json();
       const el = document.getElementById('submissionsList');
       if (d.success && d.submissions.length) {
@@ -644,8 +670,8 @@ function addQuizQuestion() {
 async function sendNotifs(type, preview, group) {
   let targets=[];
   try {
-    const r=await fetch(`/api/users?school=${encodeURIComponent(cu.school)}`);
-    const d=await r.json(); if(d.success) targets=d.users;
+    const r = await ebaFetch(`/api/users?school=${encodeURIComponent(cu.school)}`);
+    const d = await r.json(); if(d.success) targets=d.users;
   } catch(e) {
     targets=JSON.parse(localStorage.getItem('users')||'[]').filter(u=>u.school===cu.school);
   }
@@ -658,7 +684,10 @@ async function sendNotifs(type, preview, group) {
   const text = `🔔 ${cu.name} yeni ${type} paylaştı: "${preview}..."`;
   for (const t of filtered) {
     try {
-      await fetch('/api/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({receiver_tc:t.tc,text})});
+      await ebaFetch('/api/notifications', {
+        method: 'POST',
+        body: JSON.stringify({ receiver_tc: t.tc, text })
+      });
     } catch(e) {
       const n=JSON.parse(localStorage.getItem('eba_notifications')||'[]');
       n.unshift({id:Date.now()+Math.random(),receiver_tc:t.tc,text,isRead:false,createdAt:new Date().toISOString()});
@@ -669,13 +698,11 @@ async function sendNotifs(type, preview, group) {
 
 // ─── FEED ───────────────────────────────────────────────────────────
 async function loadFeed() {
-  let posts=[];
   try {
-    const r=await fetch(`/api/posts?school=${encodeURIComponent(cu.school)}&group=all&userClass=all`);
-    const d=await r.json();
-    // Öğretmenin kendi paylaşımları + okul paylaşımları
-    if(d.success) posts=d.posts;
-  } catch(e) {}
+    const r = await ebaFetch(`/api/posts?school=${encodeURIComponent(cu.school)}`);
+    const d = await r.json();
+    if(d.success) posts = d.posts;
+  } catch(e) { console.error("Feed load error:", e); }
   const el=document.getElementById('feedContainer');
   if(!posts.length){
     el.innerHTML='<div class="empty-feed"><i class="fa-regular fa-comments"></i><p style="font-size:14px;margin:0;">Henüz burada paylaşılan ileti yok.</p></div>';
@@ -912,6 +939,29 @@ async function loadSubmissions() {
    } catch(e) {}
 }
 
+async function loadQuizResults() {
+   try {
+      const r = await ebaFetch('/api/quizzes/results');
+      const d = await r.json();
+      const el = document.getElementById('quizResultsList');
+      if (d.success && d.results.length) {
+         el.innerHTML = d.results.map(r => `
+           <div style="border-bottom:1px solid #eee; padding:10px 0;">
+              <div style="display:flex; justify-content:space-between;">
+                 <strong>${r.student_name}</strong>
+                 <span style="font-size:10px; color:#aaa;">${new Date(r.takenAt).toLocaleDateString('tr-TR')}</span>
+              </div>
+              <div style="font-size:11px; color:#5c8ead;">Sınav: ${r.quiz_title}</div>
+              <div style="font-weight:700; color:#2ecc71; margin-top:3px;">Puan: ${r.score} / ${r.total_score}</div>
+              <div style="font-size:10px; color:#888;">D: ${r.correct_count} | Y: ${r.wrong_count}</div>
+           </div>
+         `).join('');
+      } else {
+         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Henüz sınav sonucu yok.</div>';
+      }
+   } catch(e) { console.error("Quiz results error:", e); }
+}
+
 function renderCal() {
   const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
   document.getElementById('calHead').textContent = `${months[calM]} ${calY}`;
@@ -958,6 +1008,24 @@ async function submitGrade(sub_id) {
        loadNotifs();
      }
    } catch(e) {}
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('eba_dark_mode', isDark);
+  // Update icon
+  const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
+  if(icon) {
+    icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+}
+
+// Apply saved theme
+if(localStorage.getItem('eba_dark_mode') === 'true') {
+  document.body.classList.add('dark-mode');
+  const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
+  if(icon) icon.className = 'fa-solid fa-sun';
 }
 
 init();

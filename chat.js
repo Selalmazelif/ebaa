@@ -1,556 +1,398 @@
-// Chat sayfası için temel statik veri ve UI yönetimi
+// chat.js — Grup Özellikleri Aktif (Orijinal Tasarım Uyumlu)
 
 const state = {
   activeConversationId: null,
-  conversations: [],
-  users: [],
-  socket: null, // Socket bağlantısı için
+  conversations: [], 
+  users: [],         
+  socket: null,
 };
 
 const elements = {
-  individualList: document.getElementById('individualList'),
-  groupList: document.getElementById('groupList'),
-  chatMessages: document.getElementById('chatMessages'),
-  chatTitle: document.getElementById('chatTitle'),
-  chatSubtitle: document.getElementById('chatSubtitle'),
-  chatForm: document.getElementById('chatForm'),
-  messageInput: document.getElementById('messageInput'),
+  individualList:     document.getElementById('individualList'),
+  groupList:          document.getElementById('groupList'),
+  chatMessages:       document.getElementById('chatMessages'),
+  chatTitle:          document.getElementById('chatTitle'),
+  chatSubtitle:       document.getElementById('chatSubtitle'),
+  chatForm:           document.getElementById('chatForm'),
+  messageInput:       document.getElementById('messageInput'),
   conversationSearch: document.getElementById('conversationSearch'),
-  toggleSidebar: document.getElementById('toggleSidebar'),
-  chatSidebar: document.getElementById('chatSidebar'),
-  groupModal: document.getElementById('groupModal'),
-  modalBackdrop: document.getElementById('modalBackdrop'),
-  openGroupModal: document.getElementById('openGroupModal'),
-  closeModal: document.getElementById('closeModal'),
-  cancelGroup: document.getElementById('cancelGroup'),
-  saveGroup: document.getElementById('saveGroup'),
-  groupName: document.getElementById('groupName'),
-  userList: document.getElementById('userList'),
-  createGroupBtn: document.getElementById('createGroupBtn'),
-  contactsModal: document.getElementById('contactsModal'),
-  openContactsBtn: document.getElementById('openContactsBtn'),
-  closeContacts: document.getElementById('closeContacts'),
-  contactsBackdrop: document.getElementById('contactsBackdrop'),
-  contactsList: document.getElementById('contactsList'),
+  groupModal:         document.getElementById('groupModal'),
+  openGroupModal:     document.getElementById('openGroupModal'),
+  createGroupBtn:     document.getElementById('createGroupBtn'),
+  saveGroup:          document.getElementById('saveGroup'),
+  groupName:          document.getElementById('groupName'),
+  userList:           document.getElementById('userList'),
+  chatTop:            document.getElementById('chatTop'),
+  groupDetailsModal:  document.getElementById('groupDetailsModal'),
+  groupDetailsName:   document.getElementById('groupDetailsName'),
+  groupDetailsMemberCount: document.getElementById('groupDetailsMemberCount'),
+  groupMembersList:   document.getElementById('groupMembersList'),
+  leaveGroupBtn:      document.getElementById('leaveGroupBtn'),
+  voiceBtn:           document.getElementById('voiceBtn'),
 };
 
 function formatTime(date = new Date()) {
   const d = new Date(date);
-  const hour = String(d.getHours()).padStart(2, '0');
-  const minute = String(d.getMinutes()).padStart(2, '0');
-  return `${hour}:${minute}`;
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
-function randomId() {
-  return `id_${Math.random().toString(16).slice(2)}`;
-}
-
-async function createDummyData() {
-  const user = getCurrentUser();
-  if (!user) return;
-
-  try {
-    // Sabit localhost:3000 yerine göreceli yol kullanıyoruz
-    const res = await fetch(`/api/users?school=${encodeURIComponent(user.school || '')}`);
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message);
-    
-    // Kendisini listeden çıkar (Hem TC hem ID kontrolü ile daha güvenli)
-    const peers = data.users.filter(u => String(u.tc) !== String(user.tc));
-    state.users = peers;
-
-    const individualConvs = peers.map((p) => ({
-      id: p.tc,
-      type: 'individual',
-      name: p.name,
-      members: [p.tc],
-      isOnline: p.isOnline,
-      lastMessage: 'Henüz mesaj yok',
-      lastTime: '',
-      messages: [],
-    }));
-
-    state.conversations = [...individualConvs];
-
-    const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
-    // Kullanıcının üye olduğu grupları getir (ID veya TC eşleşmesi)
-    const myGroups = allGroups.filter(g => g.members.includes(String(user.id)) || g.members.includes(String(user.tc)));
-    myGroups.forEach(g => {
-      // Eğer grup zaten listede yoksa ekle
-      if(!state.conversations.find(c => c.id === g.id)) {
-        state.conversations.unshift(g);
-      }
-    });
-
-    renderConversationLists(elements.conversationSearch.value);
-    if (state.conversations.length > 0 && !state.activeConversationId) {
-      setActiveConversation(state.conversations[0].id);
-    }
-    
-    // Geçmiş mesajları çekerek sol menüdeki "Son mesaj" bilgisini eksiksiz güncelle
-    individualConvs.forEach(conv => fetchMessages(conv.id));
-
-    // Socket Bağlantısını Kur (Sadece 1 kez)
-    if(!state.socket) {
-      state.socket = io();
-      state.socket.on('connect', () => {
-        state.socket.emit('login', user.tc);
-        console.log('✅ Real-time bağlantısı kuruldu.');
-      });
-
-      state.socket.on('new_message', (data) => {
-        const conv = getConversationById(data.sender_tc);
-        if(conv) {
-          const msg = {
-            from: 'them',
-            text: data.content,
-            time: formatTime(data.sentAt),
-            rawTime: data.sentAt
-          };
-          conv.messages.push(msg);
-          conv.lastMessage = msg.text;
-          conv.lastTime = msg.time;
-          conv.lastTimestamp = new Date(msg.rawTime).getTime();
-          
-          if(state.activeConversationId === data.sender_tc) {
-            renderMessages(conv.messages);
-          }
-          renderConversationLists(elements.conversationSearch.value);
-        }
-      });
-    }
-  } catch(e) {
-    console.error("User fetch failed:", e);
-    // Hata durumunda boş liste göster veya kullanıcıya bildir
-    elements.individualList.innerHTML = '<div style="padding:10px;color:#aaa;font-size:12px;text-align:center;">Kullanıcılar yüklenemedi.</div>';
-  }
-}
-
-function renderConversationItem(conversation) {
-  const item = document.createElement('button');
-  item.className = 'conversation-item';
-  item.type = 'button';
-  item.dataset.id = conversation.id;
-
-  const initials = conversation.name
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('');
-
-  item.innerHTML = `
-    <span class="conversation-avatar">
-      ${initials}
-      ${conversation.type === 'individual' ? `<span class="online-indicator ${conversation.isOnline ? 'online' : ''}"></span>` : ''}
-    </span>
-    <div class="conversation-info">
-      <div class="conversation-name">${conversation.name}</div>
-      <div class="conversation-meta">
-        <span class="conversation-last">${conversation.lastMessage}</span>
-        <span class="conversation-time">${conversation.lastTime}</span>
-      </div>
-    </div>
-  `;
-
-  item.addEventListener('click', () => {
-    setActiveConversation(conversation.id);
-    if (window.innerWidth < 980) {
-      elements.chatSidebar.classList.add('hidden');
-    }
-  });
-
-  return item;
-}
-
-function renderConversationLists(filterValue = '') {
-  const normalized = filterValue.trim().toLowerCase();
-  
-  // En son mesaja göre sıralama (en yeni en üstte)
-  state.conversations.sort((a, b) => {
-    const timeA = a.lastTimestamp || 0;
-    const timeB = b.lastTimestamp || 0;
-    return timeB - timeA;
-  });
-
-  const filtered = state.conversations.filter((c) => c.name.toLowerCase().includes(normalized));
-
-  elements.individualList.innerHTML = '';
-  elements.groupList.innerHTML = '';
-
-  if (filtered.length === 0) {
-    elements.individualList.innerHTML = '<div style="text-align:center;color:#aaa;font-size:11px;padding:10px;">Sonuç bulunamadı.</div>';
-    return;
-  }
-
-  filtered.forEach((conv) => {
-    const item = renderConversationItem(conv);
-
-    if (conv.type === 'individual') {
-      elements.individualList.appendChild(item);
-    } else {
-      elements.groupList.appendChild(item);
-    }
-
-    if (state.activeConversationId === conv.id) {
-      item.classList.add('active');
-    }
-  });
-}
-
-function getConversationById(id) {
-  return state.conversations.find((c) => c.id === id) || null;
-}
-
-function setActiveConversation(id) {
-  const conversation = getConversationById(id);
-  if (!conversation) return;
-
-  state.activeConversationId = conversation.id;
-  document.querySelectorAll('.conversation-item').forEach((item) => {
-    item.classList.toggle('active', item.dataset.id === id);
-  });
-
-  elements.chatTitle.textContent = conversation.name;
-
-  if (conversation.type === 'group') {
-    elements.chatSubtitle.textContent = `Grup sohbeti · ${conversation.members.length} kişi`;
-    elements.chatSubtitle.style.color = 'var(--muted)';
-    renderMessages(conversation.messages);
-  } else {
-    elements.chatSubtitle.textContent = conversation.isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
-    elements.chatSubtitle.style.color = conversation.isOnline ? '#2ecc71' : 'var(--muted)';
-    // Backend'den mesajları çek
-    fetchMessages(conversation.id);
-  }
-}
-
-async function fetchMessages(withTc) {
-  try {
-    const res = await fetch(`/api/messages?with_tc=${withTc}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-    });
-    const data = await res.json();
-    if (data.success) {
-      const conv = getConversationById(withTc);
-      if (conv) {
-        conv.messages = data.messages.map(m => ({
-          from: m.sender_tc === getCurrentUser().tc ? 'me' : 'them',
-          text: m.content,
-          time: formatTime(m.sentAt),
-          rawTime: m.sentAt
-        }));
-        
-        // Son mesajı ve zamanı güncelle (Mesaj listeleme mantığı eksiksiz)
-        if (conv.messages.length > 0) {
-          const lastMsg = conv.messages[conv.messages.length - 1];
-          conv.lastMessage = lastMsg.from === 'me' ? 'Siz: ' + lastMsg.text : lastMsg.text;
-          conv.lastTime = lastMsg.time;
-          conv.lastTimestamp = lastMsg.rawTime ? new Date(lastMsg.rawTime).getTime() : new Date().getTime();
-        } else {
-          conv.lastMessage = 'Henüz mesaj yok';
-          conv.lastTime = '';
-          conv.lastTimestamp = 0;
-        }
-        
-        // Arayüzü güncelle
-        renderConversationLists(elements.conversationSearch.value);
-        
-        if (state.activeConversationId === withTc) {
-          renderMessages(conv.messages);
-        }
-      }
-    }
-  } catch (e) { console.error("Message fetch failed:", e); }
-}
-
-function renderMessages(messages) {
-  elements.chatMessages.innerHTML = '';
-
-  if (!messages || messages.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    empty.innerHTML = `
-      <i class="fa-regular fa-message"></i>
-      <p>Henüz mesaj yok. Mesaj göndermek için alttaki alana yazın.</p>
-    `;
-    elements.chatMessages.appendChild(empty);
-    scrollToBottom();
-    return;
-  }
-
-  messages.forEach((message) => {
-    const item = document.createElement('div');
-    item.className = `message ${message.from === 'me' ? 'me' : 'them'}`;
-    item.innerHTML = `
-      <div>${message.text}</div>
-      <span class="message-time">${message.time}</span>
-    `;
-    elements.chatMessages.appendChild(item);
-  });
-
-  scrollToBottom();
-}
-
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-  });
-}
-
-async function sendMessage(text) {
-  const conversation = getConversationById(state.activeConversationId);
-  if (!conversation || !text.trim()) return;
-
-  const currentText = text.trim();
-  elements.messageInput.value = '';
-
-  // Local state update for immediate feedback
-  const newMessage = {
-    from: 'me',
-    text: currentText,
-    time: formatTime(),
-    rawTime: new Date().toISOString()
-  };
-  conversation.messages.push(newMessage);
-  conversation.lastMessage = 'Siz: ' + newMessage.text;
-  conversation.lastTime = newMessage.time;
-  conversation.lastTimestamp = new Date(newMessage.rawTime).getTime();
-  renderMessages(conversation.messages);
-  renderConversationLists(elements.conversationSearch.value);
-
-  // Send to Backend
-  if (conversation.type === 'individual') {
-    try {
-      // 1. Backend API'ye kaydet (HTTP üzerinden)
-      await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          receiver_tc: conversation.id,
-          content: currentText
-        })
-      });
-
-    } catch (e) { console.error("Message send failed:", e); }
-  } else if (conversation.type === 'group') {
-    // Geçici veri kullanımı (localStorage) ile grup mesajını kaydet
-    const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
-    const groupIndex = allGroups.findIndex(g => g.id === conversation.id);
-    if (groupIndex !== -1) {
-      allGroups[groupIndex].messages.push(newMessage);
-      allGroups[groupIndex].lastMessage = 'Siz: ' + newMessage.text;
-      allGroups[groupIndex].lastTime = newMessage.time;
-      allGroups[groupIndex].lastTimestamp = conversation.lastTimestamp;
-      localStorage.setItem('chatGroups', JSON.stringify(allGroups));
-    }
-  }
-}
-
-function toggleSidebar() {
-  elements.chatSidebar.classList.toggle('hidden');
+function getAuthHeader() {
+  return { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` };
 }
 
 function goToPanel() {
   const user = getCurrentUser();
-  if (!user) return;
-  window.location.href = redirectByRole(user.role);
+  if (user) window.location.href = redirectByRole(user.role);
 }
 
-async function openContactsModal() {
+// ─── BAŞLATMA ────────────────────────────────────────────────────────
+
+async function initChat() {
   const user = getCurrentUser();
   if (!user) return;
+
+  try {
+    // Bireysel konuşmaları (son mesajlarla birlikte) getir
+    const cRes = await fetch(`/api/chat-conversations?school=${encodeURIComponent(user.school || '')}`, { headers: getAuthHeader() });
+    const cData = await cRes.json();
+    if (cData.success) {
+      state.users = cData.conversations; // Modalda seçim için
+      state.conversations = cData.conversations.map(c => ({
+        id: c.tc, 
+        type: 'individual', 
+        name: c.name, 
+        messages: [], 
+        lastMessage: c.lastMessage || 'Sohbeti başlatın...'
+      }));
+    }
+    
+    await loadGroups();
+    renderConversationLists();
+    initSocket(user);
+  } catch (e) { console.error(e); }
+}
+
+async function loadGroups() {
+  try {
+    const res = await fetch('/api/chat-groups', { headers: getAuthHeader() });
+    const data = await res.json();
+    if (data.success) {
+      data.groups.forEach(g => {
+        let members = [];
+        try { members = JSON.parse(g.members); } catch(e) {}
+        state.conversations.push({
+          id: g.id, type: 'group', name: g.name, members: members, lastMessage: 'Grup Sohbeti', messages: []
+        });
+      });
+    }
+  } catch (e) { console.error(e); }
+}
+
+// ─── SOCKET ──────────────────────────────────────────────────────────
+
+function initSocket(user) {
+  if (state.socket) return;
+  state.socket = io();
+
+  function joinAllGroups() {
+    state.conversations.filter(c => c.type === 'group').forEach(g => {
+      state.socket.emit('join_group', g.id);
+    });
+  }
+
+  state.socket.on('connect', () => {
+    state.socket.emit('login', user.tc);
+    joinAllGroups();
+    console.log('✅ Socket bağlandı:', state.socket.id);
+  });
+
+  state.socket.on('reconnect', () => {
+    state.socket.emit('login', user.tc);
+    joinAllGroups();
+  });
+
+  state.socket.on('new_message', (data) => {
+    let conv = getConversationById(data.sender_tc);
+    if (!conv) {
+      // Konuşma listede yoksa oluştur
+      conv = { id: String(data.sender_tc), type: 'individual', name: data.sender_name || data.sender_tc, messages: [], lastMessage: '' };
+      state.conversations.push(conv);
+    }
+    conv.messages.push({ from: 'them', text: data.content, time: formatTime(data.sentAt) });
+    conv.lastMessage = data.content;
+    if (state.activeConversationId === String(data.sender_tc)) renderMessages(conv.messages, 'individual');
+    renderConversationLists();
+  });
+
+  state.socket.on('group_message', (data) => {
+    let conv = getConversationById(data.group_id);
+    if (!conv) return; // Grubumuz değilse yoksay
+    const myTc = getCurrentUser()?.tc;
+    if (String(data.sender_tc) === String(myTc)) return; // Kendi mesajımızı çift gösterme
+    conv.messages.push({ from: 'them', text: data.content, senderName: data.sender_name, time: formatTime(data.sentAt) });
+    conv.lastMessage = `${data.sender_name}: ${data.content}`;
+    if (state.activeConversationId === String(data.group_id)) renderMessages(conv.messages, 'group');
+    renderConversationLists();
+  });
+}
+
+// ─── UI ──────────────────────────────────────────────────────────────
+
+function renderConversationLists() {
+  elements.individualList.innerHTML = '';
+  elements.groupList.innerHTML = '';
+
+  state.conversations.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = `conversation-item ${state.activeConversationId === String(conv.id) ? 'active' : ''}`;
+    
+    item.innerHTML = `
+      <div class="conversation-avatar" style="background: ${conv.type === 'group' ? '#284B63' : '#5C8EAD'}">
+        ${conv.name.charAt(0).toUpperCase()}
+      </div>
+      <div class="conversation-info">
+        <div class="conversation-name">${conv.name}</div>
+        <div class="conversation-meta">
+          <div class="conversation-last">${conv.lastMessage}</div>
+        </div>
+      </div>
+    `;
+    
+    item.onclick = () => setActiveConversation(conv.id);
+    if (conv.type === 'individual') elements.individualList.appendChild(item);
+    else elements.groupList.appendChild(item);
+  });
+}
+
+function setActiveConversation(id) {
+  state.activeConversationId = String(id);
+  const conv = getConversationById(id);
+  elements.chatTitle.textContent = conv.name;
+  elements.chatSubtitle.textContent = conv.type === 'group' ? `${conv.members.length} Üye (Detay için tıkla)` : 'Bireysel Sohbet';
+  
+  if (conv.type === 'group') fetchGroupMessages(id);
+  else fetchIndividualMessages(id);
+  renderConversationLists();
+}
+
+async function fetchIndividualMessages(withTc) {
+  const res = await fetch(`/api/messages?with_tc=${withTc}`, { headers: getAuthHeader() });
+  const data = await res.json();
+  if (data.success) {
+    const myTc = getCurrentUser()?.tc;
+    const conv = getConversationById(withTc);
+    conv.messages = data.messages.map(m => ({ from: String(m.sender_tc) === String(myTc) ? 'me' : 'them', text: m.content, time: formatTime(m.sentAt) }));
+    renderMessages(conv.messages, 'individual');
+  }
+}
+
+async function fetchGroupMessages(groupId) {
+  const res = await fetch(`/api/chat-groups/${groupId}/messages`, { headers: getAuthHeader() });
+  const data = await res.json();
+  if (data.success) {
+    const myTc = getCurrentUser()?.tc;
+    const conv = getConversationById(groupId);
+    conv.messages = data.messages.map(m => ({ from: String(m.sender_tc) === String(myTc) ? 'me' : 'them', text: m.content, senderName: m.sender_name, time: formatTime(m.sentAt) }));
+    renderMessages(conv.messages, 'group');
+  }
+}
+
+function renderMessages(messages, type) {
+  elements.chatMessages.innerHTML = '';
+  messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = `message ${m.from === 'me' ? 'me' : 'them'}`;
+    const sender = (type === 'group' && m.from === 'them') ? `<small><b>${m.senderName}</b></small><br>` : '';
+    
+    if (m.text && m.text.startsWith('DATA:AUDIO/')) {
+      const audioUrl = m.text.split('|')[1] || m.text;
+      div.innerHTML = `${sender}<audio controls src="${audioUrl}" style="max-width:200px; height:30px;"></audio> <small style="display:block; opacity:0.6;">${m.time}</small>`;
+    } else {
+      div.innerHTML = `${sender}${m.text} <small style="display:block; opacity:0.6;">${m.time}</small>`;
+    }
+    
+    elements.chatMessages.appendChild(div);
+  });
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+// ─── GRUP İŞLEMLERİ ──────────────────────────────────────────────────
+
+function openGroupModal() {
+  elements.groupName.value = '';
+  elements.groupModal.classList.add('open');
+  
+  const availableUsers = state.users.filter(u => u.tc);
+  if (availableUsers.length === 0) {
+    elements.userList.innerHTML = '<div style="color:#e74c3c; font-size:13px; text-align:center; padding:20px;">Okulunuzda gruba eklenebilecek başka kullanıcı bulunamadı.</div>';
+  } else {
+    elements.userList.innerHTML = availableUsers.map(u => `
+      <div class="user-card" onclick="this.classList.toggle('selected')" data-tc="${u.tc}">
+        <div class="conversation-avatar" style="width:30px; height:30px; font-size:12px; background:#5C8EAD;">${u.name.charAt(0).toUpperCase()}</div>
+        <div class="conversation-info">
+          <div class="conversation-name" style="font-size:13px;">${u.name}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('open');
+  el.style.display = 'none'; // Hem class hem inline style'ı temizle
+}
+window.closeModal = closeModal;
+
+async function createGroup() {
+  const name = elements.groupName.value.trim();
+  const selected = [...elements.userList.querySelectorAll('.user-card.selected')].map(el => el.dataset.tc);
+  
+  if (!name) return alert('Lütfen bir grup adı girin.');
+  if (selected.length === 0) return alert('Lütfen en az bir üye seçin.');
   
   try {
-    const res = await fetch(`/api/users?school=${encodeURIComponent(user.school || '')}`);
+    const res = await fetch('/api/chat-groups', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() }, 
+      body: JSON.stringify({ name, members: selected }) 
+    });
     const data = await res.json();
-    if (!data.success) throw new Error(data.message);
-    
-    // Kendisini listeden çıkar
-    const peers = data.users.filter(u => String(u.tc) !== String(user.tc));
-    
-    if(elements.contactsList) {
-      elements.contactsList.innerHTML = peers.map(u => `
-        <div class="user-card" onclick="startChat('${u.tc}', '${u.name}')" style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--border); width:100%; text-align:left; background:transparent;">
-          <span class="user-avatar" style="width:38px; height:38px; background:rgba(92,142,173,0.18); color:var(--primary); border-radius:50%; display:grid; place-items:center; font-weight:700; position:relative; flex-shrink:0;">
-            ${u.name.split(' ').map(n=>n[0]).join('')}
-            <span class="online-indicator ${u.isOnline ? 'online' : ''}" style="width:11px; height:11px; border:2px solid var(--surface); position:absolute; bottom:0; right:0;"></span>
-          </span>
-          <div style="flex:1; min-width:0;">
-            <div class="user-name" style="font-weight:700; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.name}</div>
-            <div style="font-size:11px; color:${u.isOnline ? '#2ecc71' : 'var(--muted)'};">${u.isOnline ? 'Çevrimiçi' : 'Çevrimdışı'} · ${u.role === 'ogretmen' ? 'Öğretmen' : u.role === 'ogrenci' ? 'Öğrenci' : 'Veli'}</div>
+    if (data.success) {
+      closeModal('groupModal');
+      // Sayfayı yenilemeden grubu listeye ekle ve socket'e katıl
+      await loadGroups();
+      renderConversationLists();
+      // Yeni gruplara da katıl
+      if (state.socket) {
+        state.conversations.filter(c => c.type === 'group').forEach(g => state.socket.emit('join_group', g.id));
+      }
+      alert('Grup başarıyla oluşturuldu!');
+    } else {
+      alert('Hata: ' + (data.message || 'Grup oluşturulamadı.'));
+    }
+  } catch(e) {
+    console.error('Grup oluşturma hatası:', e);
+    alert('Sunucu hatası oluştu!');
+  }
+}
+
+async function openGroupDetails() {
+  const conv = getConversationById(state.activeConversationId);
+  if (!conv || conv.type !== 'group') return;
+  
+  elements.groupDetailsName.textContent = conv.name;
+  elements.groupDetailsMemberCount.textContent = 'Yükleniyor...';
+  elements.groupMembersList.innerHTML = '';
+  elements.groupDetailsModal.classList.add('open');
+
+  try {
+    const res = await fetch(`/api/chat-groups/${conv.id}/members`, { headers: getAuthHeader() });
+    const data = await res.json();
+    if (data.success) {
+      elements.groupDetailsMemberCount.textContent = `${data.members.length} Üye`;
+      elements.groupMembersList.innerHTML = data.members.map(m => `
+        <div class="user-card" onclick="startPrivateChatFromGroup('${m.tc}', '${m.name}')" style="background:#f8fafc; border:1px solid #eee;">
+          <div class="conversation-avatar" style="width:30px; height:30px; font-size:12px; background:#5C8EAD;">${m.name.charAt(0).toUpperCase()}</div>
+          <div class="conversation-info">
+            <div class="conversation-name" style="font-size:14px;">${m.name}</div>
           </div>
         </div>
       `).join('');
-    }
-    
-    if(elements.contactsModal) elements.contactsModal.classList.add('open');
-  } catch(e) {
-    console.error("Contacts fetch failed:", e);
-    if(elements.contactsList) elements.contactsList.innerHTML = '<div style="padding:20px; text-align:center; color:var(--muted);">Kişiler yüklenemedi.</div>';
-  }
-}
-
-function closeContactsModal() {
-  if(elements.contactsModal) elements.contactsModal.classList.remove('open');
-}
-
-function startChat(peerTc, peerName) {
-    closeContactsModal();
-    const existing = state.conversations.find(c => c.id === peerTc);
-    if(existing) {
-        setActiveConversation(peerTc);
     } else {
-        const newConv = {
-            id: peerTc,
-            type: 'individual',
-            name: peerName,
-            members: [peerTc],
-            lastMessage: 'Yeni sohbet...',
-            lastTime: '',
-            messages: []
+      elements.groupDetailsMemberCount.textContent = 'Üyeler yüklenemedi';
+    }
+  } catch(e) {
+    console.error('Üye listesi hatası:', e);
+    elements.groupDetailsMemberCount.textContent = 'Hata oluştu';
+  }
+}
+
+window.startPrivateChatFromGroup = function(tc, name) {
+  const me = getCurrentUser();
+  if (!me || String(tc) === String(me.tc)) return;
+  closeModal('groupDetailsModal');
+  setActiveConversation(tc);
+};
+
+// ─── EVENTLER ────────────────────────────────────────────────────────
+
+// ─── SESLİ MESAJ LOGİC ────────────────────────────────────────────────
+let mediaRecorder;
+let audioChunks = [];
+
+elements.voiceBtn.onclick = async () => {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result;
+          const voiceMsg = `DATA:AUDIO/WEBM|${base64Audio}`;
+          sendDirectMessage(voiceMsg);
         };
-        state.conversations.unshift(newConv);
-        renderConversationLists();
-        setActiveConversation(peerTc);
+      };
+      
+      mediaRecorder.start();
+      elements.voiceBtn.classList.add('recording');
+      elements.voiceBtn.innerHTML = '<i class="fa-solid fa-stop" style="color:#e53e3e;"></i>';
+      console.log("Kayıt başladı...");
+    } catch (err) {
+      alert("Mikrofon erişimi engellendi!");
     }
-}
-
-function openModal() {
-  elements.groupModal.classList.add('open');
-  elements.groupModal.setAttribute('aria-hidden', 'false');
-  renderUserList();
-}
-
-function closeModal() {
-  elements.groupModal.classList.remove('open');
-  elements.groupModal.setAttribute('aria-hidden', 'true');
-  elements.groupName.value = '';
-  elements.userList.querySelectorAll('.user-card.selected').forEach((el) => el.classList.remove('selected'));
-}
-
-function renderUserList() {
-  elements.userList.innerHTML = '';
-  state.users.forEach((user) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'user-card';
-    card.dataset.userId = user.id || user.tc;
-
-    card.innerHTML = `
-      <span class="user-avatar">${user.name
-        .split(' ')
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')}
-      </span>
-      <span class="user-name">${user.name}</span>
-    `;
-
-    card.addEventListener('click', () => {
-      card.classList.toggle('selected');
-    });
-
-    elements.userList.appendChild(card);
-  });
-}
-
-function createGroup() {
-  const groupName = elements.groupName.value.trim();
-  const selectedUsers = Array.from(elements.userList.querySelectorAll('.user-card.selected')).map((card) => card.dataset.userId);
-
-  if (!groupName) {
-    alert('Grup adı giriniz.');
-    return;
+  } else {
+    mediaRecorder.stop();
+    elements.voiceBtn.classList.remove('recording');
+    elements.voiceBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+    console.log("Kayıt durduruldu.");
   }
+};
 
-  if (selectedUsers.length < 1) {
-    alert('En az bir üye seçmelisiniz.');
-    return;
-  }
+async function sendDirectMessage(text) {
+  if (!text || !state.activeConversationId) return;
+  const conv = getConversationById(state.activeConversationId);
   
-  const user = getCurrentUser();
-  if(user) {
-      selectedUsers.push(user.id || user.tc); // add creator to group
-  }
-
-  const newGroup = {
-    id: randomId(),
-    type: 'group',
-    name: groupName,
-    members: selectedUsers,
-    lastMessage: 'Grup oluşturuldu.',
-    lastTime: formatTime(),
-    messages: [
-      { from: 'me', text: 'Grup oluşturuldu. Herkese merhaba!', time: formatTime() },
-    ],
-  };
+  conv.messages.push({ from: 'me', text, time: formatTime() });
+  conv.lastMessage = text.startsWith('DATA:AUDIO/') ? '🎤 Sesli Mesaj' : text;
   
-  const allGroups = JSON.parse(localStorage.getItem('chatGroups') || '[]');
-  allGroups.push(newGroup);
-  localStorage.setItem('chatGroups', JSON.stringify(allGroups));
-
-  state.conversations.unshift(newGroup);
-  renderConversationLists(elements.conversationSearch.value);
-  closeModal();
-  setActiveConversation(newGroup.id);
+  renderMessages(conv.messages, conv.type);
+  renderConversationLists();
+  
+  const url = conv.type === 'group' ? `/api/chat-groups/${conv.id}/messages` : '/api/messages';
+  const body = conv.type === 'group' ? { content: text } : { receiver_tc: conv.id, content: text };
+  await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeader() }, body: JSON.stringify(body) });
 }
 
-async function init() {
-  const user = requireAuth();
-  if (!user) return;
+elements.chatForm.onsubmit = async (e) => {
+  e.preventDefault();
+  const text = elements.messageInput.value.trim();
+  if (!text) return;
+  elements.messageInput.value = '';
+  sendDirectMessage(text);
+};
 
-  await createDummyData();
-  renderConversationLists(elements.conversationSearch.value);
 
-  // Varsayılan olarak ilk konuşmayı seç
-  if (state.conversations.length && !state.activeConversationId) {
-    setActiveConversation(state.conversations[0].id);
-  }
+elements.openGroupModal.onclick = openGroupModal;
+elements.createGroupBtn.onclick = openGroupModal;
+elements.saveGroup.onclick = createGroup;
+elements.chatTop.onclick = () => {
+    const conv = getConversationById(state.activeConversationId);
+    if(conv && conv.type === 'group') openGroupDetails();
+};
+elements.leaveGroupBtn.onclick = async () => {
+    const res = await fetch(`/api/chat-groups/${state.activeConversationId}/leave`, { method: 'DELETE', headers: getAuthHeader() });
+    if ((await res.json()).success) location.reload();
+};
 
-  elements.chatForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    sendMessage(elements.messageInput.value);
-  });
-
-  elements.conversationSearch.addEventListener('input', () => {
-    renderConversationLists(elements.conversationSearch.value);
-  });
-
-  if(elements.toggleSidebar) elements.toggleSidebar.addEventListener('click', toggleSidebar);
-
-  if(elements.openGroupModal) elements.openGroupModal.addEventListener('click', openModal);
-  if(elements.createGroupBtn) elements.createGroupBtn.addEventListener('click', openModal);
-  if(elements.closeModal) elements.closeModal.addEventListener('click', closeModal);
-  if(elements.cancelGroup) elements.cancelGroup.addEventListener('click', (event) => {
-    event.preventDefault();
-    closeModal();
-  });
-  if(elements.modalBackdrop) elements.modalBackdrop.addEventListener('click', closeModal);
-  if(elements.saveGroup) elements.saveGroup.addEventListener('click', (event) => {
-    event.preventDefault();
-    createGroup();
-  });
-
-  if(elements.openContactsBtn) elements.openContactsBtn.addEventListener('click', openContactsModal);
-  if(elements.closeContacts) elements.closeContacts.addEventListener('click', closeContactsModal);
-  if(elements.contactsBackdrop) elements.contactsBackdrop.addEventListener('click', closeContactsModal);
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 980) {
-      if(elements.chatSidebar) elements.chatSidebar.classList.remove('hidden');
-    }
-  });
-
-  // Arayüz ve API iletişimi: Gerçek zamanlı mesajlaşma için polling
-  setInterval(() => {
-    // Karşı tarafa mesaj gitmesi ve görebilmesi için tüm bireysel sohbetleri yokla
-    state.conversations.filter(c => c.type === 'individual').forEach(c => {
-      fetchMessages(c.id);
-    });
-  }, 3000);
-}
-
-init();
+function getConversationById(id) { return state.conversations.find(c => String(c.id) === String(id)); }
+initChat();

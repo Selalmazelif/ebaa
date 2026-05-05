@@ -61,7 +61,7 @@ if (localStorage.getItem("authToken") && localStorage.getItem("currentUser")) {
         e.preventDefault();
 
         let tc = document.getElementById("tc").value.trim();
-        let password = document.getElementById("password").value;
+        let password = document.getElementById("password").value.trim();
 
         if (!tc || !password) {
             alert("Lütfen tüm alanları doldurun.");

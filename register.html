@@ -106,11 +106,8 @@ function validateTC(tc) {
 }
 
 function validatePassword(password) {
-  // Min 8 char, en az 1 büyük harf, 1 küçük harf, 1 rakam gerektir
-  return password.length >= 8 && 
-         /[A-Z]/.test(password) && 
-         /[a-z]/.test(password) && 
-         /[0-9]/.test(password);
+  // Min 4 karakter yeterli
+  return password.length >= 4;
 }
 
 function validateName(name) {
@@ -217,7 +214,7 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
 
     // Şifre validasyonu
     if (!validatePassword(password)) {
-        alert("Şifre en az 8 karakter, 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir!");
+        alert('Şifre en az 4 karakter olmalıdır!');
         return;
     }
 

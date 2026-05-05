@@ -116,39 +116,41 @@
     messages.scrollTop = messages.scrollHeight;
   }
   
-  function getAIResponse(query) {
-    const q = query.toLowerCase();
-    
-    if(query.startsWith('AI_EXAM_EXPLAIN:')) {
-       const parts = query.split('|');
-       const question = parts[1] || '';
-       const corr = parts[2] || '';
-       const userAns = parts[3] || 'Boş';
-       return `📝 **Yapay Zeka Sınav Analizi:**<br><br>Soru: "*\${question}*"\n\nSenin cevabın **"\${userAns}"** idi ama doğru cevap **"\${corr}"** olmalıydı.\n\n💡 **İpucu:** Bu soruyu çözerken konunun temel kavramlarını veya mantıksal sıralamasını atlamış olabilirsin. Cevabı "\${corr}" bulmak için soruyu adım adım parçalara ayırarak okumalı ve doğru mantığı kurmalısın. Eğer bu konuda sürekli hata yapıyorsan, kütüphane bölümünden konu anlatım videolarına tekrar göz atmanı öneririm!`;
+  async function getAIResponse(query, context = "") {
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ message: query, context })
+      });
+      const data = await res.json();
+      if(data.success) return data.response;
+      return "Üzgünüm, şu an yanıt veremiyorum. Lütfen daha sonra tekrar dene.";
+    } catch(e) {
+      return "Bir bağlantı hatası oluştu. İnternetini kontrol edebilir misin?";
     }
-    
-    if (q.includes('merhaba') || q.includes('selam')) return 'Merhaba! Sana bugün hangi derste yardımcı olabilirim? (Matematik, Fizik, Türkçe vb.)';
-    if (q.includes('nasılsın')) return 'Teşekkür ederim, ben bir yapay zeka olduğum için hep harikayım! 🚀 Sen nasılsın, derslerin nasıl gidiyor?';
-    if (q.includes('teşekkür') || q.includes('sağol')) return 'Rica ederim! Ne zaman yardıma ihtiyacın olursa buradayım.';
-    if (q.includes('matematik') || q.includes('geometri')) return 'Matematik bir bulmaca gibidir! Formülleri ezberlemek yerine "neden böyle?" diye sormalısın. Takıldığın spesifik bir denklem varsa bana yazabilirsin.';
-    if (q.includes('fizik') || q.includes('kimya') || q.includes('biyoloji')) return 'Fen bilimleri hayatın kurallarını anlatır. Anlamadığın formül veya terim nedir? İstersen kütüphane bölümünden deney videolarını izleyebilirsin.';
-    if (q.includes('puan') || q.includes('nasıl') && q.includes('kazan')) return 'Puan kazanmak için ödevlerini zamanında teslim etmeli, sınavları başarıyla tamamlamalı ve günlük giriş yapmalısın. Liderlik tablosunda yerini almak için bol şans! 🏆';
-    if (q.includes('tarih') || q.includes('coğrafya')) return 'Tarih ve coğrafya çalışırken zihin haritaları (mind maps) oluşturmak çok işe yarar. Önemli olayları birbirine bağlayarak hikaye gibi aklında tutabilirsin.';
-    if (q.includes('sınav') && (q.includes('stres') || q.includes('heyecan') || q.includes('kötü'))) return 'Sınav stresi normaldir. Derin nefes alıp sakinleşmeyi dene. Unutma, başarısızlık sadece öğrenmenin bir parçasıdır. Yapman gereken tek şey hatalarından ders çıkarmak!';
-    if (q.includes('ödev') || q.includes('görev')) return 'Ödevlerini "Bekleyen Ödevler" sekmesinden takip edebilirsin. Zamanı iyi yönetmek için ödevlerini son güne bırakmamaya özen göster!';
-    
-    return "Şu an bu sorduğun konuyu sistemimde bulamadım, çünkü gelişim aşamasında olan bir asistanım. 🤖 Ama istersen bu sorunu **Okul Forumu**'nda paylaşarak öğretmenlerine veya diğer öğrencilere sorabilirsin!";
   }
 
-  function handleSend() {
+  async function handleSend() {
     let text = input.value.trim();
     if(!text) return;
     
     let isHiddenCommand = text.startsWith('AI_EXAM_EXPLAIN:');
+    let context = "";
     
-    if(!isHiddenCommand) {
-      addMessage(text, true);
+    if(isHiddenCommand) {
+       const parts = text.split('|');
+       const question = parts[1] || '';
+       const corr = parts[2] || '';
+       const userAns = parts[3] || '';
+       context = `Öğrenci bir sınav sorusunu yanlış yaptı. Soru: "${question}", Doğru Cevap: "${corr}", Öğrencinin Cevabı: "${userAns}". Lütfen bu hatayı nazikçe açıkla ve konuyu anlamasına yardımcı ol.`;
+       text = "Bu soruyu neden yanlış yaptığımı açıklar mısın?";
     }
+
+    addMessage(text, true);
     input.value = '';
     
     const typingMsg = document.createElement('div');
@@ -157,14 +159,14 @@
     messages.appendChild(typingMsg);
     messages.scrollTop = messages.scrollHeight;
     
-    setTimeout(() => {
-      typingMsg.remove();
-      addMessage(getAIResponse(text), false);
-      if(!isOpen) {
-         document.getElementById('ai-bot-badge').style.display = 'flex';
-      }
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
-    }, 1000 + Math.random() * 800);
+    const aiResponse = await getAIResponse(text, context);
+    
+    typingMsg.remove();
+    addMessage(aiResponse, false);
+    if(!isOpen) {
+       document.getElementById('ai-bot-badge').style.display = 'flex';
+    }
+    try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
   }
 
   sendBtn.addEventListener('click', handleSend);

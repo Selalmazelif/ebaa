@@ -127,6 +127,30 @@ body.dark-mode .pill { opacity:0.8; }
         <!-- İSTATİSTİKLER -->
         <div class="data-section" id="section-stats">
           <h4><i class="fa fa-chart-pie" style="color:#4A748F;margin-right:8px;"></i>Çocuğun EBA'da Ne Yaptı?</h4>
+          
+          <!-- OYUNLAŞTIRMA ÖZETİ (NEW) -->
+          <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:120px; background:#f0f7ff; padding:15px; border-radius:12px; text-align:center; cursor:help;" title="Çocuğunuz nasıl kazanır?
+• Günlük giriş: 10 Coin
+• Ödev tamamlama: 15 Coin
+• Sınav çözme: 20 Coin
+• Forum katılımı: 5 Coin">
+              <div style="font-size:24px; color:#f39200;"><i class="fa fa-coins"></i></div>
+              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-coins">0</div>
+              <div style="font-size:10px; color:#888; text-transform:uppercase;">EBA Coin</div>
+            </div>
+            <div style="flex:1; min-width:120px; background:#fff0f0; padding:15px; border-radius:12px; text-align:center;">
+              <div style="font-size:24px; color:#e74c3c;"><i class="fa fa-fire"></i></div>
+              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-streak">0</div>
+              <div style="font-size:10px; color:#888; text-transform:uppercase;">Seri (Gün)</div>
+            </div>
+            <div style="flex:1; min-width:120px; background:#f0fff4; padding:15px; border-radius:12px; text-align:center;">
+              <div style="font-size:24px; color:#2ecc71;"><i class="fa fa-award"></i></div>
+              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-badge-count">0</div>
+              <div style="font-size:10px; color:#888; text-transform:uppercase;">Rozet Sayısı</div>
+            </div>
+          </div>
+
           <div style="display:flex;justify-content:space-around;text-align:center;flex-wrap:wrap;gap:10px;">
             <div>
               <p style="font-size:11px;color:#888;margin-bottom:10px;">Tamamladığı<br>İçerik</p>
@@ -298,6 +322,14 @@ async function initVeliPanel() {
       `${childUser.school} - ${childUser.classNum||childUser.class||''} Sınıfı`;
     const avg = childUser.grade_avg || childUser.gradeAvg;
     if(avg) document.getElementById('average-display').textContent = avg;
+
+    // Gamification data (child specific)
+    document.getElementById('child-coins').textContent = childUser.coins || 0;
+    document.getElementById('child-streak').textContent = childUser.streak || 0;
+    try {
+      const badges = JSON.parse(childUser.badges || '[]');
+      document.getElementById('child-badge-count').textContent = badges.length;
+    } catch(e) {}
 
     // Tüm verileri MSSQL'den çek
     await Promise.all([
@@ -579,7 +611,7 @@ async function loadNotifs(user) {
 
 function renderNotifs() {
   const unread = notificationCache.filter(n=>!n.isRead).length;
-  const countEl = document.getElementById('notifCount');
+  const countEl = document.getElementById('notifBadge');
   if(unread>0) { countEl.style.display='flex'; countEl.textContent=unread; }
   else countEl.style.display='none';
 
@@ -594,7 +626,7 @@ function renderNotifs() {
 }
 
 async function markAllRead() {
-  const countEl = document.getElementById('notifCount');
+  const countEl = document.getElementById('notifBadge');
   if(countEl) countEl.style.display='none';
   
   // Local update
@@ -612,7 +644,7 @@ async function toggleNotif() {
   p.style.display='block';
   try {
     await fetch('/api/notifications/read',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({tc:currentUser.tc})});
-    const countEl = document.getElementById('notifCount');
+    const countEl = document.getElementById('notifBadge');
     if(countEl) countEl.style.display='none';
   }catch(e){}
 }

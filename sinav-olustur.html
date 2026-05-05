@@ -85,6 +85,13 @@
 
         <div id="saveResult" style="margin-top:14px; font-size:13px;"></div>
     </div>
+
+    <div style="background:white; padding:30px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); max-width:600px; margin-top:20px;">
+        <h3 style="margin-top:0; color:#284B63; font-size:18px;"><i class="fa fa-list"></i> Oluşturduğum Sınavlar</h3>
+        <div id="myExamsList" style="margin-top:15px;">
+          <p style="font-size:12px; color:#aaa; text-align:center;">Yükleniyor...</p>
+        </div>
+    </div>
   </div>
 
 </div>
@@ -104,9 +111,28 @@ if (user && user.role === 'ogretmen') {
       profileImg.style.display = 'block';
   }
 
+  async function loadMyExams() {
+    const listEl = document.getElementById('myExamsList');
+    if (!listEl) return;
+    try {
+      const res = await ebaFetch(`/api/quizzes?teacher_tc=${user.tc}`);
+      const data = await res.json();
+      if (data.success && data.quizzes.length) {
+        listEl.innerHTML = data.quizzes.map(q => `
+          <div style="padding:10px; border-bottom:1px solid #eee; font-size:13px;">
+            <strong>${q.title}</strong> (${q.subject})<br>
+            <span style="color:#888; font-size:11px;">Hedef: ${q.target_class} | ${new Date(q.createdAt).toLocaleDateString('tr-TR')}</span>
+          </div>
+        `).join('');
+      } else {
+        listEl.innerHTML = '<p style="font-size:12px; color:#aaa; text-align:center;">Henüz sınav oluşturmadınız.</p>';
+      }
+    } catch(e) { console.error(e); }
+  }
+
   document.getElementById('saveExamBtn').addEventListener('click', async () => {
       const title = document.getElementById('examTitle').value.trim();
-      const questions = document.getElementById('examQuestions').value.trim();
+      const questionsRaw = document.getElementById('examQuestions').value.trim();
       const classesStr = document.getElementById('targetClasses').value.trim();
       const subject = document.getElementById('examSubject').value.trim() || 'Genel';
       const resultEl = document.getElementById('saveResult');
@@ -117,13 +143,25 @@ if (user && user.role === 'ogretmen') {
           return;
       }
 
+      // Basit soru ayrıştırma (Her satır yeni bir soru olabilir veya özel format)
+      // Şimdilik sadece açıklamayı bir soru olarak kaydedelim veya boş geçelim
+      const questions = [];
+      if (questionsRaw) {
+        // Eğer kullanıcı soru-seçenek formatında girdiyse (opsiyonel geliştirme)
+        questions.push({
+          question_text: questionsRaw,
+          opt_a: 'A seçeneği', opt_b: 'B seçeneği', opt_c: 'C seçeneği', opt_d: 'D seçeneği',
+          correct_opt: 'A',
+          points: 10
+        });
+      }
+
       const btn = document.getElementById('saveExamBtn');
       btn.disabled = true;
       btn.textContent = '⏳ Kaydediliyor...';
       resultEl.textContent = '';
 
       try {
-        // 1) Quiz'i kaydet
         const res = await ebaFetch('/api/quizzes', {
           method: 'POST',
           body: JSON.stringify({
@@ -133,7 +171,8 @@ if (user && user.role === 'ogretmen') {
             subject,
             target_class: classesStr,
             school:       user.school,
-            time_limit:   20
+            time_limit:   20,
+            questions:    questions
           })
         });
 
@@ -144,38 +183,18 @@ if (user && user.role === 'ogretmen') {
         }
 
         const data = await res.json();
-
-        if (!data.success) {
+        if (data.success) {
+          resultEl.style.color = '#27ae60';
+          resultEl.textContent = `✅ "${title}" başarıyla kaydedildi!`;
+          document.getElementById('examTitle').value = '';
+          document.getElementById('examSubject').value = '';
+          document.getElementById('examQuestions').value = '';
+          document.getElementById('targetClasses').value = '';
+          loadMyExams();
+        } else {
           resultEl.style.color = '#e74c3c';
-          resultEl.textContent = '❌ Hata: ' + (data.message || 'Bilinmeyen hata');
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
-          return;
+          resultEl.textContent = '❌ Hata: ' + data.message;
         }
-
-        // 2) Başarı mesajı
-        resultEl.style.color = '#27ae60';
-        resultEl.textContent = `✅ "${title}" başarıyla kaydedildi! Öğrencilere bildirim gönderildi.`;
-
-        // Formu temizle
-        document.getElementById('examTitle').value = '';
-        document.getElementById('examSubject').value = '';
-        document.getElementById('examQuestions').value = '';
-        document.getElementById('targetClasses').value = '';
-
-      } catch(e) {
-        resultEl.style.color = '#e74c3c';
-        resultEl.textContent = '❌ Bir hata oluştu: ' + e.message;
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
-      }
-
-        document.getElementById('examTitle').value = '';
-        document.getElementById('examSubject').value = '';
-        document.getElementById('examQuestions').value = '';
-        document.getElementById('targetClasses').value = '';
-
       } catch(e) {
         resultEl.style.color = '#e74c3c';
         resultEl.textContent = '❌ Bir hata oluştu: ' + e.message;
@@ -184,6 +203,8 @@ if (user && user.role === 'ogretmen') {
         btn.innerHTML = '<i class="fa fa-save"></i> Sınavı Kaydet ve Bildir';
       }
   });
+
+  loadMyExams();
 
 } else {
     window.location.href = 'index.html';
