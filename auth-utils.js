@@ -155,19 +155,22 @@ function handleSearch(query) {
   if (!query) return;
   query = query.toLowerCase().trim();
 
+  const user = getCurrentUser();
+  const role = user ? user.role : 'ogrenci';
+
   const pages = {
-    'ders': 'dersler.html',
+    'ders': role === 'ogretmen' ? 'ogretmen-dersler.html' : 'dersler.html',
     'sınav': 'sinavlar.html',
     'sinav': 'sinavlar.html',
-    'canlı': 'canli-ders.html',
-    'canli': 'canli-ders.html',
+    'canlı': role === 'ogretmen' ? 'ogretmen-canli-ders.html' : 'canli-ders.html',
+    'canli': role === 'ogretmen' ? 'ogretmen-canli-ders.html' : 'canli-ders.html',
     'mesaj': 'chat.html',
     'chat': 'chat.html',
     'kitap': 'kitaplar.html',
-    'ana': 'ogrenci-panel.html',
-    'profil': 'ogrenci-panel.html',
-    'matematik': 'dersler.html',
-    'türkçe': 'dersler.html',
+    'ana': role === 'ogretmen' ? 'ogretmen-panel.html' : 'ogrenci-panel.html',
+    'profil': role === 'ogretmen' ? 'ogretmen-panel.html' : 'ogrenci-panel.html',
+    'matematik': role === 'ogretmen' ? 'ogretmen-dersler.html' : 'dersler.html',
+    'türkçe': role === 'ogretmen' ? 'ogretmen-dersler.html' : 'dersler.html',
     'sürdürülebilir': 'surdurulebilir-dunya.html',
     'dünya': 'surdurulebilir-dunya.html',
     'dijital': 'dijital-teknolojiler.html',
@@ -209,6 +212,112 @@ function getNotifications(tc) { return []; }
 function addNotification(tc, text) { }
 function initNotifications() {}
 
+/**
+ * Sidebar linklerini ve içeriğini kullanıcı rolüne göre senkronize eder.
+ * Ortak sayfalarda (sınavlar, dersler vb.) öğretmenin kendi paneline dönebilmesini sağlar.
+ */
+function syncSidebarLinks() {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarMenu = document.getElementById('sidebar-menu') || (sidebar && sidebar.querySelector('ul'));
+  
+  if (sidebarMenu) {
+    // 1. Akıllı Tahta linki yoksa ekle
+    if (!sidebarMenu.querySelector('a[href="whiteboard.html"]')) {
+      const li = document.createElement('li');
+      li.innerHTML = '<a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a>';
+      const libLi = Array.from(sidebarMenu.querySelectorAll('li')).find(l => l.innerHTML.includes('kütüphane.html'));
+      if (libLi) libLi.after(li);
+      else {
+        const lastLi = sidebarMenu.querySelector('li:last-child');
+        if (lastLi) lastLi.before(li);
+        else sidebarMenu.appendChild(li);
+      }
+    }
+
+    // 2. EBA Market ve Avatarım linklerini ekle (Artık herkes için)
+    if (!sidebarMenu.querySelector('a[href*="modal=shop"]')) {
+      const li = document.createElement('li');
+      const homePage = user.role === 'ogretmen' ? 'ogretmen-panel.html' : 'ogrenci-panel.html';
+      li.innerHTML = `<a href="${homePage}?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a>`;
+      sidebarMenu.appendChild(li);
+    }
+    if (!sidebarMenu.querySelector('a[href*="modal=avatar"]')) {
+      const li = document.createElement('li');
+      const homePage = user.role === 'ogretmen' ? 'ogretmen-panel.html' : 'ogrenci-panel.html';
+      li.innerHTML = `<a href="${homePage}?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a>`;
+      sidebarMenu.appendChild(li);
+    }
+
+    // 3. Linkleri Ayarla (Ana Sayfa, Canlı Ders ve Dersler)
+    const homeUrl = user.role === 'ogretmen' ? 'ogretmen-panel.html' : 'ogrenci-panel.html';
+    const liveLessonUrl = user.role === 'ogretmen' ? 'ogretmen-canli-ders.html' : 'canli-ders.html';
+    const lessonsUrl = user.role === 'ogretmen' ? 'ogretmen-dersler.html' : 'dersler.html';
+    const sidebarLinks = sidebarMenu.querySelectorAll('a');
+    sidebarLinks.forEach(link => {
+      const href = link.getAttribute('href') || '';
+      if (href === 'ogrenci-panel.html' || href === 'ogretmen-panel.html') {
+        link.href = homeUrl;
+      }
+      if (href === 'canli-ders.html' || href === 'ogretmen-canli-ders.html') {
+        link.href = liveLessonUrl;
+      }
+      if (href === 'dersler.html' || href === 'ogretmen-dersler.html') {
+        link.href = lessonsUrl;
+      }
+    });
+  }
+
+  // 4. Profil Bölümü - Puan/Coin Konteynırlarını ve Avatar Overlaylerini Ekle (Yoksa)
+  const profile = document.querySelector('.sidebar .profile');
+  if (profile) {
+    // Puan/Coin/Seri
+    if (!document.getElementById('user-points')) {
+      const gamificationDiv = document.createElement('div');
+      gamificationDiv.style.cssText = "margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;";
+      gamificationDiv.innerHTML = `
+        <div style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span id="user-points">0</span> Puan
+        </div>
+        <div style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;" title="Nasıl kazanılır?">
+          <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span id="user-coins">0</span> EBA Coin
+        </div>
+        <div style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span id="user-streak">0</span> Günlük Seri
+        </div>
+      `;
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.before(gamificationDiv);
+      else profile.appendChild(gamificationDiv);
+    }
+
+    // Avatar Overlays
+    const imgCont = profile.querySelector('.profile-img-container div');
+    if (imgCont && !imgCont.querySelector('#sidebar-hat')) {
+      imgCont.style.position = 'relative';
+      const overlays = `
+        <img id="sidebar-hat" style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:35px; z-index:3; display:none;">
+        <img id="sidebar-glasses" style="position:absolute; top:25px; left:50%; transform:translateX(-50%); width:30px; z-index:4; display:none;">
+        <img id="sidebar-pet" style="position:absolute; bottom:5px; right:5px; width:25px; z-index:5; display:none;">
+        <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
+      `;
+      imgCont.insertAdjacentHTML('beforeend', overlays);
+    }
+  }
+
+  // 5. Rol ve Okul Etiketlerini Güncelle
+  const roleEl = document.getElementById('profile-role') || document.getElementById('sb-role') || document.getElementById('profile-role-display');
+  if (roleEl) {
+    roleEl.textContent = 'Rol: ' + (user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Öğrenci');
+  }
+  const schoolEl = document.getElementById('profile-school') || document.getElementById('sb-school') || document.getElementById('profile-school-display');
+  if (schoolEl && user.school) {
+    schoolEl.textContent = user.school;
+  }
+}
+
 // ─── GLOBAL TERCİHLERİ UYGULA ────────────────────────────────────
 async function applyGlobalPrefs() {
   const user = getCurrentUser();
@@ -241,17 +350,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (user) {
     startHeartbeat();
     applyGlobalPrefs();
+    syncSidebarLinks();
 
-    if (user.role === 'ogrenci') {
+    // Hem öğrenci hem öğretmen için gamifikasyon yükle
+    if (user.role === 'ogrenci' || user.role === 'ogretmen') {
       loadGamificationAvatar(user);
     }
 
-    const pName = document.getElementById('profile-name');
+    const pName = document.getElementById('profile-name') || document.getElementById('sb-name');
     if(pName) pName.textContent = user.name || '';
-    const pSchool = document.getElementById('profile-school');
+    const pSchool = document.getElementById('profile-school') || document.getElementById('sb-school');
     if(pSchool) pSchool.textContent = user.school || '';
-    const pImg = document.getElementById('profile-img-display');
-    const defaultIcon = document.getElementById('default-avatar-icon');
+    const pImg = document.getElementById('profile-img-display') || document.getElementById('av-img') || document.getElementById('profile-img');
+    const defaultIcon = document.getElementById('default-avatar-icon') || document.getElementById('av-icon') || document.getElementById('user-icon');
     
     if(pImg && user.profilePic && user.profilePic.length > 10) {
       pImg.src = user.profilePic;

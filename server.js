@@ -814,7 +814,7 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
     if (author_tc) {
       try {
         await p.request().input('tc', sql.NVarChar, author_tc)
-          .query('UPDATE Users SET points = ISNULL(points,0) + 10 WHERE tc=@tc');
+          .query('UPDATE Users SET points = ISNULL(points,0) + 10, coins = ISNULL(coins,0) + 10 WHERE tc=@tc');
         // EBA Yıldızı rozeti kontrolü (100 puan)
         const pts = await p.request().input('tc', sql.NVarChar, author_tc).query('SELECT points FROM Users WHERE tc=@tc');
         const userPoints = pts.recordset[0]?.points || 0;
@@ -1314,6 +1314,9 @@ app.post('/api/assignments', async (req, res) => {
       .input('atype', sql.NVarChar, assignment_type || 'Metin')
       .query(`INSERT INTO Assignments(teacher_tc,teacher_name,title,subject,description,due_date,target_class,school,file_name,file_data,assignment_type)
               VALUES(@ttc,@tname,@title,@subj,@desc,@due,@cls,@school,@fname,@fdata,@atype)`);
+    await p.request().input('ttc', sql.NVarChar, teacher_tc)
+      .query('UPDATE Users SET points = ISNULL(points,0) + 20, coins = ISNULL(coins,0) + 20 WHERE tc=@ttc');
+
     await logActivity(p, teacher_tc, 'ASSIGNMENT_SEND', `Ödev gönderildi: ${title} → ${target_class||'all'}`);
     
     // Öğrencilere bildirim gönder

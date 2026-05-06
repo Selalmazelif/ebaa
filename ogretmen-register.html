@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Öğretmen Kaydı - EBA</title>
+<link rel="stylesheet" href="login.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">EBA</div>
+</header>
+
+<div class="container">
+    <div class="login-box">
+        <div class="role-tab">Öğretmen Kaydı</div>
+        <h2>Eğitmen Hesabı Oluştur</h2>
+
+        <form id="registerForm">
+            <div class="input-group">
+                <label>Ad Soyad</label>
+                <input type="text" id="name" placeholder="Ad Soyad" required>
+            </div>
+
+            <div class="input-group">
+                <label>TC Kimlik No</label>
+                <input type="text" id="tc" placeholder="11 haneli TC" required>
+            </div>
+
+            <div class="input-group">
+                <label>Şifre</label>
+                <input type="password" id="password" placeholder="Şifre" required>
+            </div>
+
+            <div class="input-group">
+                <label>Telefon Numarası</label>
+                <input type="tel" id="phone" placeholder="05xx xxx xx xx" required>
+            </div>
+
+            <div class="input-group">
+                <label>Okul</label>
+                <input type="text" id="school" placeholder="Örn: X Lisesi" required>
+            </div>
+
+            <div class="input-group">
+                <label>Eğitim Kademesi</label>
+                <select id="studentLevel" onchange="updateStudentClassOptions()">
+                    <option value="ilkokul">İlkokul</option>
+                    <option value="ortaokul">Ortaokul</option>
+                    <option value="lise" selected>Lise</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Yetkili Sınıflar (Çoklu Seçim İçin Ctrl Basılı Tutun)</label>
+                <select id="studentClass" multiple size="4" style="height:auto;">
+                    <option value="9">9. Sınıf</option>
+                    <option value="10">10. Sınıf</option>
+                    <option value="11">11. Sınıf</option>
+                    <option value="12">12. Sınıf</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Yetkili Şubeler (Çoklu Seçim İçin Ctrl Basılı Tutun)</label>
+                <select id="branchSelect" multiple size="4" style="height:auto;">
+                    <option value="A">A Şubesi</option>
+                    <option value="B">B Şubesi</option>
+                    <option value="C">C Şubesi</option>
+                    <option value="D">D Şubesi</option>
+                    <option value="E">E Şubesi</option>
+                    <option value="F">F Şubesi</option>
+                    <option value="G">G Şubesi</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Profil Fotoğrafı (opsiyonel)</label>
+                <div class="file-upload-wrapper" style="position:relative; display:block; width:100%;">
+                  <button type="button" onclick="document.getElementById('profilePic').click()" style="width:100%; padding:10px; background:#f1f1f1; border:1px dashed #aaa; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; color:#555; position:relative;">
+                     <i class="fa fa-upload"></i> <span id="fileNameDisplay">Fotoğraf Seç</span>
+                  </button>
+                  <input type="file" id="profilePic" accept="image/*" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;" onchange="document.getElementById('fileNameDisplay').textContent = this.files.length > 0 ? this.files[0].name : 'Fotoğraf Seç'">
+                </div>
+            </div>
+
+            <button class="login-btn" type="submit">Öğretmen Olarak Kayıt Ol</button>
+            <p style="text-align:center; font-size:13px; margin-top:15px; color:#666;">Zaten hesabın var mı? <a href="öğretmen-login.html" style="color:#284B63; font-weight:700; text-decoration:none;">Giriş Yap</a></p>
+        </form>
+    </div>
+</div>
+
+<script>
+function validateTC(tc) { return /^\d{11}$/.test(tc); }
+function validatePassword(password) { return password.length >= 4; }
+function validateName(name) { return name.length >= 3 && /^[a-zA-ZçÇğĞıİöÖşŞüÜ\s]+$/.test(name); }
+
+function updateStudentClassOptions() {
+    const level = document.getElementById("studentLevel").value;
+    const classSelect = document.getElementById("studentClass");
+    classSelect.innerHTML = "";
+    if (level === "ilkokul") { [1, 2, 3, 4].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`); }
+    else if (level === "ortaokul") { [5, 6, 7, 8].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`); }
+    else if (level === "lise") { [9, 10, 11, 12].forEach(c => classSelect.innerHTML += `<option value="${c}">${c}. Sınıf</option>`); }
+}
+
+document.getElementById("registerForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    let name = document.getElementById("name").value.trim();
+    let tc = document.getElementById("tc").value.trim();
+    let password = document.getElementById("password").value;
+    let phone = document.getElementById("phone").value.trim();
+    let school = document.getElementById("school").value.trim();
+    let role = "ogretmen";
+
+    if(!name || !tc || !password || !phone || !school){ alert("Tüm alanları doldurun!"); return; }
+    if (!validateTC(tc)) { alert("TC Kimlik No 11 haneli ve sayısal olmalıdır!"); return; }
+
+    const clsSelected = Array.from(document.getElementById("studentClass").selectedOptions).map(opt => opt.value);
+    const brSelected = Array.from(document.getElementById("branchSelect").selectedOptions).map(opt => opt.value);
+
+    let userPayload = {
+        tc: tc,
+        password: password,
+        role: role,
+        name: name,
+        school: school,
+        phone: phone,
+        classNum: clsSelected.join(","),
+        branch: brSelected.join(",")
+    };
+
+    fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userPayload)
+    }).then(async res => {
+        const data = await res.json();
+        if(data.success) {
+            alert("Öğretmen kaydı başarılı! Giriş yapabilirsiniz.");
+            window.location.href = "öğretmen-login.html";
+        } else {
+            alert("Kayıt Hatası: " + data.message);
+        }
+    }).catch(err => {
+        alert("Bağlantı hatası!");
+    });
+});
+</script>
+
+</body>
+</html>

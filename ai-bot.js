@@ -24,6 +24,7 @@
       width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #00C9FF, #92FE9D);
       color: #1e2d3d; display: flex; align-items: center; justify-content: center; font-size: 28px;
       box-shadow: 0 4px 15px rgba(0, 201, 255, 0.4); cursor: pointer; transition: transform 0.3s;
+      ${cu.role === 'ogretmen' ? 'display: none;' : ''}
     " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
       <i class="fa-solid fa-robot"></i>
       <span style="position:absolute; top:-5px; right:-5px; background:#e74c3c; color:white; width:20px; height:20px; border-radius:50%; font-size:11px; font-weight:bold; display:flex; align-items:center; justify-content:center; display:none;" id="ai-bot-badge">1</span>
@@ -179,5 +180,10 @@
        input.value = `AI_EXAM_EXPLAIN:|\${question}|\${correctAnswer}|\${userAnswer}`;
        handleSend();
      }, 400);
+  }
+
+  // Sidebar'dan açma fonksiyonu
+  window.openAiBot = function() {
+    if(!isOpen) btn.click();
   }
 })();
