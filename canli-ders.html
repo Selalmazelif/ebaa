@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -70,7 +70,7 @@ body.dark-mode .form-inp { background:#0f1923 !important; border-color:#2d4060 !
         <div class="status-indicator" title="Çevrimiçi"></div>
       </div>
       <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
-      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: Öğrenci</p>
+      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: renci</p>
       <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
       <input id="profilePicInput" type="file" accept="image/*" style="display:none;">
 
@@ -87,7 +87,7 @@ body.dark-mode .form-inp { background:#0f1923 !important; border-color:#2d4060 !
       </div>
 
       <div id="cert-btn-container" style="text-align:center; margin-top:10px; display:none; width:100%; padding:0 20px; box-sizing:border-box;">
-        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
+        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İİİndir</button>
       </div>
 
       <div id="user-badges-container" style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
@@ -205,7 +205,7 @@ async function init() {
 
   // Profil
   document.getElementById('sb-name').textContent   = cu.name;
-  document.getElementById('sb-role').textContent   = 'Rol: ' + (cu.role==='ogrenci'?'Öğrenci':cu.role==='ogretmen'?'Öğretmen':'Veli');
+  document.getElementById('sb-role').textContent   = 'Rol: ' + (cu.role==='ogrenci'?'renci':cu.role==='ogöretmen'?'Öğretmen':'Veli');
   document.getElementById('sb-school').textContent = cu.school;
   if (cu.profilePic) {
     document.getElementById('av-icon').style.display='none';
@@ -215,8 +215,8 @@ async function init() {
 
   // Sidebar
   const homeLink  = redirectByRole(cu.role);
-  const dersLink  = cu.role==='ogretmen'?'ogretmen-dersler.html':'dersler.html';
-  const canliLink = cu.role==='ogretmen'?'ogretmen-canli-ders.html':'canli-ders.html';
+  const dersLink  = cu.role==='ogöretmen'?'ogretmen-dersler.html':'dersler.html';
+  const canliLink = cu.role==='ogöretmen'?'ogretmen-canli-ders.html':'canli-ders.html';
   
 
   // Öğretmene ders ekleme butonu
@@ -372,6 +372,6 @@ setTimeout(() => { loadNotifs(); }, 1000);
     </div>
   </div>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>
+

@@ -1,6 +1,6 @@
 <head>
   <meta charset="UTF-8">
-  <title>Öğrenci Paneli - EBA</title>
+  <title>renci Paneli - EBA</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="panel.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -299,6 +299,7 @@
       right: -6px;
     }
   </style>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="auth-utils.js"></script>
   <script>requireAuth();</script>
 </head>
@@ -323,7 +324,7 @@
         <div class="status-indicator" title="Çevrimiçi"></div>
       </div>
       <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
-      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: Öğrenci</p>
+      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: renci</p>
       <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
       <input id="profilePicInput" type="file" accept="image/*" style="display:none;">
 
@@ -340,7 +341,7 @@
       </div>
 
       <div id="cert-btn-container" style="text-align:center; margin-top:10px; display:none; width:100%; padding:0 20px; box-sizing:border-box;">
-        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
+        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İİİndir</button>
       </div>
 
       <div id="user-badges-container" style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
@@ -358,6 +359,7 @@
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
       <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Portfolyo</a></li>
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
       <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
       <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
@@ -414,13 +416,7 @@
               style="margin:0 0 10px;color:#284B63;font-size:14px;border-bottom:1px solid #f0f0f0;padding-bottom:8px;">
               Eba'da Ne Yaptın? <i class="fa fa-question-circle" style="float:right;color:#ddd;"></i>
             </h4>
-            <div style="display:flex;justify-content:center;gap:12px;text-align:center;">
-              <div>
-                <p style="font-size:11px;color:#888;margin-bottom:8px;">İçerik</p>
-                <div class="stat-circle"
-                  style="width:90px;height:90px;font-size:26px;border-color:#4FC3F7;color:#4FC3F7;"
-                  id="stat-content-count">0</div>
-              </div>
+            <div style="display:flex;justify-content:center;gap:35px;text-align:center;margin-top:15px;">
               <div>
                 <p style="font-size:11px;color:#888;margin-bottom:8px;">Sınav</p>
                 <div class="stat-circle"
@@ -444,6 +440,17 @@
               style="font-size:10px;color:#aaa;text-align:center;margin-top:8px;margin-bottom:5px;"></p>
             <div style="height:120px; position:relative;">
               <canvas id="performanceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- SANA ÖZEL ÖNERİLER (ANALİZ) -->
+          <div class="panel-card" id="analysis-card" style="flex:1; padding:12px; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05); display:none;">
+            <h4 style="margin:0 0 10px; color:#284B63; font-size:14px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;">
+              Sana Özel Öneriler <i class="fa fa-lightbulb" style="float:right; color:#f1c40f;"></i>
+            </h4>
+            <div id="weak-subjects-list" style="font-size:12px; color:#666;">
+              <p style="font-size:11px; margin-bottom:8px;">Son sınavlarına göre şu konulara çalışmanı öneririz:</p>
+              <div id="weak-items"></div>
             </div>
           </div>
 
@@ -556,7 +563,7 @@
             <i class="fa fa-star" style="color:#f39200;"></i> Aldığım Notlar
           </h4>
           <div id="studentGradesList">
-            <div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadı</div>
+            <div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadıııı</div>
           </div>
         </div>
         
@@ -643,6 +650,7 @@
       await loadGamification(user);
       await renderPerformanceChart(user);
       await loadLeaderboard();
+      await loadAnalysis();
 
       // Günlük bonus bildirimi (localStorage'de dailyBonus varsa göster)
       const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -743,7 +751,7 @@
          position: fixed; top: -9999px; left: -9999px; display: flex; flex-direction: column; align-items: center; justify-content: center;
          color: white; font-family: 'Arial', sans-serif; border: 20px solid #f39200; box-sizing: border-box; text-align: center;
        `;
-       const name = currentUser.name || 'Öğrenci';
+       const name = currentUser.name || 'renci';
        const points = document.getElementById('user-points').innerText;
        
        certDiv.innerHTML = `
@@ -767,7 +775,7 @@
          const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [800, 600] });
          pdf.addImage(imgData, 'PNG', 0, 0, 800, 600);
          pdf.save('Basari_Sertifikasi_' + name.replace(/\\s+/g, '_') + '.pdf');
-         showToast('Sertifikanız başarıyla indirildi!', 'success');
+         showToast('Sertifikanız başarıyla iİİndirildi!', 'success');
        } catch(e) {
          showToast('Sertifika oluşturulurken bir hata oluştu.', 'error');
        }
@@ -860,7 +868,6 @@
       const d = await r.json();
       if (d.success && d.stats) {
         const s = d.stats;
-        document.getElementById('stat-content-count').textContent = s.content_count || 0;
         document.getElementById('stat-exam-count').textContent = s.exam_count || 0;
         document.getElementById('stat-social-count').textContent = s.social_count || 0;
         document.getElementById('stat-video-time').textContent = s.video_minutes || 0;
@@ -878,7 +885,9 @@
       const r = await ebaFetch(`/api/assignments?school=${encodeURIComponent(user.school)}&userClass=${encodeURIComponent(user.classNum || user.class || '')}&student_tc=${user.tc}`);
       if (!r) return;
       const d = await r.json();
-      if (d.success) assignmentsCache = d.assignments;
+      if (d.success) {
+        assignmentsCache = d.assignments;
+      }
 
       const el = document.getElementById('pending-tasks-list');
       if (!assignmentsCache.length) return;
@@ -948,7 +957,7 @@
         const d = await r.json();
         if (d.success && d.grades) {
           if (!d.grades.length) {
-            gList.innerHTML = '<div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadı</div>';
+            gList.innerHTML = '<div style="text-align:center;color:#ccc;font-size:12px;padding:10px;">Henüz not bulunamadıııı</div>';
             return;
           }
           gList.innerHTML = d.grades.map(g => `
@@ -1225,14 +1234,13 @@
         style="width:100%; height:120px; box-sizing:border-box; border:1px solid #ccc; border-radius:6px; padding:10px; font-family:inherit; resize:none;"></textarea>
       <div style="text-align:right; margin-top:15px;">
         <button onclick="document.getElementById('assignmentModal').style.display='none'"
-          style="padding:8px 16px; background:#eee; color:#444; border:none; border-radius:6px; cursor:pointer; margin-right:8px;">İptal</button>
+          style="padding:8px 16px; background:#eee; color:#444; border:none; border-radius:6px; cursor:pointer; margin-right:8px;">İİptal</button>
         <button onclick="submitAssignment()"
           style="padding:8px 16px; background:#2ecc71; color:white; border:none; border-radius:6px; cursor:pointer;">Gönder</button>
       </div>
     </div>
   </div>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
   <!-- SHOP MODAL -->
   <div id="shopModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center;">
     <div style="background:white; width:90%; max-width:600px; border-radius:16px; padding:24px; max-height:80vh; overflow-y:auto; position:relative;">
@@ -1259,7 +1267,10 @@
         <img id="avatar-preview-pet" style="position:absolute; bottom:10px; right:10px; width:40px; z-index:5; display:none;">
       </div>
       <div id="inventory-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;"></div>
-      <button onclick="saveAvatar()" style="background:#2ecc71; color:white; border:none; padding:10px 30px; border-radius:24px; font-weight:700; cursor:pointer;">Değişiklikleri Kaydet</button>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button onclick="saveAvatar()" style="background:#2ecc71; color:white; border:none; padding:10px 30px; border-radius:24px; font-weight:700; cursor:pointer;">Değişiklikleri Kaydet</button>
+        <button onclick="clearAvatarSelection()" style="background:#e74c3c; color:white; border:none; padding:10px 30px; border-radius:24px; font-weight:700; cursor:pointer;">Avatarı Kaldır</button>
+      </div>
     </div>
   </div>
 <script>    async function openShopModal() {
@@ -1299,61 +1310,137 @@
 
     function openAvatarModal() {
       const list = document.getElementById('inventory-list');
+      window.tempAvatar = {...window.selectedAvatar};
+      refreshAvatarPreview();
       if(!window.userInventory || window.userInventory.length === 0) {
         list.innerHTML = '<p style="color:#aaa; font-size:12px;">Henüz hiç eşyan yok. Marketten alışveriş yapabilirsin!</p>';
       } else {
         fetch('/api/shop/items').then(r => r.json()).then(data => {
           const myItems = data.items.filter(it => window.userInventory.includes(it.id));
-          list.innerHTML = myItems.map(it => `
-            <div onclick="previewAvatarItem('${it.category}', '${it.img}')" style="width:50px; height:50px; border:2px solid #eee; border-radius:8px; cursor:pointer; padding:5px;">
-              <img src="${it.img}" style="width:100%; height:100%; object-fit:contain;">
-            </div>
-          `).join('');
+          list.innerHTML = myItems.map(it => {
+            const isSelected = window.tempAvatar[it.category] === it.img;
+            return `
+              <div data-category="${it.category}" data-src="${it.img}" onclick="selectAvatarItem('${it.category}', '${it.img}')" style="width:50px; height:50px; border:2px solid ${isSelected ? '#2ecc71' : '#eee'}; border-radius:8px; cursor:pointer; padding:5px; position:relative;">
+                ${isSelected ? '<span style="position:absolute; top:4px; right:4px; width:10px; height:10px; border-radius:50%; background:#2ecc71;"></span>' : ''}
+                <img src="${it.img}" style="width:100%; height:100%; object-fit:contain;">
+              </div>
+            `;
+          }).join('');
+          refreshInventoryHighlights();
         });
       }
       document.getElementById('avatarModal').style.display = 'flex';
     }
 
-    function previewAvatarItem(cat, img) {
+    function selectAvatarItem(cat, img) {
       if(!window.tempAvatar) window.tempAvatar = {...window.selectedAvatar};
-      window.tempAvatar[cat] = img;
-      const previewImg = document.getElementById('avatar-preview-' + cat);
-      if(previewImg) {
-        previewImg.src = img;
-        previewImg.style.display = 'block';
+      if(window.tempAvatar[cat] === img) {
+        // same item clicked again; keep it selected
+        return;
       }
+      window.tempAvatar = { [cat]: img };
+      refreshAvatarPreview();
+      refreshInventoryHighlights();
+    }
+
+    function refreshAvatarPreview() {
+      const previewHat = document.getElementById('avatar-preview-hat');
+      const previewGlasses = document.getElementById('avatar-preview-glasses');
+      const previewPet = document.getElementById('avatar-preview-pet');
+      const previewBg = document.getElementById('avatar-preview-bg');
+      if(previewHat) { previewHat.style.display = 'none'; previewHat.src = ''; }
+      if(previewGlasses) { previewGlasses.style.display = 'none'; previewGlasses.src = ''; }
+      if(previewPet) { previewPet.style.display = 'none'; previewPet.src = ''; }
+      if(previewBg) { previewBg.style.display = 'none'; previewBg.src = ''; }
+
+      if(window.tempAvatar) {
+        if(window.tempAvatar.hat && previewHat) { previewHat.src = window.tempAvatar.hat; previewHat.style.display = 'block'; }
+        if(window.tempAvatar.glasses && previewGlasses) { previewGlasses.src = window.tempAvatar.glasses; previewGlasses.style.display = 'block'; }
+        if(window.tempAvatar.pet && previewPet) { previewPet.src = window.tempAvatar.pet; previewPet.style.display = 'block'; }
+        if(window.tempAvatar.background && previewBg) { previewBg.src = window.tempAvatar.background; previewBg.style.display = 'block'; }
+      }
+    }
+
+    function refreshInventoryHighlights() {
+      const items = document.querySelectorAll('#inventory-list > div');
+      items.forEach(div => {
+        const cat = div.dataset.category;
+        const src = div.dataset.src;
+        const isSelected = window.tempAvatar && cat && window.tempAvatar[cat] === src;
+        div.style.borderColor = isSelected ? '#2ecc71' : '#eee';
+      });
+    }
+
+    function clearAvatarSelection() {
+      window.tempAvatar = {};
+      refreshAvatarPreview();
+      refreshInventoryHighlights();
     }
 
     async function saveAvatar() {
       const res = await fetch('/api/user/update-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-        body: JSON.stringify({ avatar: window.tempAvatar || window.selectedAvatar })
+        body: JSON.stringify({ avatar: window.tempAvatar || {} })
       });
-      if((await res.json()).success) {
+      const data = await res.json();
+      if(data.success) {
         showToast('Avatarın güncellendi!', 'success');
-        window.selectedAvatar = {...(window.tempAvatar || window.selectedAvatar)};
+        window.selectedAvatar = {...(window.tempAvatar || {})};
         applyAvatar(window.selectedAvatar);
         closeAvatarModal();
+      } else {
+        showToast(data.message || 'Avatar kaydedilemedi.', 'error');
       }
     }
 
     function applyAvatar(av) {
-      if(!av) return;
       const sHat = document.getElementById('sidebar-hat');
       const sGlasses = document.getElementById('sidebar-glasses');
       const sPet = document.getElementById('sidebar-pet');
       const sBg = document.getElementById('sidebar-bg');
-      if(sHat && av.hat) { sHat.src = av.hat; sHat.style.display = 'block'; }
-      if(sGlasses && av.glasses) { sGlasses.src = av.glasses; sGlasses.style.display = 'block'; }
-      if(sPet && av.pet) { sPet.src = av.pet; sPet.style.display = 'block'; }
-      if(sBg && av.background) { sBg.style.background = `url(${av.background}) center/cover`; }
+      if(sHat) { sHat.style.display = 'none'; sHat.src = ''; }
+      if(sGlasses) { sGlasses.style.display = 'none'; sGlasses.src = ''; }
+      if(sPet) { sPet.style.display = 'none'; sPet.src = ''; }
+      if(sBg) { sBg.style.background = 'none'; }
+
       const pHat = document.getElementById('avatar-preview-hat');
       const pGlasses = document.getElementById('avatar-preview-glasses');
+      const pPet = document.getElementById('avatar-preview-pet');
       const pBg = document.getElementById('avatar-preview-bg');
-      if(pHat && av.hat) { pHat.src = av.hat; pHat.style.display = 'block'; }
-      if(pGlasses && av.glasses) { pGlasses.src = av.glasses; pGlasses.style.display = 'block'; }
-      if(pBg && av.background) { pBg.src = av.background; pBg.style.display = 'block'; }
+      if(pHat) { pHat.style.display = 'none'; pHat.src = ''; }
+      if(pGlasses) { pGlasses.style.display = 'none'; pGlasses.src = ''; }
+      if(pPet) { pPet.style.display = 'none'; pPet.src = ''; }
+      if(pBg) { pBg.style.display = 'none'; pBg.src = ''; }
+
+      if(!av) return;
+      if(av.hat && sHat) { sHat.src = av.hat; sHat.style.display = 'block'; }
+      if(av.glasses && sGlasses) { sGlasses.src = av.glasses; sGlasses.style.display = 'block'; }
+      if(av.pet && sPet) { sPet.src = av.pet; sPet.style.display = 'block'; }
+      if(av.background && sBg) { sBg.style.background = `url(${av.background}) center/cover`; }
+      if(av.hat && pHat) { pHat.src = av.hat; pHat.style.display = 'block'; }
+      if(av.glasses && pGlasses) { pGlasses.src = av.glasses; pGlasses.style.display = 'block'; }
+      if(av.pet && pPet) { pPet.src = av.pet; pPet.style.display = 'block'; }
+      if(av.background && pBg) { pBg.src = av.background; pBg.style.display = 'block'; }
+    }
+
+    async function loadAnalysis() {
+      try {
+        const res = await fetch('/api/analytics/weak-subjects', { headers:{'Authorization':`Bearer ${localStorage.getItem('authToken')}`} });
+        const d = await res.json();
+        const card = document.getElementById('analysis-card');
+        const list = document.getElementById('weak-items');
+        if(d.success && d.weakSubjects.length > 0) {
+          card.style.display = 'block';
+          list.innerHTML = d.weakSubjects.map(s => `
+            <div style="background:#fff9e6; padding:8px; border-radius:8px; margin-bottom:8px; border-left:4px solid #f1c40f;">
+              <div style="font-weight:700; color:#856404;">${s.subject}</div>
+              <div style="font-size:10px;">Ortalaman: %${Math.round(s.avg_score)}</div>
+              <a href="dersler.html?ders=${s.subject}" style="font-size:10px; color:#4A748F; text-decoration:none; font-weight:700;">Konuyu Çalış →</a>
+            </div>
+          `).join('');
+        }
+      } catch(e) {}
     }
 
     function closeAvatarModal() { document.getElementById('avatarModal').style.display = 'none'; }</script>
@@ -1367,11 +1454,26 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (modal === 'avatar') {
     setTimeout(() => { if (typeof openAvatarModal === 'function') openAvatarModal(); }, 500);
   }
+
+  // Anında veri yenileme (Socket.io)
+  if (typeof setupRealtimeUpdate === 'function' && typeof initStudentPanel === 'function') {
+    setupRealtimeUpdate(() => {
+        initStudentPanel();
+        loadAnalysis();
+    });
+  }
+
+  // URL'deki modal parametresini temizle (Yenileme yapınca tekrar açılmasın diye)
+  if (modal) {
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
 });
 </script>
 
 </body>
 
 </html>
+
 
 

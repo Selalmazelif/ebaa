@@ -37,10 +37,10 @@ async function fixSqlServer() {
     const sql = require('mssql');
     const config = {
       user: 'sa',
-      password: '123456',
+      password: 'Elif1405*',
       server: 'localhost',
       database: 'master',
-      options: { encrypt: true, trustServerCertificate: true }
+      options: { encrypt: false, trustServerCertificate: true }
     };
     const pool = await sql.connect(config);
     console.log('✅ SQL Server bağlantısı başarılı!');
@@ -48,7 +48,7 @@ async function fixSqlServer() {
     // Enable sa account and set password
     await pool.request().query(`
       ALTER LOGIN sa ENABLE;
-      ALTER LOGIN sa WITH PASSWORD = '123456';
+      ALTER LOGIN sa WITH PASSWORD = 'Elif1405*';
     `);
     console.log('✅ sa hesabı etkinleştirildi!');
     await pool.close();

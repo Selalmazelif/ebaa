@@ -1,9 +1,9 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EÄŸitici Oyunlar & Bulmaca - EBA</title>
+    <title>Eğitici Oyunlar & Bulmaca - EBA</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -26,8 +26,8 @@
 <body>
 
     <div class="header">
-        <a href="ogrenci-panel.html" class="logo"><i class="fa-solid fa-arrow-left"></i> EBA Ã–ÄŸrenci</a>
-        <div>EÄŸitici Oyunlar</div>
+        <a href="ogrenci-panel.html" class="logo"><i class="fa-solid fa-arrow-left"></i> EBA Öğrenci</a>
+        <div>Eğitici Oyunlar</div>
     </div>
 
     <div class="container">
@@ -35,7 +35,7 @@
         <div class="score-board">Skor: <span id="scoreVal">0</span> / 5</div>
         
         <div class="game-area" id="gameArea">
-            <div class="question-box" id="questionBox">Soru yÃ¼kleniyor...</div>
+            <div class="question-box" id="questionBox">Soru yükleniyor...</div>
             <div class="options" id="optionsBox">
                 <!-- Options injected by JS -->
             </div>
@@ -43,7 +43,7 @@
         </div>
 
         <div id="resultArea" style="display:none; margin-top:30px;">
-            <h2>Oyun Bitti! ğŸ†</h2>
+            <h2>Oyun Bitti! ??</h2>
             <p id="finalScoreText" style="font-size: 20px; margin: 20px 0;"></p>
             <button class="action-btn" style="display:inline-block; background:#4caf50;" onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i> Tekrar Oyna</button>
         </div>
@@ -57,24 +57,24 @@
         }
 
         const allQuestions = [
-            { q: "TÃ¼rkÃ§e: Hangisi bir noktalama iÅŸareti deÄŸildir?", opts: ["Soru Ä°ÅŸareti", "VirgÃ¼l", "Harf", "Nokta"], ans: 2 },
-            { q: "Matematik: 12 x 8 iÅŸleminin sonucu kaÃ§tÄ±r?", opts: ["86", "96", "106", "116"], ans: 1 },
-            { q: "Fen Bilimleri: IÅŸÄ±ÄŸÄ± kendi Ã¼reten cisimlere ne denir?", opts: ["IÅŸÄ±k KaynaÄŸÄ±", "Parlak Cisim", "YÄ±ldÄ±z", "GÃ¶lge"], ans: 0 },
-            { q: "Sosyal Bilgiler: YÃ¶n bulmak iÃ§in hangisi kullanÄ±lmaz?", opts: ["Pusula", "Kutup YÄ±ldÄ±zÄ±", "Termometre", "GÃ¼neÅŸin konumu"], ans: 2 },
-            { q: "Genel KÃ¼ltÃ¼r: TÃ¼rkiye'nin baÅŸkenti neresidir?", opts: ["Ä°stanbul", "Ä°zmir", "Ankara", "Antalya"], ans: 2 },
-            { q: "Matematik: Ã‡evresi 20 cm olan bir karenin bir kenarÄ± kaÃ§ cm'dir?", opts: ["2", "4", "5", "10"], ans: 2 },
-            { q: "Fen Bilimleri: Hangisi maddenin hallerinden biri deÄŸildir?", opts: ["KatÄ±", "SÄ±vÄ±", "Enerji", "Gaz"], ans: 2 },
-            { q: "TÃ¼rkÃ§e: EÅŸ anlamlÄ± kelimeler hangisinde bir aradadÄ±r?", opts: ["Siyah - Kara", "BÃ¼yÃ¼k - KÃ¼Ã§Ã¼k", "AÄŸlamak - GÃ¼lmek", "AÅŸaÄŸÄ± - YukarÄ±"], ans: 0 },
-            { q: "Sosyal Bilgiler: Ãœlkemizin en kalabalÄ±k ÅŸehri neresidir?", opts: ["Ankara", "Ä°zmir", "Bursa", "Ä°stanbul"], ans: 3 },
-            { q: "Fen Bilimleri: DÃ¼nya'nÄ±n uydusu hangisidir?", opts: ["GÃ¼neÅŸ", "JÃ¼piter", "Ay", "Mars"], ans: 2 },
-            { q: "Matematik: 50 sayÄ±sÄ±nÄ±n yarÄ±sÄ±nÄ±n 10 fazlasÄ± kaÃ§tÄ±r?", opts: ["25", "30", "35", "40"], ans: 2 },
-            { q: "TÃ¼rkÃ§e: 'Gece' kelimesinin zÄ±t anlamlÄ±sÄ± nedir?", opts: ["Sabah", "GÃ¼ndÃ¼z", "AkÅŸam", "KaranlÄ±k"], ans: 1 },
-            { q: "Tarih: Cumhuriyet hangi yÄ±l ilan edilmiÅŸtir?", opts: ["1919", "1920", "1923", "1938"], ans: 2 },
-            { q: "MÃ¼zik: Ä°stiklal MarÅŸÄ±'mÄ±zÄ±n ÅŸairi kimdir?", opts: ["Mehmet Akif Ersoy", "NamÄ±k Kemal", "Atilla Ä°lhan", "Ã–mer Seyfettin"], ans: 0 },
-            { q: "BiliÅŸim: AÅŸaÄŸÄ±dakilerden hangisi bir iÅŸletim sistemidir?", opts: ["Klavye", "MonitÃ¶r", "Windows", "Fare"], ans: 2 }
+            { q: "Türkçe: Hangisi bir noktalama işareti değildir?", opts: ["Soru İşareti", "Virgül", "Harf", "Nokta"], ans: 2 },
+            { q: "Matematik: 12 x 8 işleminin sonucu kaçtır?", opts: ["86", "96", "106", "116"], ans: 1 },
+            { q: "Fen Bilimleri: Işığı kendi üreten cisimlere ne denir?", opts: ["Işık Kaynağı", "Parlak Cisim", "Yıldız", "Gölge"], ans: 0 },
+            { q: "Sosyal Bilgiler: Yön bulmak için hangisi kullanılmaz?", opts: ["Pusula", "Kutup Yıldızı", "Termometre", "Güneşin konumu"], ans: 2 },
+            { q: "Genel Kültür: Türkiye'nin başkenti neresidir?", opts: ["İstanbul", "İzmir", "Ankara", "Antalya"], ans: 2 },
+            { q: "Matematik: Çevresi 20 cm olan bir karenin bir kenarı kaç cm'dir?", opts: ["2", "4", "5", "10"], ans: 2 },
+            { q: "Fen Bilimleri: Hangisi maddenin hallerinden biri değildir?", opts: ["Katı", "Sıvı", "Enerji", "Gaz"], ans: 2 },
+            { q: "Türkçe: Eş anlamlı kelimeler hangisinde bir aradadır?", opts: ["Siyah - Kara", "Büyük - Küçük", "Ağlamak - Gülmek", "Aşağı - Yukarı"], ans: 0 },
+            { q: "Sosyal Bilgiler: Ülkemizin en kalabalık şehri neresidir?", opts: ["Ankara", "İzmir", "Bursa", "İstanbul"], ans: 3 },
+            { q: "Fen Bilimleri: Dünya'nın uydusu hangisidir?", opts: ["Güneş", "Jüpiter", "Ay", "Mars"], ans: 2 },
+            { q: "Matematik: 50 sayısının yarısının 10 fazlası kaçtır?", opts: ["25", "30", "35", "40"], ans: 2 },
+            { q: "Türkçe: 'Gece' kelimesinin zıt anlamlısı nedir?", opts: ["Sabah", "Gündüz", "Akşam", "Karanlık"], ans: 1 },
+            { q: "Tarih: Cumhuriyet hangi yıl ilan edilmiştir?", opts: ["1919", "1920", "1923", "1938"], ans: 2 },
+            { q: "Müzik: İstiklal Marşı'mızın şairi kimdir?", opts: ["Mehmet Akif Ersoy", "Namık Kemal", "Atilla İlhan", "Ömer Seyfettin"], ans: 0 },
+            { q: "Bilişim: Aşağıdakilerden hangisi bir işletim sistemidir?", opts: ["Klavye", "Monitör", "Windows", "Fare"], ans: 2 }
         ];
 
-        // 15 sorudan sadece 5 rastgele soru seÃ§
+        // 15 sorudan sadece 5 rastgele soru seç
         const questions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 5);
 
         let currentQIndex = 0;
@@ -118,7 +118,7 @@
                 btn.classList.add('correct');
                 score++;
                 scoreVal.textContent = score;
-                // addNotification(getCurrentUser().tc, "Bulmacada doÄŸru cevap verdin, tebrikler!");
+                // addNotification(getCurrentUser().tc, "Bulmacada doğru cevap verdin, tebrikler!");
             } else {
                 btn.classList.add('wrong');
                 allBtns[qData.ans].classList.add('correct'); // reveal correct one
@@ -140,7 +140,6 @@
         window.onload = loadQuestion;
     </script>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>
 

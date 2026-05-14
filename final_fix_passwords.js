@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const config = {
   user: 'sa',
-  password: '123456',
+  password: 'Elif1405*',
   server: 'localhost',
   database: 'EBA_DB',
   options: { encrypt: false, trustServerCertificate: true, enableArithAbort: true }

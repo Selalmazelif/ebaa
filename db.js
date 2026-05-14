@@ -3,7 +3,7 @@ const sql = require('mssql');
 
 const config = {
   user:     'sa',
-  password: '123456',
+  password: 'Elif1405*',
   server:   'localhost',
   database: 'EBA_DB',
   options: {

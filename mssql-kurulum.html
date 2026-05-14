@@ -233,13 +233,13 @@ body { background:#0d1117; color:#c9d1d9; min-height:100vh; }
     <div class="step-body">
       <div class="alert alert-info">
         <i class="fa fa-circle-info"></i>
-        <div>EBA'nın bağlanmak istediği hesap: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">sa</code> — şifre: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">123456</code></div>
+        <div>EBA'nın bağlanmak istediği hesap: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">sa</code> — şifre: <code style="background:#0d1117;padding:2px 6px;border-radius:4px;">Elif1405*</code></div>
       </div>
 
       <strong style="font-size:13px;color:#e6edf3;display:block;margin-bottom:10px;">📋 Yöntem A: SSMS ile (görsel)</strong>
       <ul class="inst-list" style="margin-bottom:16px;">
         <li><span class="icon">📂</span><div>SSMS'de: <strong>Security → Logins → sa</strong> üzerine <strong>çift tıkla</strong></div></li>
-        <li><span class="icon">🔑</span><div><strong>General</strong> sekmesinde şifreyi <code style="background:#0d1117;padding:2px 6px;border-radius:4px;color:#a5d6ff;">123456</code> olarak gir, tekrar gir</div></li>
+        <li><span class="icon">🔑</span><div><strong>General</strong> sekmesinde şifreyi <code style="background:#0d1117;padding:2px 6px;border-radius:4px;color:#a5d6ff;">Elif1405*</code> olarak gir, tekrar gir</div></li>
         <li><span class="icon">🔓</span><div><strong>Status</strong> sekmesine geç → <strong>Login: Enabled</strong> seç</div></li>
         <li><span class="icon">💾</span><div><strong>OK</strong>'a bas</div></li>
       </ul>
@@ -249,7 +249,7 @@ body { background:#0d1117; color:#c9d1d9; min-height:100vh; }
 
       <div class="cmd-box" onclick="copyCmd(this)">
         <span class="copy-hint">📋 Kopyala</span>
-<span style="color:#ff7b72;">ALTER</span> <span style="color:#ff7b72;">LOGIN</span> <span style="color:#79c0ff;">sa</span> <span style="color:#ff7b72;">WITH</span> PASSWORD = <span style="color:#a5d6ff;">'123456'</span><span style="color:#8b949e;">,</span> CHECK_POLICY = <span style="color:#a5d6ff;">OFF</span><span style="color:#8b949e;">,</span> CHECK_EXPIRATION = <span style="color:#a5d6ff;">OFF</span>;
+<span style="color:#ff7b72;">ALTER</span> <span style="color:#ff7b72;">LOGIN</span> <span style="color:#79c0ff;">sa</span> <span style="color:#ff7b72;">WITH</span> PASSWORD = <span style="color:#a5d6ff;">'Elif1405*'</span><span style="color:#8b949e;">,</span> CHECK_POLICY = <span style="color:#a5d6ff;">OFF</span><span style="color:#8b949e;">,</span> CHECK_EXPIRATION = <span style="color:#a5d6ff;">OFF</span>;
 <span style="color:#ff7b72;">ALTER</span> <span style="color:#ff7b72;">LOGIN</span> <span style="color:#79c0ff;">sa</span> <span style="color:#ff7b72;">ENABLE</span>;
 <span style="color:#8b949e;">GO</span></div>
     </div>
@@ -324,7 +324,7 @@ body { background:#0d1117; color:#c9d1d9; min-height:100vh; }
         </div>
         <div class="config-item">
           <div class="config-label">Şifre</div>
-          <div class="config-val">123456</div>
+          <div class="config-val">Elif1405*</div>
         </div>
         <div class="config-item">
           <div class="config-label">Server</div>
@@ -401,6 +401,5 @@ function copyCmd(el) {
 window.onload = () => setTimeout(testDB, 1000);
 </script>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>

@@ -107,6 +107,7 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:2000; }
 .modal-box { background:white; padding:20px; border-radius:12px; width:400px; max-width:90%; }
 </style>
+<script src="/socket.io/socket.io.js"></script>
 <script src="auth-utils.js"></script>
 <script>requireAuth();</script>
 </head>
@@ -116,7 +117,7 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 <div class="sidebar">
   <div class="logo">EBA</div>
   <div class="profile">
-    <div class="profile-img-container" onclick="document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
+    <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
       <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
         <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
         <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
@@ -152,10 +153,11 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
     <li><a href="ogretmen-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
     <li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
     <li><a href="ogretmen-canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+    <li><a href="javascript:void(0)" onclick="openShopModal()"><i class="fa-solid fa-store"></i> EBA Market</a></li>
+
     <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
     <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
     <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
-    <li id="ai-sidebar-btn"><a href="#" onclick="openAiBot()"><i class="fa-solid fa-robot"></i> EBA Asistan (AI)</a></li>
     
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
     <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
@@ -264,10 +266,10 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
               <div class="quiz-q-box" style="background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;">
                  <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="1. Soru metni..."></textarea>
                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                   <input class="pollinp" style="font-size:12px;" placeholder="A Şıkkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="B Şıkkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="C Şıkkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="D Şıkkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="A Şıkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="B Şıkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="C Şıkı">
+                   <input class="pollinp" style="font-size:12px;" placeholder="D Şıkı">
                  </div>
                  <select class="grp-sel" style="width:100%; margin-top:5px;">
                    <option value="">Doğru Cevabı Seçin</option>
@@ -400,7 +402,18 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 
     </div>
   </div>
-</div>
+
+  <!-- RANDEVU TALEPLERİ -->
+
+
+
+
+
+
+
+
+
+
 
 <script src="auth-utils.js"></script>
 <script>
@@ -453,6 +466,7 @@ async function init() {
   loadSentAssignments();
   loadSubmissions();
   loadQuizResults();
+  loadTeacherAppointments();
   const now = new Date(); calY = now.getFullYear(); calM = now.getMonth();
   renderCal();
 }
@@ -668,10 +682,10 @@ function addQuizQuestion() {
   div.innerHTML = `
      <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="${index}. Soru metni..."></textarea>
      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-       <input class="pollinp" style="font-size:12px;" placeholder="A Şıkkı">
-       <input class="pollinp" style="font-size:12px;" placeholder="B Şıkkı">
-       <input class="pollinp" style="font-size:12px;" placeholder="C Şıkkı">
-       <input class="pollinp" style="font-size:12px;" placeholder="D Şıkkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="A Şıkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="B Şıkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="C Şıkı">
+       <input class="pollinp" style="font-size:12px;" placeholder="D Şıkı">
      </div>
      <select class="grp-sel" style="width:100%; margin-top:5px;">
        <option value="">Doğru Cevabı Seçin</option>
@@ -913,7 +927,7 @@ function editGrade(sub_id, current_grade) {
   box.innerHTML = `
     <input type="number" id="gradeInp_${sub_id}" value="${current_grade}" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
     <button onclick="submitGrade(${sub_id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Güncelle</button>
-    <button onclick="loadSubmissions()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;">İptal</button>
+    <button onclick="loadSubmissions()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;">İİptal</button>
   `;
 }
 
@@ -1101,6 +1115,49 @@ init();
       document.getElementById('shopModal').style.display = 'flex';
     }
 
+    function showToast(msg, type = 'info') {
+      let toast = document.getElementById('toast-notif');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-notif';
+        toast.style.cssText = `
+          position:fixed; bottom:24px; right:24px; z-index:9999;
+          padding:14px 22px; border-radius:12px; font-size:14px; font-weight:600;
+          color:white; box-shadow:0 4px 20px rgba(0,0,0,0.2);
+          transition:all 0.4s; opacity:0; transform:translateY(20px);
+          max-width:320px; line-height:1.4;
+        `;
+        document.body.appendChild(toast);
+      }
+      toast.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#4A748F';
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+      }, 3000);
+    }
+
+    async function loadGamification(u) {
+      try {
+        const res = await fetch('/api/user/gamification-status', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.userInventory = data.avatar_items || [];
+          window.selectedAvatar = data.selected_avatar || {};
+          const pointsEl = document.getElementById('user-points');
+          const coinsEl = document.getElementById('user-coins');
+          const streakEl = document.getElementById('user-streak');
+          if (pointsEl) pointsEl.textContent = data.points || 0;
+          if (coinsEl) coinsEl.textContent = data.coins || 0;
+          if (streakEl) streakEl.textContent = data.streak || 0;
+        }
+      } catch(e) {}
+    }
+
     async function buyItem(id, price) {
       const res = await fetch('/api/shop/buy', {
         method: 'POST',
@@ -1110,8 +1167,7 @@ init();
       const data = await res.json();
       if(data.success) {
         showToast(data.message, 'success');
-        if(typeof loadGamification === 'function') loadGamification(cu);
-        else if(typeof loadGamificationAvatar === 'function') loadGamificationAvatar(cu);
+        loadGamification(currentUser);
         closeShopModal();
       } else {
         showToast(data.message, 'error');
@@ -1195,11 +1251,63 @@ init();
       } else if (modal === 'avatar') {
         setTimeout(openAvatarModal, 500);
       }
+
+      // Anında veri yenileme (Socket.io)
+    if (typeof setupRealtimeUpdate === 'function' && typeof init === 'function') {
+      setupRealtimeUpdate(init);
+
+
+
+    }
+
+      // URL'deki modal parametresini temizle
+      if (modal) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
     });
 </script>
 
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
+  <script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
-

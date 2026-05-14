@@ -1,8 +1,8 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>GÃ¼le GÃ¼le - EBA</title>
+    <title>Güle Güle - EBA</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,14 +40,14 @@
 <body>
     <div class="goodbye-container">
         <div class="logo">EBA</div>
-        <h1>GÃ¼le GÃ¼le!</h1>
-        <p>GÃ¼venli bir ÅŸekilde Ã§Ä±kÄ±ÅŸ yaptÄ±nÄ±z.</p>
-        <p>Yeniden giriÅŸ yapmak iÃ§in lÃ¼tfen ana sayfaya dÃ¶nÃ¼n.</p>
-        <button onclick="goToHome()" style="background:#4A748F; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; margin-top:20px;">Ana Sayfaya DÃ¶n</button>
+        <h1>Güle Güle!</h1>
+        <p>Güvenli bir şekilde çıkış yaptınız.</p>
+        <p>Yeniden giriş yapmak için lütfen ana sayfaya dönün.</p>
+        <button onclick="goToHome()" style="background:#4A748F; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; margin-top:20px;">Ana Sayfaya Dön</button>
     </div>
 
     <script>
-        // GÃ¼venlik: Ã‡Ä±kÄ±ÅŸ sÄ±rasÄ±nda tÃ¼m oturum verilerini temizle
+        // Güvenlik: Çıkış sırasında tüm oturum verilerini temizle
         function clearSession() {
             // sessionStorage (tab-specific) temizle
             sessionStorage.removeItem('currentUser');
@@ -60,7 +60,7 @@
         
         clearSession();
         
-        // 3 saniye sonra index.html'e yÃ¶nlendir
+        // 3 saniye sonra index.html'e yönlendir
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 3000);
@@ -70,6 +70,5 @@
         }
     </script>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>

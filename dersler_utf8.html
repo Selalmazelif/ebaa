@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 
 <head>
   <meta charset="UTF-8">
-  <title>Kitaplar</title>
+  <title>Dersler</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="panel.css">
   <script src="auth-utils.js"></script>
@@ -61,9 +61,9 @@
     
     <ul id="sidebar-menu">
       <li><a href="ogrenci-panel.html" ><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
-      <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="dersler.html" class="active"><i class="fa-solid fa-book"></i> Dersler</a></li>
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
-      <li><a href="kitaplar.html" class="active"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
       <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
@@ -73,24 +73,47 @@
   </div>
 
   <div class="main">
+
     <div class="topbar">
-      <div></div>
-      <div class="icons">
-        <i class="fa fa-bell" title="Bildirimler"></i>
-        <a href="chat.html"><i class="fa fa-envelope" title="Mesajlar"></i></a>
+
+      <div class="search">
+        <i class="fa fa-search"></i>
+        <input placeholder="Ara">
       </div>
+
+      
+    <div class="icons" style="position:relative;">
+      <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
+        <i class="fa fa-bell"></i>
+        <span id="notifBadge" style="display:none;background:#e74c3c;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px;display:inline-flex;"></span>
+      </span>
+      <a href="chat.html"><i class="fa fa-envelope"></i></a>
+    </div>
+
+    <!-- Bildirim paneli -->
+    <div id="notifPanel" style="display:none;position:fixed;top:64px;right:20px;width:300px;max-height:360px;overflow-y:auto;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;">
+      <div style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:13px;">?? Bildirimler</div>
+      <div id="notifList"></div>
+    </div>
+    
+
     </div>
 
     <div class="banner">
+
       <div>
-        <h2>Kitaplar</h2>
-        <p>Önerilen ve okumanız gereken kitaplar</p>
+        <h2>Dersler</h2>
+        <p id="class-info">Sınıfınıza göre dersler</p>
       </div>
+
     </div>
 
-    <div class="cards" id="kitaplar-grid">
-      <!-- JS ile doldurulacak -->
+    <div class="cards" id="dersler-grid">
+
+      <!-- Dinamik olarak doldurulur -->
+
     </div>
+
   </div>
 
   <script src="auth-utils.js"></script>
@@ -99,81 +122,67 @@
     if (user) {
       document.getElementById('profile-name').textContent = user.name;
       document.getElementById('profile-school').textContent = user.school;
-      const logoutBtn = document.getElementById('logoutBtn');
-      if (logoutBtn) logoutBtn.addEventListener('click', logout);
-
-      if (user.profilePic) {
-        document.getElementById('default-avatar-icon').style.display = 'none';
-        const profileImg = document.getElementById('profile-img-display');
-        profileImg.src = user.profilePic;
-        profileImg.style.display = 'block';
-      }
-
-      const menu = document.getElementById('sidebar-menu');
-      menu.innerHTML = `
-    <li><a href="${redirectByRole(user.role)}"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
-    <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
-    <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
-    <li><a href="kitaplar.html" class="active"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
-    <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
-    <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
-    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
-  `;
-
-      async function readBook(title) {
-        alert(title + ' kitabını okumaya başladınız!');
-        try {
-          await fetch('/api/student-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ student_tc: user.tc, type: 'content' })
-          });
-        } catch (e) { }
-      }
-
-      const kitaplar = [
-        { title: "Sefiller", author: "Victor Hugo", img: "https://m.media-amazon.com/images/I/51rY8Z+8T1L._SY344_BO1,204,203,200_.jpg", type: "Roman" },
-        { title: "Suç ve Ceza", author: "Dostoyevski", img: "https://m.media-amazon.com/images/I/41Z-mndfVzL._SY344_BO1,204,203,200_.jpg", type: "Roman" },
-        { title: "1984", author: "George Orwell", img: "https://m.media-amazon.com/images/I/41aM4xOZxaL._SY344_BO1,204,203,200_.jpg", type: "Bilim Kurgu" },
-        { title: "Simyacı", author: "Paulo Coelho", img: "https://m.media-amazon.com/images/I/51y1Ww1yC0L._SY344_BO1,204,203,200_.jpg", type: "Fantastik" },
-        { title: "Nutuk", author: "Mustafa Kemal Atatürk", img: "https://m.media-amazon.com/images/I/41O+nQkI9TL._SY344_BO1,204,203,200_.jpg", type: "Tarih" },
-        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", img: "https://m.media-amazon.com/images/I/41SgR7-oO3L._SY344_BO1,204,203,200_.jpg", type: "Hikaye" },
-      ];
-
-      const grid = document.getElementById('kitaplar-grid');
-      grid.innerHTML = kitaplar.map(kitap => `
-    <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;" onclick="readBook('${kitap.title}')">
-      <div>
-        <div style="background:#eee; height:150px; border-radius:8px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-            ${kitap.img ?`<img src="${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">` : `<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>`}
-        </div>
-        <h3 style="font-size:16px; margin-bottom:5px;">${kitap.title}</h3>
-        <p style="font-size:13px; color:#666;">${kitap.author}</p>
-      </div>
-      <div style="margin-top:15px; display:inline-block; padding:4px 10px; background:#DDE7EC; color:#4A748F; font-size:11px; font-weight:bold; border-radius:12px; align-self:flex-start;">
-        ${kitap.type}
-      </div>
-    </div>`).join('');
-
       document.getElementById('logoutBtn').addEventListener('click', logout);
+
+      const derslerGrid = document.getElementById('dersler-grid');
+      const classInfo = document.getElementById('class-info');
+
+      const dersler = {
+        '9': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Üslü Sayılar', 'Köklü Sayılar', 'Faktöriyel'] },
+          { name: 'Fen Bilimleri', img: 'img/fen.jpg', topics: ['Canlılar Dünyası', 'Maddenin Halleri'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['İlk Çağ Uygarlıkları', 'Türklerin Tarih Sahnesi'] },
+          { name: 'İngilizce', img: 'img/ing.jpg', topics: ['Simple Present', 'Kelime Bilgisi'] }
+        ],
+        '10': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Edebi Sanatlar', 'Paragraf Anlamı'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Doğrusal Denklemler', 'Polinomlar'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Elektrik', 'Kuvvet'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Atom Modelleri', 'Elementler'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Hücre ve Organizasyon', 'Ekosistem'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Osmanlıda Dağılma Dönemi', 'Kurtuluş Savaşı'] }
+        ],
+        '11': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Anlatım Bozuklukları', 'Paragraf Türleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Denklem Sistemleri', 'Olasılık'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Dalga', 'Optik'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Kimyasal Enerji', 'Organik Kimya'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Genetik', 'Fizyoloji'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Çağdaş Türk ve Dünya Tarihi'] },
+          { name: 'Coğrafya', img: 'img/coğrafya.jpg', topics: ['Küresel Isınma', 'Nüfus Coğrafyası'] }
+        ],
+        '12': [
+          { name: 'Türkçe', img: 'img/turkce.jpg', topics: ['Sözcük Türleri', 'Anlatım Teknikleri'] },
+          { name: 'Matematik', img: 'img/mat.jpg', topics: ['Türev', 'Limit', 'Permütasyon'] },
+          { name: 'Fizik', img: 'img/fizik.jpg', topics: ['Elektrik-Magnetizma', 'Modern Fizik'] },
+          { name: 'Kimya', img: 'img/kimya.jpg', topics: ['Asit-Baz', 'Kimyasal Denklem'] },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg', topics: ['Evrim', 'Bitki Fizyolojisi'] },
+          { name: 'Tarih', img: 'img/tarih.jpg', topics: ['Dünya Siyaseti', 'Soğuk Savaş'] },
+          { name: 'Coğrafya', img: 'img/coğrafya.jpg', topics: ['Doğal Kaynaklar', 'Nüfus Politikaları'] },
+          { name: 'Felsefe', img: 'img/fel.jpg', topics: ['Etik', 'Siyaset Felsefesi'] }
+        ]
+      };
+
+      const userClass = user.class || '9';
+      classInfo.textContent = `${userClass}. Sınıf Dersleri`;
+
+      const classDersler = dersler[userClass] || [];
+      derslerGrid.innerHTML = classDersler.map(ders => {
+        return `
+      <a href="ders-detay.html?ders=${encodeURIComponent(ders.name)}" class="card-link" style="text-decoration:none; color:inherit; display:block;">
+        <div class="card">
+          <img src="${ders.img}" alt="${ders.name}">
+          <h3>${ders.name}</h3>
+          <p style="font-size:12px; color:#666; margin-top:8px;">Konuları görmek için tıklayın <i class="fa fa-arrow-right" style="font-size:10px; margin-left:4px;"></i></p>
+        </div>
+      </a>
+    `;
+      }).join('');
     }
   </script>
 
- " Sınav Yanlışları Modalı"
-  <div id="examDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span id="examTitleSpan"></span></h3>
-      <div style="display:flex; justify-content:space-around; margin-bottom:15px; text-align:center;">
-         <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span style="font-size:12px; font-weight:normal;">Doğru</span></div>
-         <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span style="font-size:12px; font-weight:normal;">Yanlış</span></div>
-         <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span style="font-size:12px; font-weight:normal;">Boş</span></div>
-      </div>
-      <div id="wrongQuestionsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#444;"></div>
-      <div style="text-align:right; margin-top:20px;">
-        <button onclick="document.getElementById('examDetailModal').style.display='none'" style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
-      </div>
-    </div>
-  </div>
+
 
 
 <script>
@@ -217,7 +226,24 @@ setTimeout(() => { loadNotifs(); }, 1000);
 </script>
 
 
+
+  <!-- Sınav Yanlışları Modalı -->
+  <div id="examDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span id="examTitleSpan"></span></h3>
+      <div style="display:flex; justify-content:space-around; margin-bottom:15px; text-align:center;">
+         <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span style="font-size:12px; font-weight:normal;">Doğru</span></div>
+         <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span style="font-size:12px; font-weight:normal;">Yanlış</span></div>
+         <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span style="font-size:12px; font-weight:normal;">Boş</span></div>
+      </div>
+      <div id="wrongQuestionsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#444;"></div>
+      <div style="text-align:right; margin-top:20px;">
+        <button onclick="document.getElementById('examDetailModal').style.display='none'" style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
+      </div>
+    </div>
+  </div>
   <script src="fix-notifications.js"></script>
 </body>
 
 </html>
+

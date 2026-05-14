@@ -169,6 +169,15 @@ body {
   background: rgba(92, 142, 173, 0.1);
 }
 
+.conversation-item.has-new-message {
+  background: #fff3cd;
+  font-weight: bold;
+}
+
+.conversation-item.has-new-message:hover {
+  background: #ffe99c;
+}
+
 .conversation-avatar {
   width: 45px;
   height: 45px;
@@ -272,6 +281,18 @@ body {
   color: var(--text-main);
   border-bottom-left-radius: 4px;
   border: 1px solid var(--border-color);
+}
+
+.message.new-message {
+  font-weight: bold;
+  background: #fff3cd !important;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #333 !important;
+}
+
+.message.new-message:hover {
+  background: #ffe99c !important;
 }
 
 .message-time {

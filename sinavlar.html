@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
@@ -9,223 +9,61 @@
   <script>requireAuth();</script>
 </head>
 <body>
-    <div class="sidebar">
+  <div class="sidebar">
     <div class="logo">EBA</div>
     <div class="profile">
-      <div class="profile-img-container" onclick="document.getElementById('profilePicInput') ? document.getElementById('profilePicInput').click() : null" title="Fotoğrafı Değiştir">
-        <div style="width:70px;height:70px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 8px;position:relative;">
-          <i class="fa fa-user" style="font-size:35px;color:#ccc;" id="default-avatar-icon"></i>
+      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
+        <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
+          <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
           <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
-          
-          <!-- Avatar Overlays -->
-          <img id="sidebar-hat" style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:30px; z-index:3; display:none;">
-          <img id="sidebar-glasses" style="position:absolute; top:25px; left:50%; transform:translateX(-50%); width:25px; z-index:4; display:none;">
-          <img id="sidebar-pet" style="position:absolute; bottom:5px; right:5px; width:20px; z-index:5; display:none;">
-          <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
         </div>
         <div class="edit-overlay"><i class="fa fa-camera"></i></div>
-        <div class="status-indicator" title="Çevrimiçi"></div>
       </div>
-      <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
-      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: Öğrenci</p>
-      <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
-      <input id="profilePicInput" type="file" accept="image/*" style="display:none;">
-
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;">
-        <div style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-          <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span id="user-points">0</span> Puan
-        </div>
-        <div style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;" title="Nasıl kazanılır?&#10;• Günlük giriş: 10 Coin&#10;• Ödev tamamlama: 15 Coin&#10;• Sınav çözme: 20 Coin&#10;• Forum katılımı: 5 Coin">
-          <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span id="user-coins">0</span> EBA Coin
-        </div>
-        <div style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-          <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span id="user-streak">0</span> Günlük Seri
-        </div>
-      </div>
-
-      <div id="cert-btn-container" style="text-align:center; margin-top:10px; display:none; width:100%; padding:0 20px; box-sizing:border-box;">
-        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
-      </div>
-
-      <div id="user-badges-container" style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
-        <!-- Rozetler buraya gelecek -->
-      </div>
-      
-      <div style="width:100%; padding:0 20px; box-sizing:border-box;">
-        <button id="logoutBtn" style="width:100%; margin-top:15px;padding:6px 12px;background:#fff;color:#284B63;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
-      </div>
+      <p id="profile-name" style="font-weight:600;"></p>
+      <input id="picInput" type="file" accept="image/*" style="display:none;">
+      <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
     </div>
-    
     <ul id="sidebar-menu">
-      <li><a href="ogrenci-panel.html" ><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
       <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
-      <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
-      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html" class="active"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
-      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
-      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
-      <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
-      <li><a href="ogrenci-panel.html?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a></li>
-      <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
     </ul>
   </div>
 
   <div class="main">
-    <div class="topbar">
-      <div></div>
-      <div class="icons" style="position:relative;">
-        <span style="position:relative;cursor:pointer;" onclick="toggleNotif()"><i class="fa fa-bell"></i><span id="notifBadge" style="display:none;background:#e74c3c;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px;display:inline-flex;"></span></span>
-        <a href="chat.html"><i class="fa fa-envelope"></i></a>
-      </div>
-      <div id="notifPanel" style="display:none;position:fixed;top:64px;right:20px;width:300px;max-height:360px;overflow-y:auto;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;">
-        <div style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:13px;">🔔 Bildirimler</div>
-        <div id="notifList"></div>
-      </div>
-    </div>
-
-    <div class="banner">
+    <div class="banner" style="margin:20px; background:#284B63; border-radius:15px; padding:30px; color:white; display:flex; justify-content:space-between; align-items:center;">
       <div>
         <h2>Sınavlar</h2>
-        <p id="class-info">Sınıfınıza göre sınavlar</p>
+        <p>Aktif sınavlarınız ve sonuçlarınız</p>
       </div>
     </div>
-
-    <div id="active-quizzes-section" style="padding: 20px; display: none;">
-      <h3 style="color:#284B63; margin-bottom:15px; display:flex; align-items:center; gap:10px;">
-        <i class="fa fa-bolt" style="color:#f39200;"></i> Öğretmenlerimden Gelen Aktif Sınavlar
-      </h3>
-      <div class="cards" id="active-quizzes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;"></div>
+    <div id="quiz-list" style="padding:20px; display:grid; gap:15px;">
+       <p style="color:#888;">Sınavlar yükleniyor...</p>
     </div>
-
-    <div class="cards" id="sinavlar-grid" style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;"></div>
   </div>
 
   <script>
-    const user = getCurrentUser();
-    if(user) {
+    const user = requireAuth();
+    if (user) {
       document.getElementById('profile-name').textContent = user.name;
-      document.getElementById('profile-role').textContent = 'Rol: ' + (user.role==='ogrenci'?'Öğrenci':user.role==='ogretmen'?'Öğretmen':'Veli');
-      document.getElementById('profile-school').textContent = user.school;
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      if(user.profilePic) {
-        document.getElementById('default-avatar-icon').style.display = 'none';
-        const profileImg = document.getElementById('profile-img-display');
-        profileImg.src = user.profilePic; profileImg.style.display = 'block';
-      }
-
+      document.getElementById('logoutBtn').onclick = logout;
       
-
-      loadActiveQuizzes(user);
-      loadStaticExams(user);
-    }
-
-    async function loadActiveQuizzes(user) {
-      try {
-        const r = await ebaFetch(`/api/quizzes?school=${encodeURIComponent(user.school)}&target_class=${encodeURIComponent(user.classNum||user.class||'all')}`);
-        const d = await r.json();
-        const grid = document.getElementById('active-quizzes-grid');
-        const section = document.getElementById('active-quizzes-section');
-        if (d.success && d.quizzes.length) {
-          section.style.display = 'block';
-          grid.innerHTML = d.quizzes.map(q => `
-            <div class="card" style="background: white; border: 1.5px solid #EBF5FB; box-shadow: 0 4px 12px rgba(0,0,0,0.05); color: #444; padding: 20px; border-radius: 12px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                <div style="background:#f39200; color:white; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:bold;">YENİ</div>
-                <div style="font-size:11px; color:#aaa;"><i class="fa fa-clock"></i> ${q.time_limit} dk</div>
-              </div>
-              <h3 style="margin:0 0 6px; font-size:15px; color:#284B63;">${q.title}</h3>
-              <p style="font-size:12px; color:#888; margin-bottom:15px;">Ders: ${q.subject} · Öğretmen: ${q.teacher_name}</p>
-              <button onclick="startQuiz(${q.id}, '${q.title.replace(/'/g, "\\'")}', ${q.time_limit})" style="width:100%; padding:10px; background:#284B63; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:13px;">Sınava Başla</button>
-            </div>
-          `).join('');
+      async function loadQuizzes() {
+        try {
+          const res = await ebaFetch('/api/quizzes?school=' + encodeURIComponent(user.school));
+          const data = await res.json();
+          const list = document.getElementById('quiz-list');
+          if(data.success && data.quizzes.length) {
+            list.innerHTML = data.quizzes.map(q => '<div class=\"card\" style=\"background:white; padding:20px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.05);\"><div style=\"text-align:left;\"><h3 style=\"margin:0; color:#284B63;\">' + q.title + '</h3><p style=\"font-size:12px; color:#888; margin-top:5px;\">' + q.subject + ' | Süre: ' + q.time_limit + ' dk</p></div><button onclick=\"location.href=\'quiz.html?id=' + q.id + '\'\" style=\"background:#2ecc71; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:700;\">Sınava Başla</button></div>').join('');
+          } else {
+            list.innerHTML = '<p style=\"color:#888;\">Şu an aktif sınav bulunmuyor.</p>';
+          }
+        } catch(e) {
+          document.getElementById('quiz-list').innerHTML = '<p style=\"color:#e74c3c;\">Sınavlar yüklenirken bir hata oluştu.</p>';
         }
-      } catch(e) {}
-    }
-
-    function startQuiz(id, title, limit) {
-      sessionStorage.setItem('current_quiz', JSON.stringify({id, title, limit}));
-      location.href = 'active-quiz.html';
-    }
-
-    function loadStaticExams(user) {
-      const exams = [
-        { name: 'Tarama Testleri', color: '#2c6aa0', icon: 'fa-list-check', desc: '32 test · Ders başına konu tarama', link: 'tarama-testleri.html', questions: 20, sure: '25 dk' },
-        { name: 'Kazanım Kavrama', color: '#e33a6a', icon: 'fa-graduation-cap', desc: 'Kazanım bazlı değerlendirme', link: '#', questions: 20, sure: '30 dk' },
-        { name: 'Deneme Sınavları', color: '#607d8b', icon: 'fa-pen-to-square', desc: 'Okul bazlı deneme sınavları', link: '#', questions: 40, sure: '60 dk' }
-      ];
-      document.getElementById('sinavlar-grid').innerHTML = exams.map(s => `
-        <div class="card" style="background: linear-gradient(135deg, ${s.color}, ${s.color}cc); color:white; padding:20px; border-radius:12px; position:relative; overflow:hidden;">
-          <i class="fa ${s.icon}" style="position:absolute;right:16px;top:16px;font-size:24px;opacity:0.2;"></i>
-          <h3 style="margin:0 0 8px;font-size:15px;">${s.name}</h3>
-          <p style="font-size:11px;margin:0 0 12px;opacity:0.9;">${s.desc}</p>
-          <div style="display:flex;gap:10px;font-size:10px;">
-            <span style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:4px;">${s.questions} soru</span>
-            <span>${s.sure}</span>
-          </div>
-        </div>
-      `).join('');
+      }
+      loadQuizzes();
     }
   </script>
-
-  <!-- Sınav Yanlışları Modalı -->
-  <div id="examDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span id="examTitleSpan"></span></h3>
-      <div style="display:flex; justify-content:space-around; margin-bottom:15px; text-align:center;">
-         <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span style="font-size:12px; font-weight:normal;">Doğru</span></div>
-         <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span style="font-size:12px; font-weight:normal;">Yanlış</span></div>
-         <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span style="font-size:12px; font-weight:normal;">Boş</span></div>
-      </div>
-      <div id="wrongQuestionsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#444;"></div>
-      <div style="text-align:right; margin-top:20px;">
-        <button onclick="document.getElementById('examDetailModal').style.display='none'" style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
-      </div>
-    </div>
-  </div>
-
-
-<script>
-function showExamDetails(t,c,w,b,sJson) {
-  document.getElementById('examTitleSpan').textContent=t;
-  document.getElementById('exCor').textContent=c;
-  document.getElementById('exWro').textContent=w;
-  document.getElementById('exBla').textContent=b;
-  const el = document.getElementById('wrongQuestionsList');
-  if(!sJson || sJson==='[]' || sJson==='null') {
-    el.innerHTML='<div style="text-align:center;color:#aaa;padding:10px;">Yanlış soru detayı yok.</div>';
-  } else {
-    try {
-      const arr = JSON.parse(sJson);
-      el.innerHTML = arr.map(q => '<div style="border:1px solid #ffcccc;background:#fff5f5;padding:10px;border-radius:6px;margin-top:10px;"><b>Soru:</b> '+q.q+'<br><span style="color:#e74c3c">Cevabınız: '+(q.ans||'Boş')+'</span><br><span style="color:#2ecc71">Doğru: '+q.corr+'</span></div>').join('');
-    } catch(e){ el.innerHTML='Hata: '+e.message; }
-  }
-  document.getElementById('examDetailModal').style.display='flex';
-}
-
-function parseNotifText(originalText) {
-  let txt = originalText;
-  let btn = '';
-  const match = txt.match(/===EXAM_DET:(.*?)===/);
-  if(match) {
-     const parts = match[1].split('|');
-     const title = parts[0];
-     const cor = parts[1];
-     const wro = parts[2];
-     const bla = parts[3];
-     const json = parts[4] || '[]';
-     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-     btn = '<br><button onclick="showExamDetails(\''+title+'\',\''+cor+'\',\''+wro+'\',\''+bla+'\',\''+jsonEscaped+'\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
-     txt = txt.replace(match[0], '');
-  }
-  return txt + btn;
-}
-
-
-setTimeout(() => { loadNotifs(); }, 1000);
-</script>
-
-
-  <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
 </body>
 </html>

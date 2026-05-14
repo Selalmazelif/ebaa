@@ -62,7 +62,8 @@ async function initChat() {
         type: 'individual', 
         name: c.name, 
         messages: [], 
-        lastMessage: c.lastMessage || 'Sohbeti başlatın...'
+        lastMessage: c.lastMessage || 'Sohbeti başlatın...',
+        lastActivity: Date.now()
       }));
     }
     
@@ -81,7 +82,7 @@ async function loadGroups() {
         let members = [];
         try { members = JSON.parse(g.members); } catch(e) {}
         state.conversations.push({
-          id: g.id, type: 'group', name: g.name, members: members, lastMessage: 'Grup Sohbeti', messages: []
+          id: g.id, type: 'group', name: g.name, members: members, lastMessage: 'Grup Sohbeti', messages: [], lastActivity: Date.now()
         });
       });
     }
@@ -115,11 +116,13 @@ function initSocket(user) {
     let conv = getConversationById(data.sender_tc);
     if (!conv) {
       // Konuşma listede yoksa oluştur
-      conv = { id: String(data.sender_tc), type: 'individual', name: data.sender_name || data.sender_tc, messages: [], lastMessage: '' };
+      conv = { id: String(data.sender_tc), type: 'individual', name: data.sender_name || data.sender_tc, messages: [], lastMessage: '', hasNewMessage: true, lastActivity: Date.now() };
       state.conversations.push(conv);
     }
-    conv.messages.push({ from: 'them', text: data.content, time: formatTime(data.sentAt) });
+    conv.messages.push({ from: 'them', text: data.content, time: formatTime(data.sentAt), isNew: true });
     conv.lastMessage = data.content;
+    conv.hasNewMessage = true;
+    conv.lastActivity = Date.now();
     if (state.activeConversationId === String(data.sender_tc)) renderMessages(conv.messages, 'individual');
     renderConversationLists();
   });
@@ -129,8 +132,10 @@ function initSocket(user) {
     if (!conv) return; // Grubumuz değilse yoksay
     const myTc = getCurrentUser()?.tc;
     if (String(data.sender_tc) === String(myTc)) return; // Kendi mesajımızı çift gösterme
-    conv.messages.push({ from: 'them', text: data.content, senderName: data.sender_name, time: formatTime(data.sentAt) });
+    conv.messages.push({ from: 'them', text: data.content, senderName: data.sender_name, time: formatTime(data.sentAt), isNew: true });
     conv.lastMessage = `${data.sender_name}: ${data.content}`;
+    conv.hasNewMessage = true;
+    conv.lastActivity = Date.now();
     if (state.activeConversationId === String(data.group_id)) renderMessages(conv.messages, 'group');
     renderConversationLists();
   });
@@ -142,9 +147,25 @@ function renderConversationLists() {
   elements.individualList.innerHTML = '';
   elements.groupList.innerHTML = '';
 
-  state.conversations.forEach(conv => {
+  // Sort conversations: last activity first, then new messages
+  const individual = state.conversations.filter(c => c.type === 'individual').sort((a, b) => {
+    // Önce yeni mesajlar üste gelsin
+    if (a.hasNewMessage && !b.hasNewMessage) return -1;
+    if (!a.hasNewMessage && b.hasNewMessage) return 1;
+    // Sonra en son aktif olana göre sırala
+    return (b.lastActivity || 0) - (a.lastActivity || 0);
+  });
+  const groups = state.conversations.filter(c => c.type === 'group').sort((a, b) => {
+    // Önce yeni mesajlar üste gelsin
+    if (a.hasNewMessage && !b.hasNewMessage) return -1;
+    if (!a.hasNewMessage && b.hasNewMessage) return 1;
+    // Sonra en son aktif olana göre sırala
+    return (b.lastActivity || 0) - (a.lastActivity || 0);
+  });
+
+  individual.forEach(conv => {
     const item = document.createElement('div');
-    item.className = `conversation-item ${state.activeConversationId === String(conv.id) ? 'active' : ''}`;
+    item.className = `conversation-item ${state.activeConversationId === String(conv.id) ? 'active' : ''} ${conv.hasNewMessage ? 'has-new-message' : ''}`;
     
     item.innerHTML = `
       <div class="conversation-avatar" style="background: ${conv.type === 'group' ? '#284B63' : '#5C8EAD'}">
@@ -153,20 +174,48 @@ function renderConversationLists() {
       <div class="conversation-info">
         <div class="conversation-name">${conv.name}</div>
         <div class="conversation-meta">
-          <div class="conversation-last">${conv.lastMessage}</div>
+          <div class="conversation-last" style="${conv.hasNewMessage ? 'font-weight:bold;' : ''}">${conv.lastMessage}</div>
         </div>
       </div>
     `;
     
-    item.onclick = () => setActiveConversation(conv.id);
-    if (conv.type === 'individual') elements.individualList.appendChild(item);
-    else elements.groupList.appendChild(item);
+    item.onclick = () => {
+      conv.hasNewMessage = false;
+      setActiveConversation(conv.id);
+      renderConversationLists();
+    };
+    elements.individualList.appendChild(item);
+  });
+
+  groups.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = `conversation-item ${state.activeConversationId === String(conv.id) ? 'active' : ''} ${conv.hasNewMessage ? 'has-new-message' : ''}`;
+    
+    item.innerHTML = `
+      <div class="conversation-avatar" style="background: ${conv.type === 'group' ? '#284B63' : '#5C8EAD'}">
+        ${conv.name.charAt(0).toUpperCase()}
+      </div>
+      <div class="conversation-info">
+        <div class="conversation-name">${conv.name}</div>
+        <div class="conversation-meta">
+          <div class="conversation-last" style="${conv.hasNewMessage ? 'font-weight:bold;' : ''}">${conv.lastMessage}</div>
+        </div>
+      </div>
+    `;
+    
+    item.onclick = () => {
+      conv.hasNewMessage = false;
+      setActiveConversation(conv.id);
+      renderConversationLists();
+    };
+    elements.groupList.appendChild(item);
   });
 }
 
 function setActiveConversation(id) {
   state.activeConversationId = String(id);
   const conv = getConversationById(id);
+  conv.lastActivity = Date.now();
   elements.chatTitle.textContent = conv.name;
   elements.chatSubtitle.textContent = conv.type === 'group' ? `${conv.members.length} Üye (Detay için tıkla)` : 'Bireysel Sohbet';
   
@@ -201,7 +250,7 @@ function renderMessages(messages, type) {
   elements.chatMessages.innerHTML = '';
   messages.forEach(m => {
     const div = document.createElement('div');
-    div.className = `message ${m.from === 'me' ? 'me' : 'them'}`;
+    div.className = `message ${m.from === 'me' ? 'me' : 'them'} ${m.isNew ? 'new-message' : ''}`;
     const sender = (type === 'group' && m.from === 'them') ? `<small><b>${m.senderName}</b></small><br>` : '';
     
     if (m.text && m.text.startsWith('DATA:AUDIO/')) {
@@ -209,6 +258,13 @@ function renderMessages(messages, type) {
       div.innerHTML = `${sender}<audio controls src="${audioUrl}" style="max-width:200px; height:30px;"></audio> <small style="display:block; opacity:0.6;">${m.time}</small>`;
     } else {
       div.innerHTML = `${sender}${m.text} <small style="display:block; opacity:0.6;">${m.time}</small>`;
+      if (m.isNew) {
+        div.onclick = () => {
+          m.isNew = false;
+          div.classList.remove('new-message');
+          div.onclick = null;
+        };
+      }
     }
     
     elements.chatMessages.appendChild(div);
@@ -364,6 +420,7 @@ async function sendDirectMessage(text) {
   
   conv.messages.push({ from: 'me', text, time: formatTime() });
   conv.lastMessage = text.startsWith('DATA:AUDIO/') ? '🎤 Sesli Mesaj' : text;
+  conv.lastActivity = Date.now();
   
   renderMessages(conv.messages, conv.type);
   renderConversationLists();

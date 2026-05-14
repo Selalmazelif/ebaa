@@ -2,11 +2,11 @@ const sql = require('mssql');
 
 const masterConfig = {
   user: 'sa',
-  password: '123456',
+  password: 'Elif1405*',
   server: 'localhost',
   database: 'master',
   options: {
-    encrypt: true,
+    encrypt: false,
     trustServerCertificate: true
   }
 };
@@ -34,15 +34,23 @@ async function setup() {
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
             BEGIN
                 CREATE TABLE Users (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    tc NVARCHAR(11) NOT NULL UNIQUE,
-                    password NVARCHAR(100) NOT NULL,
-                    role NVARCHAR(20) NOT NULL,
-                    name NVARCHAR(100),
-                    school NVARCHAR(200),
-                    class NVARCHAR(50),
-                    isActive BIT DEFAULT 1,
-                    createdAt DATETIME DEFAULT GETDATE()
+                    id         INT IDENTITY(1,1) PRIMARY KEY,
+                    tc         NVARCHAR(11)  NOT NULL UNIQUE,
+                    password   NVARCHAR(100) NOT NULL,
+                    role       NVARCHAR(20)  NOT NULL,
+                    name       NVARCHAR(100),
+                    school     NVARCHAR(200),
+                    class      NVARCHAR(50),
+                    branch     NVARCHAR(100),
+                    level      NVARCHAR(50),
+                    veliTc     NVARCHAR(11),
+                    profilePic NVARCHAR(MAX),
+                    grade_avg  FLOAT   DEFAULT 0,
+                    isOnline   BIT     DEFAULT 0,
+                    lastSeen   DATETIME,
+                    points     INT     DEFAULT 0,
+                    isActive   BIT     DEFAULT 1,
+                    createdAt  DATETIME DEFAULT GETDATE()
                 )
             END
         `);

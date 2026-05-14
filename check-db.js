@@ -1,7 +1,7 @@
 const sql = require('mssql');
 const config = {
-  user: 'sa', password: '123456', server: 'localhost', database: 'EBA_DB',
-  options: { encrypt: true, trustServerCertificate: true }
+  user: 'sa', password: 'Elif1405*', server: 'localhost', database: 'EBA_DB',
+  options: { encrypt: false, trustServerCertificate: true }
 };
 
 async function check() {

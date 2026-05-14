@@ -150,6 +150,50 @@ function redirectByRole(role) {
   return 'ogrenci-panel.html';
 }
 
+/**
+ * Otomatik veri yenileme başlatır.
+ */
+function startAutoRefresh(func, interval = 30000) {
+  return setInterval(() => {
+    try {
+      console.log('Veriler otomatik yenileniyor...');
+      func();
+    } catch (e) {
+      console.error('Otomatik yenileme hatası:', e);
+    }
+  }, interval);
+}
+
+/**
+ * Socket.io üzerinden anında güncelleme ayarlar.
+ */
+let ebaSocket;
+function setupRealtimeUpdate(refreshCallback) {
+  if (typeof io === 'undefined') {
+    console.warn('Socket.io kütüphanesi yüklenmemiş!');
+    return;
+  }
+  
+  if (!ebaSocket) {
+    ebaSocket = io();
+    const user = getCurrentUser();
+    if (user && user.tc) {
+      ebaSocket.emit('login', user.tc);
+    }
+  }
+
+  ebaSocket.off('refresh_data'); // Eski listener'ı temizle
+  ebaSocket.on('refresh_data', () => {
+    console.log('Sunucudan anında güncelleme sinyali alındı. Veriler tazeleniyor...');
+    // Veritabanı işleminin tam tamamlanması için küçük bir gecikme (yarım saniye) ekleyelim
+    setTimeout(() => {
+      if (typeof refreshCallback === 'function') {
+        refreshCallback();
+      }
+    }, 500);
+  });
+}
+
 // --- ARAMA FONKSİYONALİTESİ ---
 function handleSearch(query) {
   if (!query) return;
@@ -310,7 +354,7 @@ function syncSidebarLinks() {
   // 5. Rol ve Okul Etiketlerini Güncelle
   const roleEl = document.getElementById('profile-role') || document.getElementById('sb-role') || document.getElementById('profile-role-display');
   if (roleEl) {
-    roleEl.textContent = 'Rol: ' + (user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'Öğrenci');
+    roleEl.textContent = 'Rol: ' + (user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'renci');
   }
   const schoolEl = document.getElementById('profile-school') || document.getElementById('sb-school') || document.getElementById('profile-school-display');
   if (schoolEl && user.school) {
@@ -373,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(defaultIcon) defaultIcon.style.display = 'block';
     }
 
-    // Çıkış butonu
+    // k butonu
     const lBtn = document.getElementById('logoutBtn');
     if(lBtn) lBtn.onclick = logout;
   }

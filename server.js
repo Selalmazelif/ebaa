@@ -6,10 +6,21 @@ const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
 const http    = require('http');
 const { Server } = require('socket.io');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+// ─── ICONV-LITE PRE-WARM (OneDrive Fix) ──────────────────────────
+try {
+  const iconv = require('iconv-lite');
+  // Trigger lazy loading of all encodings at startup
+  iconv.getCodec('utf8');
+  iconv.getCodec('windows-1254');
+  iconv.getCodec('iso-8859-9');
+  console.log('✅ iconv-lite codecs (UTF8, CP1254, ISO8859-9) pre-warmed.');
+} catch (e) {
+  console.warn('⚠️ iconv-lite pre-warm warning:', e.message);
+}
+
+// Gemini AI kaldırıldı
 
 
 const JWT_SECRET = 'eba-secret-2026';
@@ -64,10 +75,11 @@ app.use(express.static(__dirname));
 
 // ─── MSSQL KONFİGÜRASYON ──────────────────────────────────────────
 const DB_CONFIG = {
-  user:     'sa',
-  password: '123456',
-  server:   'localhost',
-  database: 'EBA_DB',
+  user:     process.env.DB_USER || 'sa',
+  password: process.env.DB_PASSWORD || 'Elif1405*',
+  server:   process.env.DB_SERVER || 'localhost',
+  port:     parseInt(process.env.DB_PORT) || 1433,
+  database: process.env.DB_NAME || 'EBA_DB',
   options: {
     encrypt:              false,
     trustServerCertificate: true,
@@ -130,12 +142,32 @@ async function setupTables() {
        isOnline   BIT   DEFAULT 0,
        lastSeen   DATETIME,
        points     INT   DEFAULT 0,
+       coins      INT   DEFAULT 0,
+       streak     INT   DEFAULT 0,
+       last_login DATETIME,
+       badges     NVARCHAR(MAX),
+       avatar_items NVARCHAR(MAX),
+       selected_avatar NVARCHAR(MAX),
        createdAt  DATETIME DEFAULT GETDATE()
      )
      ELSE
      BEGIN
        IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'points', 'ColumnId') IS NOT NULL
          ALTER TABLE Users ADD points INT DEFAULT 0;
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'coins', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD coins INT DEFAULT 0;
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'streak', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD streak INT DEFAULT 0;
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'last_login', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD last_login DATETIME;
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'badges', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD badges NVARCHAR(MAX);
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'avatar_items', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD avatar_items NVARCHAR(MAX);
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'selected_avatar', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD selected_avatar NVARCHAR(MAX);
+       IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'classNum', 'ColumnId') IS NOT NULL
+         ALTER TABLE Users ADD classNum NVARCHAR(MAX);
      END`,
 
     // 6. ÖDEVLER
@@ -252,8 +284,17 @@ async function setupTables() {
        score      FLOAT DEFAULT 0,
        total      INT DEFAULT 0,
        duration   INT DEFAULT 0,
+       correct_cnt INT DEFAULT 0,
+       wrong_cnt   INT DEFAULT 0,
+       blank_cnt   INT DEFAULT 0,
+       wrong_questions NVARCHAR(MAX),
        takenAt    DATETIME DEFAULT GETDATE()
-     )`,
+     )
+     ELSE
+     BEGIN
+       IF NOT COLUMNPROPERTY(OBJECT_ID('TestResults'), 'correct_cnt', 'ColumnId') IS NOT NULL
+         ALTER TABLE TestResults ADD correct_cnt INT DEFAULT 0, wrong_cnt INT DEFAULT 0, blank_cnt INT DEFAULT 0, wrong_questions NVARCHAR(MAX);
+     END`,
 
     // 13. KÜTÜPHANE (Kaynaklar)
     `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Library' AND xtype='U')
@@ -590,19 +631,33 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // 🏆 GÜNLÜK GİRİŞ PUANI (+5, aynı gün bir kez)
     try {
       const today = new Date().toISOString().split('T')[0];
-      const lastLoginCheck = await p.request().input('tc', sql.NVarChar, tc)
-        .query('SELECT CONVERT(date, lastSeen) as lastDay FROM Users WHERE tc=@tc');
-      const lastDay = lastLoginCheck.recordset[0]?.lastDay;
-      const lastDayStr = lastDay ? new Date(lastDay).toISOString().split('T')[0] : null;
+      const pData = await p.request().input('tc', sql.NVarChar, tc)
+        .query('SELECT last_login, streak FROM Users WHERE tc=@tc');
+      
+      const lastLogin = pData.recordset[0]?.last_login;
+      const streak = pData.recordset[0]?.streak || 0;
+      const lastDayStr = lastLogin ? new Date(lastLogin).toISOString().split('T')[0] : null;
+
       if (lastDayStr !== today) {
-        await p.request().input('tc', sql.NVarChar, tc)
-          .query('UPDATE Users SET points = ISNULL(points,0) + 5 WHERE tc=@tc');
-        user.dailyBonus = true; // frontend'e bildir
+        let newStreak = streak;
+        if (lastDayStr) {
+          const lastDate = new Date(lastDayStr);
+          const diff = Math.floor((new Date(today) - lastDate) / (1000 * 60 * 60 * 24));
+          if (diff === 1) newStreak++;
+          else newStreak = 1;
+        } else {
+          newStreak = 1;
+        }
+        
+        await p.request()
+          .input('tc', sql.NVarChar, tc)
+          .input('s', sql.Int, newStreak)
+          .query('UPDATE Users SET points = ISNULL(points,0) + 10, coins = ISNULL(coins,0) + 10, last_login = GETDATE(), streak = @s WHERE tc=@tc');
+        user.dailyBonus = true;
       }
-    } catch(e) {}
+    } catch(e) { console.error('Daily bonus error:', e); }
     
     console.log(`✅ Login: ${tc} (${role})`);
     res.json({ success: true, user, token });
@@ -814,7 +869,7 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
     if (author_tc) {
       try {
         await p.request().input('tc', sql.NVarChar, author_tc)
-          .query('UPDATE Users SET points = ISNULL(points,0) + 10, coins = ISNULL(coins,0) + 10 WHERE tc=@tc');
+          .query('UPDATE Users SET points = ISNULL(points,0) + 5, coins = ISNULL(coins,0) + 5 WHERE tc=@tc');
         // EBA Yıldızı rozeti kontrolü (100 puan)
         const pts = await p.request().input('tc', sql.NVarChar, author_tc).query('SELECT points FROM Users WHERE tc=@tc');
         const userPoints = pts.recordset[0]?.points || 0;
@@ -860,6 +915,7 @@ app.post('/api/posts', authenticateToken, async (req, res) => {
     } catch(e) {}
 
     res.json({ success: true });
+    io.emit('refresh_data');
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
@@ -1315,7 +1371,7 @@ app.post('/api/assignments', async (req, res) => {
       .query(`INSERT INTO Assignments(teacher_tc,teacher_name,title,subject,description,due_date,target_class,school,file_name,file_data,assignment_type)
               VALUES(@ttc,@tname,@title,@subj,@desc,@due,@cls,@school,@fname,@fdata,@atype)`);
     await p.request().input('ttc', sql.NVarChar, teacher_tc)
-      .query('UPDATE Users SET points = ISNULL(points,0) + 20, coins = ISNULL(coins,0) + 20 WHERE tc=@ttc');
+      .query('UPDATE Users SET points = ISNULL(points,0) + 15, coins = ISNULL(coins,0) + 15 WHERE tc=@ttc');
 
     await logActivity(p, teacher_tc, 'ASSIGNMENT_SEND', `Ödev gönderildi: ${title} → ${target_class||'all'}`);
     
@@ -1480,7 +1536,8 @@ app.post('/api/watched-videos', async (req, res) => {
       .input('title',   sql.NVarChar, title      || '')
       .input('subject', sql.NVarChar, subject    || '')
       .input('dur',     sql.Int,      parseInt(duration)||0)
-      .query('INSERT INTO WatchedVideos(student_tc,title,subject,duration) VALUES(@tc,@title,@subject,@dur)');
+      .query(`INSERT INTO WatchedVideos(student_tc,title,subject,duration) VALUES(@tc,@title,@subject,@dur);
+              UPDATE Users SET points = ISNULL(points,0) + 10 WHERE tc=@tc;`);
 
     // Video dakikalarını güncelle
     if (duration > 0) {
@@ -1635,7 +1692,7 @@ async function logSettings(p, tc, field, oldVal, newVal) {
 }
 
 // ─── SUNUCU BAŞLAT ────────────────────────────────────────────────
-const PORT = 3000;
+const PORT = process.env.PORT || 8080;
 
 
 // --- ÖDEV CEVABI GÖNDERME ---
@@ -1676,7 +1733,7 @@ app.post('/api/assignment-submit', async (req, res) => {
     try {
       await p.request()
         .input('tc', sql.NVarChar, student_tc)
-        .query('UPDATE Users SET points = ISNULL(points,0) + 20, coins = ISNULL(coins,0) + 15 WHERE tc=@tc');
+        .query('UPDATE Users SET points = ISNULL(points,0) + 15, coins = ISNULL(coins,0) + 15 WHERE tc=@tc');
       // Ödev Uzmanı rozeti kontrolü (500 puan)
       const pts = await p.request().input('tc', sql.NVarChar, student_tc).query('SELECT points FROM Users WHERE tc=@tc');
       const userPoints = pts.recordset[0]?.points || 0;
@@ -1776,6 +1833,17 @@ app.get('/api/student-grades', async (req, res) => {
     const r = await p.request().input('tc', sql.NVarChar, student_tc).query(q);
     res.json({success:true, grades: r.recordset});
   } catch(e) { res.status(500).json({success:false, grades:[], message:e.message}); }
+});
+
+
+// ─── ÖĞRENME ANALİZİ API ─────────────────────────────────────────
+app.get('/api/analytics/weak-subjects', authenticateToken, async (req, res) => {
+  const tc = req.user.tc;
+  try {
+    const p = await getPool();
+    const r = await p.request().input('tc', sql.NVarChar, tc).query("SELECT subject, AVG(score*100/total) as avg_score FROM TestResults WHERE student_tc=@tc GROUP BY subject HAVING AVG(score*100/total) < 60");
+    res.json({ success: true, weakSubjects: r.recordset });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 // Global Hata Yakalayıcı
@@ -1973,6 +2041,7 @@ app.post('/api/quiz-submit', authenticateToken, async (req, res) => {
     } catch(e) {}
 
     res.json({ success: true, score, total, correct, wrong });
+    io.emit('refresh_data');
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -2165,34 +2234,7 @@ app.post('/api/whiteboard/clear', authenticateToken, (req, res) => {
 });
 
 
-// ─── AI ASSISTANT API ────────────────────────────────────────────────
-app.post('/api/ai/chat', authenticateToken, async (req, res) => {
-  try {
-    const { message, context } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'BURAYA_GEMINI_API_KEY_YAZIN' || apiKey === 'your_api_key_here') {
-      return res.json({ success: true, response: "⚠️ Yapay Zeka (Gemini) API anahtarı ayarlanmamış. Lütfen .env dosyasındaki GEMINI_API_KEY alanına geçerli bir anahtar girin." });
-    }
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const prompt = `Sen bir EBA (Eğitim Bilişim Ağı) asistanısın. Adın "EBA Asistan". 
-    Öğrencilere, öğretmenlere ve velilere yardımcı oluyorsun.
-    Kullanıcı Rolü: ${req.user.role}
-    Kullanıcı Adı: ${req.user.name}
-    Bağlam (Context): ${context || "Genel yardım"}
-    
-    Kullanıcı Mesajı: ${message}
-    
-    Lütfen arkadaş canlısı, teşvik edici ve eğitici bir dille cevap ver. Cevapların çok uzun olmasın.`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    res.json({ success: true, response: response.text() });
-  } catch (e) {
-    console.error("AI Error:", e);
-    res.status(500).json({ success: false, message: "Yapay zeka yanıt veremedi." });
-  }
-});
+// AI Chat kaldırıldı
 
 // ─── GAMIFICATION & SHOP API ─────────────────────────────────────────
 app.get('/api/user/gamification-status', authenticateToken, async (req, res) => {
@@ -2204,31 +2246,8 @@ app.get('/api/user/gamification-status', authenticateToken, async (req, res) => 
     if (r.recordset.length === 0) return res.status(404).json({ success: false });
     
     const user = r.recordset[0];
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const lastLogin = user.last_login ? new Date(user.last_login) : null;
-    const lastLoginStr = lastLogin ? lastLogin.toISOString().split('T')[0] : null;
-    
     let newStreak = user.streak || 0;
-    
-    if (lastLoginStr !== todayStr) {
-      // Yeni bir gün girişi
-      const oneDay = 24 * 60 * 60 * 1000;
-      const lastLoginDate = lastLoginStr ? new Date(lastLoginStr) : null;
-      const todayDate = new Date(todayStr);
-      
-      if (lastLoginDate && (todayDate - lastLoginDate) === oneDay) {
-        newStreak += 1; // Ardışık gün
-      } else {
-        newStreak = 1; // İlk gün veya ara verildi
-      }
-      
-      // Veritabanını güncelle
-      await p.request()
-        .input('tc', sql.NVarChar, req.user.tc)
-        .input('s', sql.Int, newStreak)
-        .query('UPDATE Users SET coins = coins + 10, last_login = GETDATE(), streak = @s WHERE tc=@tc');
-    }
+    // Günlük giriş kontrolü artık login aşamasında yapılıyor.
 
     res.json({ 
       success: true, 
@@ -2303,6 +2322,7 @@ app.post('/api/shop/buy', authenticateToken, async (req, res) => {
       .query('UPDATE Users SET coins = coins - @price, avatar_items = @items WHERE tc=@tc');
       
     res.json({ success: true, message: 'Başarıyla satın alındı!' });
+    io.emit('refresh_data');
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -2312,6 +2332,7 @@ app.post('/api/user/update-avatar', authenticateToken, async (req, res) => {
     const p = await getPool();
     await p.request().input('tc', sql.NVarChar, req.user.tc).input('av', sql.NVarChar(sql.MAX), JSON.stringify(avatar)).query('UPDATE Users SET selected_avatar = @av WHERE tc=@tc');
     res.json({ success: true });
+    io.emit('refresh_data');
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 

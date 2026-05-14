@@ -35,7 +35,7 @@
 .data-table td { padding:7px 10px; border-bottom:1px solid #f8f8f8; color:#444; }
 .data-table tr:last-child td { border-bottom:none; }
 .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
-.pill-green { background:#d1e7dd; color:#0f5132; }
+.pill-göreen { background:#d1e7dd; color:#0f5132; }
 .pill-blue  { background:#cfe2ff; color:#084298; }
 .pill-orange{ background:#fff3cd; color:#856404; }
 
@@ -52,6 +52,7 @@ body.dark-mode .stat-circle-sm { background:rgba(0,0,0,0.2) !important; border-c
 body.dark-mode h4, body.dark-mode h2 { color:#a8d4f0 !important; border-color:#2d4060 !important; }
 body.dark-mode .pill { opacity:0.8; }
 </style>
+<script src="/socket.io/socket.io.js"></script>
 <script src="auth-utils.js"></script>
 <script>requireAuth();</script>
 </head>
@@ -81,8 +82,9 @@ body.dark-mode .pill { opacity:0.8; }
     <li><a href="#" onclick="scrollToSection('section-tests')"><i class="fa-solid fa-pen"></i> Yapılan Testler</a></li>
     <li><a href="#" onclick="scrollToSection('section-settings-log')"><i class="fa-solid fa-history"></i> Ayarlar Log</a></li>
     
-      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
-    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+      <li><a href="#section-posts"><i class="fa-solid fa-newspaper"></i> Okul Haberleri</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Dijital Portfolyo</a></li>
+      <li><a href="#section-tests"><i class="fa-solid fa-pen"></i> Sınav Sonuçları</a></li>
   </ul>
 </div>
 
@@ -112,7 +114,7 @@ body.dark-mode .pill { opacity:0.8; }
     <!-- ÖĞRENCİ BAŞLIK -->
     <div class="info-card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <h2 style="margin:0;color:#1F3C56;font-size:20px;">Öğrenci: <span id="child-name-display">–</span></h2>
+        <h2 style="margin:0;color:#1F3C56;font-size:20px;">renci: <span id="child-name-display">–</span></h2>
         <p style="margin:5px 0 0;color:#888;font-size:14px;" id="child-school-display">–</p>
       </div>
       <div style="background:#EBF5FB;padding:12px 18px;border-radius:10px;text-align:center;">
@@ -128,26 +130,22 @@ body.dark-mode .pill { opacity:0.8; }
         <div class="data-section" id="section-stats">
           <h4><i class="fa fa-chart-pie" style="color:#4A748F;margin-right:8px;"></i>Çocuğun EBA'da Ne Yaptı?</h4>
           
-          <!-- OYUNLAŞTIRMA ÖZETİ (NEW) -->
-          <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:120px; background:#f0f7ff; padding:15px; border-radius:12px; text-align:center; cursor:help;" title="Çocuğunuz nasıl kazanır?
-• Günlük giriş: 10 Coin
-• Ödev tamamlama: 15 Coin
-• Sınav çözme: 20 Coin
-• Forum katılımı: 5 Coin">
-              <div style="font-size:24px; color:#f39200;"><i class="fa fa-coins"></i></div>
-              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-coins">0</div>
-              <div style="font-size:10px; color:#888; text-transform:uppercase;">EBA Coin</div>
+          <!-- OYUNLAŞTIRMA ÖZETİ (Premium Design) -->
+          <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:140px; background:linear-gradient(135deg, #f0f7ff, #e1f0ff); padding:20px; border-radius:18px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid #dceeff;">
+              <div style="font-size:32px; color:#f39200; margin-bottom:10px;"><i class="fa fa-coins"></i></div>
+              <div style="font-size:24px; font-weight:900; color:#284B63;" id="child-coins">0</div>
+              <div style="font-size:11px; color:#5C8EAD; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:5px;">EBA COİN</div>
             </div>
-            <div style="flex:1; min-width:120px; background:#fff0f0; padding:15px; border-radius:12px; text-align:center;">
-              <div style="font-size:24px; color:#e74c3c;"><i class="fa fa-fire"></i></div>
-              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-streak">0</div>
-              <div style="font-size:10px; color:#888; text-transform:uppercase;">Seri (Gün)</div>
+            <div style="flex:1; min-width:140px; background:linear-gradient(135deg, #fff0f0, #ffe5e5); padding:20px; border-radius:18px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid #ffdcdc;">
+              <div style="font-size:32px; color:#e74c3c; margin-bottom:10px;"><i class="fa fa-fire"></i></div>
+              <div style="font-size:24px; font-weight:900; color:#284B63;" id="child-streak">0</div>
+              <div style="font-size:11px; color:#A93226; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:5px;">SERİ (GÜN)</div>
             </div>
-            <div style="flex:1; min-width:120px; background:#f0fff4; padding:15px; border-radius:12px; text-align:center;">
-              <div style="font-size:24px; color:#2ecc71;"><i class="fa fa-award"></i></div>
-              <div style="font-size:18px; font-weight:800; color:#284B63;" id="child-badge-count">0</div>
-              <div style="font-size:10px; color:#888; text-transform:uppercase;">Rozet Sayısı</div>
+            <div style="flex:1; min-width:140px; background:linear-gradient(135deg, #f0fff4, #e6ffed); padding:20px; border-radius:18px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.03); border:1px solid #defce5;">
+              <div style="font-size:32px; color:#2ecc71; margin-bottom:10px;"><i class="fa fa-award"></i></div>
+              <div style="font-size:24px; font-weight:900; color:#284B63;" id="child-badge-count">0</div>
+              <div style="font-size:11px; color:#1D8348; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:5px;">ROZET SAYISI</div>
             </div>
           </div>
 
@@ -198,7 +196,7 @@ body.dark-mode .pill { opacity:0.8; }
         <div class="data-section" id="section-assignments">
           <h4><i class="fa fa-book-open" style="color:#2ecc71;margin-right:8px;"></i>Gönderilen Ödevler</h4>
           <div id="assignments-table-container">
-            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Ödev bulunamadı</div>
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Ödev bulunamadıııı</div>
           </div>
         </div>
 
@@ -206,7 +204,7 @@ body.dark-mode .pill { opacity:0.8; }
         <div class="data-section" id="section-videos">
           <h4><i class="fa fa-play-circle" style="color:#4A748F;margin-right:8px;"></i>İzlenen Videolar</h4>
           <div id="watched-videos-container">
-            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Video izleme geçmişi bulunamadı</div>
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Video izleme geçmişi bulunamadıııı</div>
           </div>
         </div>
 
@@ -214,7 +212,7 @@ body.dark-mode .pill { opacity:0.8; }
         <div class="data-section" id="section-tests">
           <h4><i class="fa fa-pen" style="color:#f39200;margin-right:8px;"></i>Yapılan Testler</h4>
           <div id="tests-container">
-            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Test sonucu bulunamadı</div>
+            <div style="text-align:center;color:#ccc;padding:16px;font-size:13px;">Test sonucu bulunamadıııı</div>
           </div>
         </div>
 
@@ -230,7 +228,7 @@ body.dark-mode .pill { opacity:0.8; }
         <div class="data-section">
           <h4><i class="fa fa-video" style="color:#4A748F;margin-right:8px;"></i>Yaklaşan Canlı Dersler</h4>
           <div id="live-lessons-list">
-            <div style="text-align:center;color:#aaa;padding:16px;font-size:13px;">Canlı ders bulunamadı</div>
+            <div style="text-align:center;color:#aaa;padding:16px;font-size:13px;">Canlı ders bulunamadıııı</div>
           </div>
         </div>
 
@@ -246,6 +244,7 @@ body.dark-mode .pill { opacity:0.8; }
             </tbody>
           </table>
         </div>
+
 
       </div>
 
@@ -299,7 +298,7 @@ async function initVeliPanel() {
     const img=document.getElementById('profile-img-display'); img.src=user.profilePic; img.style.display='block';
   }
 
-  // Öğrenciyi veliTc eşleşmesiyle bul
+  // renciyi veliTc eşleşmesiyle bul
   // Önce veliTc=user.tc olan öğrenciyi ara
   let allUsers = [];
   try {
@@ -345,7 +344,7 @@ async function initVeliPanel() {
     ]);
     loadSchedule(childUser);
   } else {
-    document.getElementById('child-name-display').textContent = '(Öğrenci bulunamadı)';
+    document.getElementById('child-name-display').textContent = '(renci bulunamadıııı)';
     document.getElementById('child-school-display').textContent =
       'Lütfen öğrenci kaydında Veli TC numaranızın girildiğinden emin olun.';
   }
@@ -517,7 +516,7 @@ async function loadTestResults(child) {
           <td><strong>${t.title||'Test'}</strong></td>
           <td>${t.subject||'–'}</td>
           <td>
-            <span class="pill ${t.score/t.total>=0.7?'pill-green':t.score/t.total>=0.5?'pill-orange':'pill-blue'}">
+            <span class="pill ${t.score/t.total>=0.7?'pill-göreen':t.score/t.total>=0.5?'pill-orange':'pill-blue'}">
               ${t.score}/${t.total}
             </span>
           </td>
@@ -712,8 +711,115 @@ function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalend
 function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
 
 initVeliPanel();
+
+// Anında veri yenileme (Socket.io)
+if (typeof setupRealtimeUpdate === 'function') {
+  setupRealtimeUpdate(initVeliPanel);
+}
 </script>
   <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
+

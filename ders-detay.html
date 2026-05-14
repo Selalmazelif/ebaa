@@ -1,266 +1,81 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Ders Detayı</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
-<script src="auth-utils.js"></script><script>requireAuth();</script></head>
-
+  <meta charset="UTF-8">
+  <title>Ders Detayı - EBA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
+</head>
 <body>
-
-<div class="sidebar">
-
-<div class="logo">EBA</div>
-
-<div class="profile">
-<div class="profile-box"></div>
-<p id="profile-name">Öğrenci</p>
-<p id="profile-school" style="font-size:13px; color:#DDE7EC; margin-top:4px;">Okul</p>
-<button id="logoutBtn" style="margin-top:8px; padding:6px 10px; background:#fff; color:#4A748F; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Çıkış</button>
-</div>
-
-<ul>
-
-<li>
-<a href="ogrenci-panel.html">
-<i class="fa-solid fa-house"></i> Ana Sayfa
-</a>
-</li>
-
-<li>
-<a href="dersler.html">
-<i class="fa-solid fa-book"></i> Dersler
-</a>
-</li>
-
-<li>
-<a href="canli-ders.html">
-<i class="fa-solid fa-video"></i> Canlı Ders
-</a>
-</li>
-
-<li>
-<a href="sinavlar.html">
-<i class="fa-solid fa-pen"></i> Sınavlar
-</a>
-</li>
-
-<li>
-<a href="chat.html">
-<i class="fa-solid fa-comments"></i> Mesajlar
-</a>
-</li>
-
-<li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
-      </ul>
-
-</div>
-
-<div class="main">
-
-<div class="topbar">
-
-<div class="search">
-<i class="fa fa-search"></i>
-<input placeholder="Ara">
-</div>
-
-
-    <div class="icons" style="position:relative;">
-      <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
-        <i class="fa fa-bell"></i>
-        <span id="notifBadge" style="display:none;background:#e74c3c;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px;display:inline-flex;"></span>
-      </span>
-      <a href="chat.html"><i class="fa fa-envelope"></i></a>
-    </div>
-
-    <!-- Bildirim paneli -->
-    <div id="notifPanel" style="display:none;position:fixed;top:64px;right:20px;width:300px;max-height:360px;overflow-y:auto;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;">
-      <div style="padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:13px;">🔔 Bildirimler</div>
-      <div id="notifList"></div>
-    </div>
-    
-
-</div>
-
-<div class="banner">
-
-<div>
-<h2 id="ders-title">Ders Detayı</h2>
-<p id="class-info">Sınıfınıza göre ders konuları</p>
-</div>
-<button onclick="window.history.back()">Geri Dön</button>
-
-</div>
-
-<div class="cards" id="topics-grid">
-
-<!-- Dinamik olarak doldurulur -->
-
-</div>
-
-</div>
-
-<script src="auth-utils.js"></script>
-<script>
-const user = requireAuth();
-if (user) {
-  document.getElementById('profile-name').textContent = user.name;
-  document.getElementById('profile-school').textContent = user.school;
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  const topicsGrid = document.getElementById('topics-grid');
-  const classInfo = document.getElementById('class-info');
-  const dersTitle = document.getElementById('ders-title');
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const selectedDers = urlParams.get('ders');
-
-  const dersler = {
-    '9': [
-      { name: 'Türkçe', topics: ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri', 'Yazım Kuralları'] },
-      { name: 'Matematik', topics: ['Mantık', 'Kümeler', 'Denklemler ve Eşitsizlikler', 'Üslü ve Köklü İfadeler'] },
-      { name: 'Fen Bilimleri', topics: ['Fizik Bilimine Giriş', 'Madde ve Özellikleri', 'Kuvvet ve Hareket'] },
-      { name: 'Tarih', topics: ['Tarih ve Zaman', 'İnsanlığın İlk Dönemleri', 'Orta Çağda Dünya'] },
-      { name: 'İngilizce', topics: ['Studying Abroad', 'My Environment', 'Movies', 'Human In Nature'] }
-    ],
-    '10': [
-      { name: 'Türkçe', topics: ['Edebiyata Giriş', 'Hikaye', 'Şiir', 'Destan ve Efsane', 'Roman'] },
-      { name: 'Matematik', topics: ['Sayma ve Olasılık', 'Fonksiyonlar', 'Polinomlar', 'İkinci Dereceden Denklemler'] },
-      { name: 'Fizik', topics: ['Elektrik ve Manyetizma', 'Basınç ve Kaldırma Kuvveti', 'Dalgalar'] },
-      { name: 'Kimya', topics: ['Kimyanın Temel Kanunları', 'Karışımlar', 'Asitler, Bazlar ve Tuzlar'] },
-      { name: 'Biyoloji', topics: ['Hücre Bölünmeleri', 'Kalıtım', 'Ekosistem Ekolojisi'] },
-      { name: 'Tarih', topics: ['Yerleşme ve Devletleşme Süreci', 'Dünya Gücü Osmanlı', 'Sultan ve Osmanlı Merkez Teşkilatı'] }
-    ],
-    '11': [
-      { name: 'Türkçe', topics: ['Edebiyat ve Toplum', 'Makale', 'Sohbet ve Fıkra', 'Eleştiri'] },
-      { name: 'Matematik', topics: ['Trigonometri', 'Analitik Geometri', 'Fonksiyonlarda Uygulamalar', 'Çember ve Daire'] },
-      { name: 'Fizik', topics: ['Kuvvet ve Hareket', 'Elektrik ve Manyetizma'] },
-      { name: 'Kimya', topics: ['Modern Atom Teorisi', 'Gazlar', 'Sıvı Çözeltiler', 'Kimyasal Tepkimelerde Enerji'] },
-      { name: 'Biyoloji', topics: ['İnsan Fizyolojisi', 'Komünite ve Popülasyon Ekolojisi'] },
-      { name: 'Tarih', topics: ['Değişen Dünya Dengeleri', 'Değişim Çağında Avrupa', 'Uluslararası İlişkiler'] },
-      { name: 'Coğrafya', topics: ['Biyoçeşitlilik', 'Şehirlerin Fonksiyonları', 'Türkiye\'de Tarım ve Hayvancılık'] }
-    ],
-    '12': [
-      { name: 'Türkçe', topics: ['Edebiyat Felsefe İlişkisi', 'Sözcükte Anlam', 'Cümlede Anlam', 'Paragraf'] },
-      { name: 'Matematik', topics: ['Üstel ve Logaritmik Fonksiyonlar', 'Diziler', 'Türev', 'İntegral'] },
-      { name: 'Fizik', topics: ['Çembersel Hareket', 'Basit Harmonik Hareket', 'Atom Fiziğine Giriş'] },
-      { name: 'Kimya', topics: ['Kimya ve Elektrik', 'Karbon Kimyasına Giriş', 'Organik Bileşikler'] },
-      { name: 'Biyoloji', topics: ['Genden Proteine', 'Hücresel Solunum', 'Bitki Biyolojisi'] },
-      { name: 'Tarih', topics: ['20. Yüzyıl Başlarında Osmanlı', 'Milli Mücadele', 'Atatürkçülük ve Türk İnkılabı'] },
-      { name: 'Coğrafya', topics: ['Ekstrem Doğa Olayları', 'Küresel İklim Değişimi', 'Türkiye\'nin Ekonomik Politikaları'] },
-      { name: 'Felsefe', topics: ['20. Yüzyıl Felsefesi', 'Mantık', 'Psikoloji', 'Sosyoloji'] }
-    ]
-  };
-
-  const userClass = user.class || '9';
-  
-  if (selectedDers) {
-      dersTitle.textContent = selectedDers;
-      classInfo.textContent = `${userClass}. Sınıf ${selectedDers} Konuları`;
-      
-      const classDersler = dersler[userClass] || [];
-      const dersObj = classDersler.find(d => d.name === selectedDers);
-      
-      if (dersObj && dersObj.topics) {
-          topicsGrid.innerHTML = dersObj.topics.map((topic, index) => `
-            <div class="card" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px;">
-              <div style="background:#DDE7EC; color:#4A748F; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-bottom:15px;">
-                ${index + 1}
-              </div>
-              <h3 style="font-size:16px;">${topic}</h3>
-              <button onclick="watchTopic('${topic}')" style="margin-top:15px; padding:8px 15px; border:none; background:#4A748F; color:white; border-radius:20px; cursor:pointer;">Konuya Git</button>
-            </div>
-          `).join('');
-      } else {
-          topicsGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding:20px;">Bu ders için konu bulunamadı.</p>`;
-      }
-  } else {
-      dersTitle.textContent = "Ders Seçilmedi";
-      topicsGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; padding:20px;">Lütfen önceki sayfadan bir ders seçin.</p>`;
-  }
-}
-</script>
-
-
-
-
-<script>
-function showExamDetails(t,c,w,b,sJson) {
-  document.getElementById('examTitleSpan').textContent=t;
-  document.getElementById('exCor').textContent=c;
-  document.getElementById('exWro').textContent=w;
-  document.getElementById('exBla').textContent=b;
-  const el = document.getElementById('wrongQuestionsList');
-  if(!sJson || sJson==='[]' || sJson==='null') {
-    el.innerHTML='<div style="text-align:center;color:#aaa;padding:10px;">Yanlış soru detayı yok.</div>';
-  } else {
-    try {
-      const arr = JSON.parse(sJson);
-      el.innerHTML = arr.map(q => '<div style="border:1px solid #ffcccc;background:#fff5f5;padding:10px;border-radius:6px;margin-top:10px;"><b>Soru:</b> '+q.q+'<br><span style="color:#e74c3c">Cevabınız: '+(q.ans||'Boş')+'</span><br><span style="color:#2ecc71">Doğru: '+q.corr+'</span></div>').join('');
-    } catch(e){ el.innerHTML='Hata: '+e.message; }
-  }
-  document.getElementById('examDetailModal').style.display='flex';
-}
-
-function parseNotifText(originalText) {
-  let txt = originalText;
-  let btn = '';
-  const match = txt.match(/===EXAM_DET:(.*?)===/);
-  if(match) {
-     const parts = match[1].split('|');
-     const title = parts[0];
-     const cor = parts[1];
-     const wro = parts[2];
-     const bla = parts[3];
-     const json = parts[4] || '[]';
-     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-     btn = '<br><button onclick="showExamDetails(\''+title+'\',\''+cor+'\',\''+wro+'\',\''+bla+'\',\''+jsonEscaped+'\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
-     txt = txt.replace(match[0], '');
-  }
-  return txt + btn;
-}
-
-
-setTimeout(() => { loadNotifs(); }, 1000);
-</script>
-
-
-
-  <!-- Sınav Yanlışları Modalı -->
-  <div id="examDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span id="examTitleSpan"></span></h3>
-      <div style="display:flex; justify-content:space-around; margin-bottom:15px; text-align:center;">
-         <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span style="font-size:12px; font-weight:normal;">Doğru</span></div>
-         <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span style="font-size:12px; font-weight:normal;">Yanlış</span></div>
-         <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span style="font-size:12px; font-weight:normal;">Boş</span></div>
+  <div class="sidebar">
+    <div class="logo">EBA</div>
+    <div class="profile">
+      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
+        <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
+          <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
+        </div>
+        <div class="edit-overlay"><i class="fa fa-camera"></i></div>
       </div>
-      <div id="wrongQuestionsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#444;"></div>
-      <div style="text-align:right; margin-top:20px;">
-        <button onclick="document.getElementById('examDetailModal').style.display='none'" style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
-      </div>
+      <p id="profile-name" style="font-weight:600;"></p>
+      <input id="picInput" type="file" accept="image/*" style="display:none;">
+      <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
     </div>
+    <ul id="sidebar-menu">
+      <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="dersler.html" class="active"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+    </ul>
   </div>
 
-<script>
-async function watchTopic(name) {
-  alert(name + ' konusunu çalışmaya başladınız. Video/İçerik süresi istatistiklerinize eklenecek.');
-  try {
-     const user = JSON.parse(localStorage.getItem('currentUser'));
-     // Video istatistiği olarak 15 dakika ekleyelim (örnek)
-     await fetch('/api/student-stats', {
-       method: 'POST',
-       headers: {'Content-Type': 'application/json'},
-       body: JSON.stringify({ student_tc: user.tc, type: 'video', value: 15 })
-     });
-  } catch(e) {}
-}
-</script>
+  <div class="main">
+    <div class="topbar" style="height:60px; background:white; display:flex; align-items:center; padding:0 20px; box-shadow:0 1px 5px rgba(0,0,0,0.1);">
+      <h2 id="ders-header-title">Ders Detayı</h2>
+    </div>
+    <div class="banner" style="margin:20px; background:#284B63; border-radius:15px; padding:30px; color:white; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 id="ders-title">Yükleniyor...</h2>
+        <p id="class-info">Sınıfınıza göre ders konuları</p>
+      </div>
+      <button onclick="window.history.back()" style="background:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:700; color:#284B63;">Geri Dön</button>
+    </div>
+    <div class="cards" id="topics-grid" style="padding:20px; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;"></div>
+  </div>
 
-  <script src="fix-notifications.js"></script>
-  <script src="ai-bot.js"></script>
+  <script>
+    const user = requireAuth();
+    if (user) {
+      document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('logoutBtn').onclick = logout;
+
+      const topicsGrid = document.getElementById('topics-grid');
+      const classInfo = document.getElementById('class-info');
+      const dersTitle = document.getElementById('ders-title');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedDers = urlParams.get('ders') || 'Türkçe';
+      dersTitle.textContent = selectedDers;
+
+      const derslerData = {
+        'Türkçe': ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri', 'Paragraf Anlamı'],
+        'Matematik': ['Üslü Sayılar', 'Köklü Sayılar', 'Denklemler', 'Polinomlar'],
+        'Fizik': ['Elektrik', 'Kuvvet ve Hareket', 'Optik'],
+        'Kimya': ['Atom ve Periyodik Sistem', 'Kimyasal Türler Arası Etkileşimler'],
+        'Biyoloji': ['Hücre', 'Canlıların Dünyası', 'Ekosistem'],
+        'Tarih': ['İlk Çağ Uygarlıkları', 'Osmanlı Kuruluş Dönemi'],
+        'Fen Bilimleri': ['Madde ve Isı', 'Vücudumuzdaki Sistemler']
+      };
+
+      const topics = derslerData[selectedDers] || [];
+      if (topics.length > 0) {
+        topicsGrid.innerHTML = topics.map(topic => '<div class="card" style="background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);"><h3 style="margin:0; color:#284B63;">' + topic + '</h3><p style="font-size:12px; color:#666; margin-top:8px;">Konu detaylarını görmek için tıklayın <i class="fa fa-arrow-right"></i></p></div>').join('');
+      } else {
+        topicsGrid.innerHTML = '<p style="color:#888; grid-column:1/-1; text-align:center;">Bu ders için henüz konu bulunamadı.</p>';
+      }
+    }
+  </script>
 </body>
 </html>
-
