@@ -80,6 +80,7 @@ body.dark-mode .pill { opacity:0.8; }
     <li><a href="#" onclick="scrollToSection('section-assignments')"><i class="fa-solid fa-tasks"></i> Ödevler</a></li>
     <li><a href="#" onclick="scrollToSection('section-videos')"><i class="fa-solid fa-play-circle"></i> İzlenen Videolar</a></li>
     <li><a href="#" onclick="scrollToSection('section-tests')"><i class="fa-solid fa-pen"></i> Yapılan Testler</a></li>
+    <li><a href="#" onclick="scrollToSection('section-appointments')"><i class="fa-solid fa-handshake"></i> Randevularım</a></li>
     <li><a href="#" onclick="scrollToSection('section-settings-log')"><i class="fa-solid fa-history"></i> Ayarlar Log</a></li>
     
       <li><a href="#section-posts"><i class="fa-solid fa-newspaper"></i> Okul Haberleri</a></li>
@@ -114,7 +115,7 @@ body.dark-mode .pill { opacity:0.8; }
     <!-- ÖĞRENCİ BAŞLIK -->
     <div class="info-card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <h2 style="margin:0;color:#1F3C56;font-size:20px;">renci: <span id="child-name-display">–</span></h2>
+        <h2 style="margin:0;color:#1F3C56;font-size:20px;">Öğrenci: <span id="child-name-display">–</span></h2>
         <p style="margin:5px 0 0;color:#888;font-size:14px;" id="child-school-display">–</p>
       </div>
       <div style="background:#EBF5FB;padding:12px 18px;border-radius:10px;text-align:center;">
@@ -232,6 +233,24 @@ body.dark-mode .pill { opacity:0.8; }
           </div>
         </div>
 
+        
+        <!-- RANDEVU SİSTEMİ -->
+        <div class="data-section" id="section-appointments">
+          <h4><i class="fa fa-handshake" style="color:#f39200;margin-right:8px;"></i>Öğretmen Randevu Talebi</h4>
+          <div style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #eee;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+               <select id="randevuTeacherTc" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;"><option value="">Öğretmen Seçin</option></select>
+               <input type="date" id="randevuDate" style="padding:8px; border:1px solid #ccc; border-radius:6px; width:100%; box-sizing:border-box;">
+               <input type="time" id="randevuTime" style="padding:8px; border:1px solid #ccc; border-radius:6px; width:100%; box-sizing:border-box;">
+            </div>
+            <button onclick="talepRandevu()" style="background:#4A748F; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">Randevu Talep Et</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Öğretmen</th><th>Tarih / Saat</th><th>Durum</th></tr></thead>
+            <tbody id="veliRandevuList"><tr><td colspan="3" style="text-align:center; color:#aaa; padding:15px;">Yükleniyor...</td></tr></tbody>
+          </table>
+        </div>
+
         <!-- DERS PROGRAMI -->
         <div class="data-section" id="section-program">
           <h4><i class="fa fa-calendar-days" style="color:#4A748F;margin-right:8px;"></i>Ders Programı</h4>
@@ -343,11 +362,14 @@ async function initVeliPanel() {
       renderChildPerformanceChart(childUser),
     ]);
     loadSchedule(childUser);
+    loadVeliRandevu();
   } else {
-    document.getElementById('child-name-display').textContent = '(renci bulunamadıııı)';
-    document.getElementById('child-school-display').textContent =
-      'Lütfen öğrenci kaydında Veli TC numaranızın girildiğinden emin olun.';
+    document.getElementById('child-name-display').textContent = '(Öğrenci bulunamadı)';
+    document.getElementById('child-school-display').textContent = 'Lütfen öğrenci kaydında Veli TC numaranızın girildiğinden emin olun.';
   }
+
+  // Randevuları her durumda yükle (öğretmen listesi okul bazlı değilse veya öğrencisi yoksa bile listeyi çeksin)
+  loadVeliRandevu();
 
   await loadNotifs(user);
   const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
@@ -653,6 +675,75 @@ document.addEventListener('click',e=>{
 });
 
 // ─── DERS PROGRAMI (sabit şablon) ────────────────────────────────
+
+// ─── RANDEVU SİSTEMİ (VELİ) ──────────────────────────────────
+async function loadVeliRandevu() {
+  try {
+    // 1. Öğretmenleri ve Öğrencileri Yükle (Dropdownlar için)
+    const rData = await fetch('/api/appointments/teachers', { 
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } 
+    });
+    const dData = await rData.json();
+    if (dData.success) {
+      const tSel = document.getElementById('randevuTeacherTc');
+      if (tSel) {
+        tSel.innerHTML = '<option value="">Öğretmen Seçin</option>' + 
+          dData.teachers.map(t => `<option value="${t.tc}">${t.name} (${t.branch || ''})</option>`).join('');
+      }
+    }
+
+    // 2. Mevcut Randevuları Yükle
+    const r = await fetch('/api/appointments', { 
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') } 
+    });
+    const d = await r.json();
+    const tbody = document.getElementById('veliRandevuList');
+    if (d.success && d.appointments.length > 0) {
+      tbody.innerHTML = d.appointments.map(a => `
+        <tr>
+          <td>${a.teacher_name || a.teacher_tc}</td>
+          <td>${a.appt_date} ${a.appt_time}</td>
+          <td><span class="pill ${a.status === 'Onaylandı' ? 'pill-göreen' : a.status === 'Reddedildi' ? 'pill-orange' : 'pill-blue'}">${a.status}</span></td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:15px;">Randevu talebiniz bulunmuyor.</td></tr>';
+    }
+  } catch(e) { console.error("Randevu yükleme hatası:", e); }
+}
+
+async function talepRandevu() {
+  const tSel = document.getElementById('randevuTeacherTc');
+  const teacherTc = tSel.value;
+  const teacherName = tSel.options[tSel.selectedIndex]?.text.split(' (')[0] || '';
+  const date = document.getElementById('randevuDate').value;
+  const time = document.getElementById('randevuTime').value;
+  
+  if (!teacherTc || !date || !time) return alert("Lütfen tüm alanları doldurun!");
+  
+  try {
+    const r = await fetch('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('authToken') },
+      body: JSON.stringify({ 
+        teacher_tc: teacherTc, 
+        teacher_name: teacherName,
+        student_tc: childUser?.tc || '', 
+        student_name: childUser?.name || '',
+        appt_date: date, 
+        appt_time: time 
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+       alert("Randevu talebi gönderildi.");
+       loadVeliRandevu();
+    } else {
+       alert("Hata: " + d.message);
+    }
+  } catch(e) { alert("Hata: " + e.message); }
+}
+
 function loadSchedule(child) {
   const programs = {
     default: [

@@ -97,12 +97,14 @@
       const tc = new URLSearchParams(window.location.search).get('tc') || cu.tc;
       
       // Kullanıcı Bilgileri
-      const userRes = await fetch('/api/user-stats?tc=' + tc, { headers:{'Authorization':`Bearer ${localStorage.getItem('authToken')}`} });
+      const token = localStorage.getItem('authToken');
+      const userRes = await fetch('/api/user-stats?tc=' + tc, { headers:{'Authorization':`Bearer ${token}`} });
       const userData = await userRes.json();
       if(userData.success) {
         const u = userData.user;
-        document.getElementById('u-name').textContent = u.name;
-        document.getElementById('u-school').textContent = u.school + ' | ' + (u.class || u.classNum || '');
+        const s = userData.stats || {};
+        document.getElementById('u-name').textContent = u.name || 'Öğrenci';
+        document.getElementById('u-school').textContent = (u.school || '') + ' | ' + (u.classNum || '');
         document.getElementById('u-points').textContent = u.points || 0;
         document.getElementById('u-coins').textContent = u.coins || 0;
         if(u.profilePic) {
@@ -110,22 +112,28 @@
           document.getElementById('u-img').style.display = 'block';
           document.getElementById('u-icon').style.display = 'none';
         }
+        // İstatistikler
+        document.getElementById('stat-total-exams').textContent = s.exam_count || 0;
+        document.getElementById('stat-video-time').textContent = (s.video_minutes || 0) + ' dk';
+        document.getElementById('stat-social').textContent = s.social_count || 0;
       }
       
       // Rozetler
-      const badgeRes = await fetch('/api/user-badges?tc=' + tc, { headers:{'Authorization':`Bearer ${localStorage.getItem('authToken')}`} });
+      const badgeRes = await fetch('/api/user-badges?tc=' + tc, { headers:{'Authorization':`Bearer ${token}`} });
       const badgeData = await badgeRes.json();
       if(badgeData.success && badgeData.badges.length) {
         document.getElementById('badge-list').innerHTML = badgeData.badges.map(b => `
           <div class="badge-item">
-            <img src="${b.icon_url}" class="badge-icon" title="${b.description}">
+            <div style="width:60px; height:60px; background:#f0f8ff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 5px; box-shadow:0 4px 8px rgba(0,0,0,0.05);">
+              <i class="fa ${b.icon || 'fa-award'}" style="color:#f39200; font-size:24px;"></i>
+            </div>
             <div class="badge-name">${b.name}</div>
           </div>
         `).join('');
       }
       
       // Sınavlar
-      const testRes = await fetch('/api/test-results?tc=' + tc, { headers:{'Authorization':`Bearer ${localStorage.getItem('authToken')}`} });
+      const testRes = await fetch('/api/test-results?tc=' + tc, { headers:{'Authorization':`Bearer ${token}`} });
       const testData = await testRes.json();
       if(testData.success && testData.tests.length) {
         const top = testData.tests.sort((a,b) => (b.score/b.total) - (a.score/a.total)).slice(0, 5);
@@ -141,14 +149,7 @@
         `).join('');
       }
 
-      // İstatistikler
-      const statRes = await fetch('/api/user/gamification-status', { headers:{'Authorization':`Bearer ${localStorage.getItem('authToken')}`} });
-      const statData = await statRes.json();
-      if(statData.success) {
-        document.getElementById('stat-total-exams').textContent = statData.stats?.exam_count || 0;
-        document.getElementById('stat-video-time').textContent = (statData.stats?.video_time || 0) + ' dk';
-        document.getElementById('stat-social').textContent = statData.stats?.social_count || 0;
-      }
+      // İstatistikler (Zaten userData içinde yüklendi)
     });
   </script>
 </body>

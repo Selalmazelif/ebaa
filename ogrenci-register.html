@@ -114,14 +114,16 @@ document.getElementById("registerForm").addEventListener("submit", function(e){
     if (!validateName(name)) { alert("Ad-soyad en az 3 karakter olmalı!"); return; }
     if (!validatePassword(password)) { alert('Şifre en az 4 karakter olmalıdır!'); return; }
 
+    let classVal = document.getElementById("studentClass").value;
+    let branchVal = document.getElementById("branchSelect").value;
     let userPayload = {
         tc: tc,
         password: password,
         role: role,
         name: name,
         school: school,
-        classNum: document.getElementById("studentClass").value,
-        branch: document.getElementById("branchSelect").value
+        classNum: classVal + " / " + branchVal,
+        branch: branchVal
     };
 
     fetch('/api/register', {

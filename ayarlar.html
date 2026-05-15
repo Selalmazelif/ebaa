@@ -132,13 +132,16 @@ body.dark-mode .btn-change-pic { border-color: #7ec8e3 !important; color: #7ec8e
       </div>
     </div>
     
-    <ul id="sidebar-menu">
-      <li><a href="ogrenci-panel.html" ><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+        <ul id="sidebar-menu">
+      <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
       <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
       <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Portfolyo</a></li>
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
+      <li><a href="yarisma.html"><i class="fa-solid fa-bolt"></i> 1v1 Yarışma</a></li>
       <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
       <li><a href="ogrenci-panel.html?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a></li>
       <li><a href="ayarlar.html" class="active"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
@@ -270,7 +273,7 @@ async function initSettings() {
   const pNameSB = document.getElementById('profile-name');
   if(pNameSB) pNameSB.textContent = cu.name || '';
   const pRoleSB = document.getElementById('profile-role');
-  if(pRoleSB) pRoleSB.textContent = 'Rol: ' + (cu.role === 'ogrenci' ? 'Öğrenci' : cu.role === 'ogretmen' ? 'Öğretmen' : 'Veli');
+  if(pRoleSB) pRoleSB.textContent = 'Rol: ' + ((cu.role === 'ogrenci' || cu.role === 'renci') ? 'Öğrenci' : cu.role === 'ogretmen' ? 'Öğretmen' : 'Veli');
   const pSchoolSB = document.getElementById('profile-school');
   if(pSchoolSB) pSchoolSB.textContent = cu.school || '–';
 

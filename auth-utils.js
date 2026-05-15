@@ -1,8 +1,8 @@
 // ─── GLOBAL TEMA UYGULA (tüm sayfalarda çalışır) ─────────────────
 (function applyThemeImmediately() {
-  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')); } catch(e) { return null; } })();
+  const user = (() => { try { return JSON.parse(localStorage.getItem('currentUser')); } catch (e) { return null; } })();
   const tc = user?.tc;
-  
+
   const userPrefs = tc ? JSON.parse(localStorage.getItem('eba_prefs_' + tc) || '{}') : {};
   const deviceTheme = localStorage.getItem('eba_device_theme');
   const theme = userPrefs.theme || deviceTheme;
@@ -54,7 +54,7 @@ async function logout() {
         },
         body: JSON.stringify({ tc: user.tc })
       });
-    } catch(e) {}
+    } catch (e) { }
   }
   localStorage.removeItem('currentUser');
   localStorage.removeItem('authToken');
@@ -102,7 +102,7 @@ function startHeartbeat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tc: user.tc })
       });
-    } catch(e) {}
+    } catch (e) { }
   };
 
   sendPing();
@@ -121,11 +121,11 @@ window.addEventListener('beforeunload', () => {
 function deleteCurrentUser() {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
-  
+
   let users = JSON.parse(localStorage.getItem('users') || '[]');
   users = users.filter(u => u.tc !== currentUser.tc);
   localStorage.setItem('users', JSON.stringify(users));
-  
+
   let allNotifications = JSON.parse(localStorage.getItem('notifications') || '{}');
   delete allNotifications[currentUser.tc];
   localStorage.setItem('notifications', JSON.stringify(allNotifications));
@@ -167,23 +167,22 @@ function startAutoRefresh(func, interval = 30000) {
 /**
  * Socket.io üzerinden anında güncelleme ayarlar.
  */
-let ebaSocket;
 function setupRealtimeUpdate(refreshCallback) {
   if (typeof io === 'undefined') {
     console.warn('Socket.io kütüphanesi yüklenmemiş!');
     return;
   }
-  
-  if (!ebaSocket) {
-    ebaSocket = io();
+
+  if (!window.ebaSocket) {
+    window.ebaSocket = io();
     const user = getCurrentUser();
     if (user && user.tc) {
-      ebaSocket.emit('login', user.tc);
+      window.ebaSocket.emit('login', user.tc);
     }
   }
 
-  ebaSocket.off('refresh_data'); // Eski listener'ı temizle
-  ebaSocket.on('refresh_data', () => {
+  window.ebaSocket.off('refresh_data'); // Eski listener'ı temizle
+  window.ebaSocket.on('refresh_data', () => {
     console.log('Sunucudan anında güncelleme sinyali alındı. Veriler tazeleniyor...');
     // Veritabanı işleminin tam tamamlanması için küçük bir gecikme (yarım saniye) ekleyelim
     setTimeout(() => {
@@ -237,15 +236,15 @@ function handleSearch(query) {
 function initSearch() {
   const searchInput = document.querySelector('.search input');
   const searchIcon = document.querySelector('.search i');
-  
+
   if (searchInput) {
-    searchInput.addEventListener('keypress', function(e) {
+    searchInput.addEventListener('keypress', function (e) {
       if (e.key === 'Enter') handleSearch(e.target.value);
     });
   }
-  
+
   if (searchIcon && searchInput) {
-    searchIcon.addEventListener('click', function() {
+    searchIcon.addEventListener('click', function () {
       handleSearch(searchInput.value);
     });
   }
@@ -254,7 +253,7 @@ function initSearch() {
 // --- BİLDİRİM (DEVRE DIŞI - MSSQL KULLANILIYOR) ---
 function getNotifications(tc) { return []; }
 function addNotification(tc, text) { }
-function initNotifications() {}
+function initNotifications() { }
 
 /**
  * Sidebar linklerini ve içeriğini kullanıcı rolüne göre senkronize eder.
@@ -266,7 +265,7 @@ function syncSidebarLinks() {
 
   const sidebar = document.querySelector('.sidebar');
   const sidebarMenu = document.getElementById('sidebar-menu') || (sidebar && sidebar.querySelector('ul'));
-  
+
   if (sidebarMenu) {
     // 1. Akıllı Tahta linki yoksa ekle
     if (!sidebarMenu.querySelector('a[href="whiteboard.html"]')) {
@@ -354,7 +353,7 @@ function syncSidebarLinks() {
   // 5. Rol ve Okul Etiketlerini Güncelle
   const roleEl = document.getElementById('profile-role') || document.getElementById('sb-role') || document.getElementById('profile-role-display');
   if (roleEl) {
-    roleEl.textContent = 'Rol: ' + (user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'renci');
+    roleEl.textContent = 'Rol: ' + (user.role === 'ogretmen' ? 'Öğretmen' : user.role === 'veli' ? 'Veli' : 'öğrenci');
   }
   const schoolEl = document.getElementById('profile-school') || document.getElementById('sb-school') || document.getElementById('profile-school-display');
   if (schoolEl && user.school) {
@@ -365,25 +364,25 @@ function syncSidebarLinks() {
 // ─── GLOBAL TERCİHLERİ UYGULA ────────────────────────────────────
 async function applyGlobalPrefs() {
   const user = getCurrentUser();
-  if(!user) return;
+  if (!user) return;
   try {
     const r = await fetch('/api/prefs?tc=' + user.tc);
     const d = await r.json();
-    if(d.success && d.prefs) {
+    if (d.success && d.prefs) {
       const p = d.prefs;
-      if(p.theme === 'dark') document.body.classList.add('dark-mode');
+      if (p.theme === 'dark') document.body.classList.add('dark-mode');
       else document.body.classList.remove('dark-mode');
-      
+
       const badge = document.getElementById('notifBadge');
       const count = document.getElementById('notifCount');
-      if(p.notifications === false || p.notifications === 0) {
-        if(badge) badge.style.opacity = '0';
-        if(count) count.style.opacity = '0';
+      if (p.notifications === false || p.notifications === 0) {
+        if (badge) badge.style.opacity = '0';
+        if (count) count.style.opacity = '0';
       }
-      
+
       localStorage.setItem('eba_prefs_' + user.tc, JSON.stringify(p));
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 // DOMContentLoaded — Tüm sayfalarda çalışır
@@ -402,24 +401,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const pName = document.getElementById('profile-name') || document.getElementById('sb-name');
-    if(pName) pName.textContent = user.name || '';
+    if (pName) pName.textContent = user.name || '';
     const pSchool = document.getElementById('profile-school') || document.getElementById('sb-school');
-    if(pSchool) pSchool.textContent = user.school || '';
+    if (pSchool) pSchool.textContent = user.school || '';
     const pImg = document.getElementById('profile-img-display') || document.getElementById('av-img') || document.getElementById('profile-img');
     const defaultIcon = document.getElementById('default-avatar-icon') || document.getElementById('av-icon') || document.getElementById('user-icon');
-    
-    if(pImg && user.profilePic && user.profilePic.length > 10) {
+
+    if (pImg && user.profilePic && user.profilePic.length > 10) {
       pImg.src = user.profilePic;
       pImg.style.display = 'block';
-      if(defaultIcon) defaultIcon.style.display = 'none';
+      if (defaultIcon) defaultIcon.style.display = 'none';
     } else {
-      if(pImg) pImg.style.display = 'none';
-      if(defaultIcon) defaultIcon.style.display = 'block';
+      if (pImg) pImg.style.display = 'none';
+      if (defaultIcon) defaultIcon.style.display = 'block';
     }
 
     // k butonu
     const lBtn = document.getElementById('logoutBtn');
-    if(lBtn) lBtn.onclick = logout;
+    if (lBtn) lBtn.onclick = logout;
   }
 });
 
@@ -445,18 +444,18 @@ async function loadGamificationAvatar(user) {
         if (btnContainer) btnContainer.style.display = 'block';
       }
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function applySidebarAvatar(av) {
-  if(!av) return;
+  if (!av) return;
   const sHat = document.getElementById('sidebar-hat');
   const sGlasses = document.getElementById('sidebar-glasses');
   const sPet = document.getElementById('sidebar-pet');
   const sBg = document.getElementById('sidebar-bg');
-  
-  if(sHat && av.hat) { sHat.src = av.hat; sHat.style.display = 'block'; }
-  if(sGlasses && av.glasses) { sGlasses.src = av.glasses; sGlasses.style.display = 'block'; }
-  if(sPet && av.pet) { sPet.src = av.pet; sPet.style.display = 'block'; }
-  if(sBg && av.background) { sBg.style.background = `url(${av.background}) center/cover`; }
+
+  if (sHat && av.hat) { sHat.src = av.hat; sHat.style.display = 'block'; }
+  if (sGlasses && av.glasses) { sGlasses.src = av.glasses; sGlasses.style.display = 'block'; }
+  if (sPet && av.pet) { sPet.src = av.pet; sPet.style.display = 'block'; }
+  if (sBg && av.background) { sBg.style.background = `url(${av.background}) center/cover`; }
 }

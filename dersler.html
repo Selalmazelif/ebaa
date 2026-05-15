@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8">
   <title>Dersler - EBA</title>
@@ -8,24 +9,73 @@
   <script src="auth-utils.js"></script>
   <script>requireAuth();</script>
   <style>
-    .banner { margin:20px; background:#284B63; border-radius:15px; padding:30px; color:white; display:flex; justify-content:space-between; align-items:center; }
-    .cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:20px; padding:20px; }
-    .card { background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05); transition:transform 0.3s; cursor:pointer; }
-    .card:hover { transform:translateY(-5px); }
-    .card img { width:100%; height:140px; object-fit:cover; border-radius:8px; margin-bottom:15px; }
-    .card h3 { color:#284B63; margin:0; font-size:18px; }
-    body.dark-mode .card { background:#1e2d3d; border:1px solid #2d4060; }
-    body.dark-mode .card h3 { color:#a8d4f0; }
+    .banner {
+      margin: 20px;
+      background: #284B63;
+      border-radius: 15px;
+      padding: 30px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .card h3 {
+      color: #284B63;
+      margin: 0;
+      font-size: 18px;
+    }
+
+    body.dark-mode .card {
+      background: #1e2d3d;
+      border: 1px solid #2d4060;
+    }
+
+    body.dark-mode .card h3 {
+      color: #a8d4f0;
+    }
   </style>
 </head>
+
 <body>
   <div class="sidebar">
     <div class="logo">EBA</div>
     <div class="profile">
-      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
-        <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
+      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
           <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
-          <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
+          <img src="" alt="" id="profile-img-display"
+            style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
           <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
         </div>
         <div class="edit-overlay"><i class="fa fa-camera"></i></div>
@@ -33,13 +83,22 @@
       <p id="profile-name" style="font-weight:600;"></p>
       <p id="profile-school" style="font-size:12px;opacity:0.7;"></p>
       <input id="picInput" type="file" accept="image/*" style="display:none;">
-      <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
+      <button id="logoutBtn"
+        style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
     </div>
     <ul id="sidebar-menu">
       <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
       <li><a href="dersler.html" class="active"><i class="fa-solid fa-book"></i> Dersler</a></li>
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Portfolyo</a></li>
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
+      <li><a href="yarisma.html"><i class="fa-solid fa-bolt"></i> 1v1 Yarışma</a></li>
+      <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
+      <li><a href="ogrenci-panel.html?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a></li>
+      <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
     </ul>
   </div>
 
@@ -65,28 +124,28 @@
 
       const derslerData = {
         '9': [
-          { name: 'Türkçe', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400' },
-          { name: 'Matematik', img: 'https://images.unsplash.com/photo-1509228468518-180dd482180c?w=400' },
-          { name: 'Fen Bilimleri', img: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400' },
-          { name: 'Tarih', img: 'https://images.unsplash.com/photo-1461360343450-62117e543ea3?w=400' }
+          { name: 'Türkçe', img: 'img/turkce.jpg' },
+          { name: 'Matematik', img: 'img/mat.jpg' },
+          { name: 'Fen Bilimleri', img: 'img/fen.jpg' },
+          { name: 'Tarih', img: 'img/tarih.jpg' }
         ],
         '10': [
-          { name: 'Türkçe', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400' },
-          { name: 'Matematik', img: 'https://images.unsplash.com/photo-1509228468518-180dd482180c?w=400' },
-          { name: 'Fizik', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400' },
-          { name: 'Kimya', img: 'https://images.unsplash.com/photo-1532187863486-abf9d343f835?w=400' }
+          { name: 'Türkçe', img: 'img/turkce.jpg' },
+          { name: 'Matematik', img: 'img/mat.jpg' },
+          { name: 'Fizik', img: 'img/fizik.jpg' },
+          { name: 'Kimya', img: 'img/kimya.jpg' }
         ],
         '11': [
-          { name: 'Türkçe', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400' },
-          { name: 'Matematik', img: 'https://images.unsplash.com/photo-1509228468518-180dd482180c?w=400' },
-          { name: 'Fizik', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400' },
-          { name: 'Biyoloji', img: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=400' }
+          { name: 'Türkçe', img: 'img/turkce.jpg' },
+          { name: 'Matematik', img: 'img/mat.jpg' },
+          { name: 'Fizik', img: 'img/fizik.jpg' },
+          { name: 'Biyoloji', img: 'img/biyoloji.jpg' }
         ],
         '12': [
-          { name: 'Türkçe', img: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400' },
-          { name: 'Matematik', img: 'https://images.unsplash.com/photo-1509228468518-180dd482180c?w=400' },
-          { name: 'Tarih', img: 'https://images.unsplash.com/photo-1461360343450-62117e543ea3?w=400' },
-          { name: 'Felsefe', img: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400' }
+          { name: 'Türkçe', img: 'img/turkce.jpg' },
+          { name: 'Matematik', img: 'img/mat.jpg' },
+          { name: 'Tarih', img: 'img/tarih.jpg' },
+          { name: 'Felsefe', img: 'img/fel.jpg' }
         ]
       };
 
@@ -98,4 +157,5 @@
     }
   </script>
 </body>
+
 </html>

@@ -7,74 +7,364 @@
   <link rel="stylesheet" href="panel.css">
   <script src="auth-utils.js"></script>
   <script>requireAuth();</script>
+  <style>
+    .banner { margin:20px; background:linear-gradient(135deg,#284B63,#4A748F); border-radius:16px; padding:28px 32px; color:white; }
+    .topics-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; padding:20px; }
+    .topic-card {
+      background:white; padding:20px; border-radius:14px; box-shadow:0 3px 12px rgba(0,0,0,0.07);
+      cursor:pointer; transition:all 0.25s; border:2px solid transparent; position:relative;
+    }
+    .topic-card:hover { transform:translateY(-4px); border-color:#4A748F; box-shadow:0 8px 24px rgba(74,116,143,0.18); }
+    .topic-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:14px; }
+    .topic-title { font-weight:700; color:#284B63; font-size:15px; margin-bottom:6px; }
+    .topic-desc { font-size:12px; color:#888; line-height:1.5; }
+    .topic-badge { position:absolute; top:14px; right:14px; background:#e8f5e9; color:#2e7d32; font-size:10px; font-weight:700; padding:3px 8px; border-radius:10px; }
+    body.dark-mode .topic-card { background:#1e2d3d; border-color:#2d4060; }
+    body.dark-mode .topic-title { color:#a8d4f0; }
+
+    /* ─── VİDEO MODALİ ────────────────────────────── */
+    .modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+      z-index:2000; align-items:center; justify-content:center; padding:20px;
+    }
+    .modal-overlay.show { display:flex; }
+    .modal-box {
+      background:white; border-radius:20px; width:100%; max-width:780px;
+      max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    }
+    .modal-header {
+      padding:22px 26px 16px; border-bottom:1px solid #f0f0f0;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modal-header h3 { color:#284B63; font-size:18px; font-weight:800; margin:0; }
+    .modal-body { padding:20px 26px 26px; }
+    .video-list { display:flex; flex-direction:column; gap:14px; }
+    .video-item {
+      background:#f8fafc; border-radius:14px; overflow:hidden;
+      border:2px solid #eee; transition:0.2s;
+    }
+    .video-item:hover { border-color:#4A748F; }
+    .video-thumb {
+      width:100%; cursor:pointer; position:relative; background:#000;
+    }
+    .video-thumb iframe { width:100%; height:320px; border:none; display:none; }
+    .video-placeholder {
+      height:200px; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,#1a1a2e,#16213e); color:white; flex-direction:column; gap:12px;
+    }
+    .play-btn {
+      width:64px; height:64px; background:rgba(255,255,255,0.15); border-radius:50%;
+      display:flex; align-items:center; justify-content:center; font-size:28px; cursor:pointer;
+      transition:0.2s; border:2px solid rgba(255,255,255,0.3);
+    }
+    .play-btn:hover { background:rgba(255,255,255,0.25); transform:scale(1.1); }
+    .video-info { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+    .video-title { font-weight:700; color:#284B63; font-size:14px; }
+    .video-duration { font-size:12px; color:#888; margin-top:4px; }
+    .reward-badge {
+      background:linear-gradient(135deg,#f39200,#d35400); color:white;
+      padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700;
+      white-space:nowrap;
+    }
+    .watched-badge { background:#2ecc71; }
+
+    /* Ödül toast */
+    .reward-toast {
+      position:fixed; top:80px; right:20px; z-index:9999;
+      background:linear-gradient(135deg,#284B63,#4A748F);
+      color:white; padding:16px 22px; border-radius:16px;
+      box-shadow:0 8px 30px rgba(40,75,99,0.4);
+      font-size:14px; font-weight:700; animation:slideIn 0.4s ease;
+      max-width:300px;
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
+  </style>
 </head>
 <body>
   <div class="sidebar">
     <div class="logo">EBA</div>
     <div class="profile">
-      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
-        <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
-          <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
-          <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
+      <div class="profile-img-container">
+        <div style="width:70px;height:70px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 8px;">
+          <i class="fa fa-user" style="font-size:35px;color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;">
         </div>
-        <div class="edit-overlay"><i class="fa fa-camera"></i></div>
       </div>
       <p id="profile-name" style="font-weight:600;"></p>
-      <input id="picInput" type="file" accept="image/*" style="display:none;">
+      <p id="profile-school" style="font-size:12px;opacity:0.7;"></p>
       <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
     </div>
-    <ul id="sidebar-menu">
+        <ul id="sidebar-menu">
       <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
-      <li><a href="dersler.html" class="active"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Portfolyo</a></li>
+      <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
+      <li><a href="yarisma.html"><i class="fa-solid fa-bolt"></i> 1v1 Yarışma</a></li>
+      <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
+      <li><a href="ogrenci-panel.html?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a></li>
+      <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
     </ul>
   </div>
 
   <div class="main">
-    <div class="topbar" style="height:60px; background:white; display:flex; align-items:center; padding:0 20px; box-shadow:0 1px 5px rgba(0,0,0,0.1);">
-      <h2 id="ders-header-title">Ders Detayı</h2>
-    </div>
-    <div class="banner" style="margin:20px; background:#284B63; border-radius:15px; padding:30px; color:white; display:flex; justify-content:space-between; align-items:center;">
+    <div class="banner">
       <div>
-        <h2 id="ders-title">Yükleniyor...</h2>
-        <p id="class-info">Sınıfınıza göre ders konuları</p>
+        <a href="dersler.html" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:13px;"><i class="fa fa-arrow-left"></i> Dersler</a>
+        <h2 id="ders-adi" style="margin:8px 0 4px;font-size:26px;"></h2>
+        <p id="ders-desc" style="opacity:0.85;font-size:14px;"></p>
       </div>
-      <button onclick="window.history.back()" style="background:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:700; color:#284B63;">Geri Dön</button>
+      <div style="text-align:right;">
+        <div style="background:rgba(255,255,255,0.15);padding:10px 18px;border-radius:12px;font-size:13px;">
+          <i class="fa fa-video"></i> Video izleyince <strong>+15 Puan</strong> ve <strong>+10 Coin</strong> kazanırsın!
+        </div>
+      </div>
     </div>
-    <div class="cards" id="topics-grid" style="padding:20px; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;"></div>
+
+    <div class="topics-grid" id="topics-grid"></div>
+  </div>
+
+  <!-- VİDEO MODALİ -->
+  <div class="modal-overlay" id="videoModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-topic-title"><i class="fa fa-play-circle" style="color:#4A748F;margin-right:8px;"></i> Konu Videoları</h3>
+        <i class="fa fa-times" style="cursor:pointer;font-size:20px;color:#ccc;" onclick="closeVideoModal()"></i>
+      </div>
+      <div class="modal-body">
+        <div class="video-list" id="video-list"></div>
+      </div>
+    </div>
   </div>
 
   <script>
     const user = requireAuth();
     if (user) {
       document.getElementById('profile-name').textContent = user.name;
+      document.getElementById('profile-school').textContent = user.school;
       document.getElementById('logoutBtn').onclick = logout;
-
-      const topicsGrid = document.getElementById('topics-grid');
-      const classInfo = document.getElementById('class-info');
-      const dersTitle = document.getElementById('ders-title');
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const selectedDers = urlParams.get('ders') || 'Türkçe';
-      dersTitle.textContent = selectedDers;
-
-      const derslerData = {
-        'Türkçe': ['Fiil Çekimleri', 'Cümle Türleri', 'Noktalama İşaretleri', 'Paragraf Anlamı'],
-        'Matematik': ['Üslü Sayılar', 'Köklü Sayılar', 'Denklemler', 'Polinomlar'],
-        'Fizik': ['Elektrik', 'Kuvvet ve Hareket', 'Optik'],
-        'Kimya': ['Atom ve Periyodik Sistem', 'Kimyasal Türler Arası Etkileşimler'],
-        'Biyoloji': ['Hücre', 'Canlıların Dünyası', 'Ekosistem'],
-        'Tarih': ['İlk Çağ Uygarlıkları', 'Osmanlı Kuruluş Dönemi'],
-        'Fen Bilimleri': ['Madde ve Isı', 'Vücudumuzdaki Sistemler']
-      };
-
-      const topics = derslerData[selectedDers] || [];
-      if (topics.length > 0) {
-        topicsGrid.innerHTML = topics.map(topic => '<div class="card" style="background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);"><h3 style="margin:0; color:#284B63;">' + topic + '</h3><p style="font-size:12px; color:#666; margin-top:8px;">Konu detaylarını görmek için tıklayın <i class="fa fa-arrow-right"></i></p></div>').join('');
-      } else {
-        topicsGrid.innerHTML = '<p style="color:#888; grid-column:1/-1; text-align:center;">Bu ders için henüz konu bulunamadı.</p>';
+      if (user.profilePic) {
+        document.getElementById('default-avatar-icon').style.display = 'none';
+        const img = document.getElementById('profile-img-display');
+        img.src = user.profilePic; img.style.display = 'block';
       }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const dersAdi = params.get('ders') || 'Ders';
+    document.getElementById('ders-adi').textContent = dersAdi;
+    document.title = dersAdi + ' - EBA';
+
+    // ─── KONU VERİSİ ───
+    const konuData = {
+      'Türkçe': {
+        desc: 'Dil bilgisi, anlama ve anlatma becerilerini geliştirin',
+        konular: [
+          { title:'Sözcükte Anlam', icon:'📖', color:'#3b82f6', videos:[
+            { title:'Sözcükte Anlam - Temel Kavramlar', youtubeId:'dQw4w9WgXcQ', duration:'12 dk' },
+            { title:'Mecaz ve Gerçek Anlam', youtubeId:'dQw4w9WgXcQ', duration:'9 dk' }
+          ]},
+          { title:'Cümlede Anlam', icon:'✍️', color:'#8b5cf6', videos:[
+            { title:'Cümle Türleri', youtubeId:'dQw4w9WgXcQ', duration:'15 dk' }
+          ]},
+          { title:'Paragraf', icon:'📝', color:'#10b981', videos:[
+            { title:'Paragraf Türleri ve Özellikleri', youtubeId:'dQw4w9WgXcQ', duration:'18 dk' }
+          ]},
+          { title:'Ses Bilgisi', icon:'🔊', color:'#f59e0b', videos:[
+            { title:'Ses Olayları', youtubeId:'dQw4w9WgXcQ', duration:'11 dk' }
+          ]},
+          { title:'Sözcük Türleri', icon:'🏷️', color:'#ef4444', videos:[
+            { title:'İsim ve Zamir', youtubeId:'dQw4w9WgXcQ', duration:'14 dk' }
+          ]},
+          { title:'Yazım Kuralları', icon:'✒️', color:'#06b6d4', videos:[
+            { title:'Büyük Harf ve Noktalama', youtubeId:'dQw4w9WgXcQ', duration:'10 dk' }
+          ]}
+        ]
+      },
+      'Matematik': {
+        desc: 'Temel matematiksel kavramlar ve problem çözme teknikleri',
+        konular: [
+          { title:'Sayılar ve İşlemler', icon:'🔢', color:'#3b82f6', videos:[
+            { title:'Doğal Sayılarda Dört İşlem', youtubeId:'dQw4w9WgXcQ', duration:'14 dk' },
+            { title:'Tam Sayılar', youtubeId:'dQw4w9WgXcQ', duration:'12 dk' }
+          ]},
+          { title:'Üslü İfadeler', icon:'⬛', color:'#8b5cf6', videos:[
+            { title:'Üslü Sayılar Konu Anlatımı', youtubeId:'dQw4w9WgXcQ', duration:'16 dk' }
+          ]},
+          { title:'Köklü İfadeler', icon:'√', color:'#10b981', videos:[
+            { title:'Karekök ve Kübikkök', youtubeId:'dQw4w9WgXcQ', duration:'13 dk' }
+          ]},
+          { title:'Çarpanlara Ayırma', icon:'✂️', color:'#f59e0b', videos:[
+            { title:'Çarpanlara Ayırma Yöntemleri', youtubeId:'dQw4w9WgXcQ', duration:'20 dk' }
+          ]},
+          { title:'Denklemler', icon:'⚖️', color:'#ef4444', videos:[
+            { title:'Birinci Dereceden Denklemler', youtubeId:'dQw4w9WgXcQ', duration:'18 dk' }
+          ]},
+          { title:'Geometri', icon:'📐', color:'#06b6d4', videos:[
+            { title:'Temel Geometri Kavramları', youtubeId:'dQw4w9WgXcQ', duration:'15 dk' }
+          ]}
+        ]
+      },
+      'Fizik': {
+        desc: 'Doğanın temel yasalarını keşfet',
+        konular: [
+          { title:'Kuvvet ve Hareket', icon:'🚀', color:'#3b82f6', videos:[
+            { title:'Newton\'un Hareket Yasaları', youtubeId:'dQw4w9WgXcQ', duration:'17 dk' }
+          ]},
+          { title:'Enerji', icon:'⚡', color:'#f59e0b', videos:[
+            { title:'Kinetik ve Potansiyel Enerji', youtubeId:'dQw4w9WgXcQ', duration:'14 dk' }
+          ]},
+          { title:'Elektrik', icon:'🔋', color:'#8b5cf6', videos:[
+            { title:'Elektrik Yükü ve Alan', youtubeId:'dQw4w9WgXcQ', duration:'16 dk' }
+          ]},
+          { title:'Dalgalar', icon:'🌊', color:'#10b981', videos:[
+            { title:'Dalga Hareketi', youtubeId:'dQw4w9WgXcQ', duration:'12 dk' }
+          ]},
+          { title:'Optik', icon:'🔭', color:'#ef4444', videos:[
+            { title:'Işığın Yansıması ve Kırılması', youtubeId:'dQw4w9WgXcQ', duration:'15 dk' }
+          ]},
+          { title:'Modern Fizik', icon:'⚛️', color:'#06b6d4', videos:[
+            { title:'Atom Modelleri', youtubeId:'dQw4w9WgXcQ', duration:'13 dk' }
+          ]}
+        ]
+      },
+      'Din Kültürü ve Ahlak Bilgisi': {
+        desc: 'Değerler, ahlak ve inanç konuları',
+        konular: [
+          { title:'İman ve İslam\'ın Şartları', icon:'🕌', color:'#10b981', videos:[
+            { title:'İmanın Şartları', youtubeId:'dQw4w9WgXcQ', duration:'12 dk' }
+          ]},
+          { title:'Hz. Muhammed\'in Hayatı', icon:'📜', color:'#f59e0b', videos:[
+            { title:'Peygamberimizin Hayatı', youtubeId:'dQw4w9WgXcQ', duration:'20 dk' }
+          ]},
+          { title:'İbadetler', icon:'🤲', color:'#3b82f6', videos:[
+            { title:'İslam\'da İbadet Anlayışı', youtubeId:'dQw4w9WgXcQ', duration:'14 dk' }
+          ]},
+          { title:'Ahlak', icon:'❤️', color:'#ef4444', videos:[
+            { title:'İslam Ahlakı', youtubeId:'dQw4w9WgXcQ', duration:'11 dk' }
+          ]}
+        ]
+      }
+    };
+
+    // Varsayılan ders verisi
+    const defaultKonu = {
+      desc: 'Bu dersin konularını keşfedin',
+      konular: [
+        { title:'Temel Kavramlar', icon:'📚', color:'#3b82f6', videos:[{ title:'Giriş Dersi', youtubeId:'dQw4w9WgXcQ', duration:'10 dk' }] },
+        { title:'İleri Konular', icon:'🎯', color:'#8b5cf6', videos:[{ title:'İleri Konu Anlatımı', youtubeId:'dQw4w9WgXcQ', duration:'15 dk' }] },
+        { title:'Soru Çözümü', icon:'✏️', color:'#10b981', videos:[{ title:'Alıştırmalar', youtubeId:'dQw4w9WgXcQ', duration:'20 dk' }] }
+      ]
+    };
+
+    const dersInfo = konuData[dersAdi] || defaultKonu;
+    document.getElementById('ders-desc').textContent = dersInfo.desc;
+
+    const watchedKey = 'eba_watched_' + (user?.tc || 'anon');
+    const watchedVideos = JSON.parse(localStorage.getItem(watchedKey) || '[]');
+
+    const grid = document.getElementById('topics-grid');
+    grid.innerHTML = dersInfo.konular.map((konu, idx) => {
+      const watchedCount = konu.videos.filter(v => watchedVideos.includes(konu.title + '_' + v.title)).length;
+      const allWatched = watchedCount === konu.videos.length;
+      return `
+        <div class="topic-card" onclick="openVideoModal(${idx})">
+          <div class="topic-icon" style="background:${konu.color}20; color:${konu.color};">${konu.icon}</div>
+          <div class="topic-title">${konu.title}</div>
+          <div class="topic-desc">${konu.videos.length} video • ${konu.videos.reduce((sum, v) => sum + parseInt(v.duration), 0)} dk</div>
+          ${allWatched ? '<div class="topic-badge"><i class="fa fa-check"></i> Tamamlandı</div>' : watchedCount > 0 ? `<div class="topic-badge" style="background:#fff3e0;color:#e65100;">${watchedCount}/${konu.videos.length} İzlendi</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    // ─── VİDEO MODALİ ───
+    let currentKonuIdx = -1;
+    function openVideoModal(idx) {
+      currentKonuIdx = idx;
+      const konu = dersInfo.konular[idx];
+      document.getElementById('modal-topic-title').innerHTML = `<i class="fa fa-play-circle" style="color:#4A748F;margin-right:8px;"></i> ${konu.title}`;
+      const list = document.getElementById('video-list');
+      list.innerHTML = konu.videos.map((v, vi) => {
+        const vKey = konu.title + '_' + v.title;
+        const isWatched = watchedVideos.includes(vKey);
+        return `
+          <div class="video-item" id="vitem_${vi}">
+            <div class="video-thumb" id="vthumb_${vi}">
+              <div class="video-placeholder" onclick="loadVideo(${vi}, '${v.youtubeId}', '${konu.title}', '${v.title}', ${parseInt(v.duration)})">
+                <div class="play-btn"><i class="fa fa-play" style="margin-left:4px;"></i></div>
+                <div style="font-size:13px;font-weight:600;">📹 ${v.title}</div>
+                <div style="font-size:11px;opacity:0.7;">Oynatmak için tıklayın</div>
+              </div>
+              <iframe id="vframe_${vi}" allow="autoplay" allowfullscreen></iframe>
+            </div>
+            <div class="video-info">
+              <div>
+                <div class="video-title">${v.title}</div>
+                <div class="video-duration"><i class="fa fa-clock"></i> ${v.duration}</div>
+              </div>
+              <div class="${isWatched ? 'reward-badge watched-badge' : 'reward-badge'}" id="vbadge_${vi}">
+                ${isWatched ? '✅ İzlendi' : '🏆 +15 Puan +10 Coin'}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('videoModal').classList.add('show');
+    }
+
+    function closeVideoModal() {
+      document.getElementById('videoModal').classList.remove('show');
+      // iframe'leri durdur
+      document.querySelectorAll('.video-thumb iframe').forEach(f => { f.src = ''; });
+    }
+
+    function loadVideo(vi, youtubeId, konuTitle, videoTitle, duration) {
+      const placeholder = document.querySelector(`#vthumb_${vi} .video-placeholder`);
+      const iframe = document.getElementById(`vframe_${vi}`);
+      if (placeholder) placeholder.style.display = 'none';
+      iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1`;
+      iframe.style.display = 'block';
+
+      // Ödül ver (bir kez)
+      const vKey = konuTitle + '_' + videoTitle;
+      if (!watchedVideos.includes(vKey)) {
+        setTimeout(() => awardVideoReward(vKey, videoTitle, dersAdi, duration), 5000);
+      }
+    }
+
+    async function awardVideoReward(vKey, title, subject, duration) {
+      try {
+        const token = localStorage.getItem('authToken');
+        const r = await fetch('/api/video-reward', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ title, subject, duration })
+        });
+        const d = await r.json();
+        if (d.success) {
+          watchedVideos.push(vKey);
+          localStorage.setItem(watchedKey, JSON.stringify(watchedVideos));
+          showRewardToast(d.message || '🎬 +15 Puan +10 Coin kazandınız!');
+          // Badge güncelle
+          const konu = dersInfo.konular[currentKonuIdx];
+          const vi = konu.videos.findIndex(v => konu.title + '_' + v.title === vKey);
+          if (vi >= 0) {
+            const badge = document.getElementById(`vbadge_${vi}`);
+            if (badge) { badge.className = 'reward-badge watched-badge'; badge.textContent = '✅ İzlendi'; }
+          }
+        }
+      } catch (e) {}
+    }
+
+    function showRewardToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'reward-toast';
+      t.innerHTML = `<i class="fa fa-trophy" style="color:#f59e0b;margin-right:8px;"></i>${msg}`;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
     }
   </script>
 </body>

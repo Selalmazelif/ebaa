@@ -1,409 +1,953 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
-<meta charset="UTF-8">
-<title>Öğretmen Paneli - EBA</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="stylesheet" href="panel.css">
-<style>
-/* ─── LAYOUT ─────────────────────────────────────────────────────── */
-.page-body { display:flex; gap:20px; padding:20px; align-items:flex-start; }
-.col-main  { flex:1; min-width:0; display:flex; flex-direction:column; gap:16px; }
-.col-right { width:290px; flex-shrink:0; display:flex; flex-direction:column; gap:16px; }
+  <meta charset="UTF-8">
+  <title>Öğretmen Paneli - EBA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="panel.css">
+  <style>
+    /* ─── LAYOUT ─────────────────────────────────────────────────────── */
+    .page-body {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      align-items: flex-start;
+    }
 
-/* ─── POST ALANÜ ─────────────────────────────────────────────────── */
-.post-area { background:white; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,0.06); overflow:hidden; }
-.post-tabs  { display:flex; border-bottom:2px solid #f0f0f0; }
-.tab-btn    { flex:1; border:none; background:white; padding:13px 6px; color:#999; cursor:pointer; font-size:13px;
-              font-weight:600; border-bottom:3px solid transparent; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px; }
-.tab-btn.active { color:#f39200; border-bottom-color:#f39200; background:#fffdf8; }
-.tab-btn:hover:not(.active) { background:#fafafa; color:#555; }
-.tab-panel  { display:none; padding:16px 18px; }
-.tab-panel.active { display:block; }
-.post-avatar-row { display:flex; gap:12px; align-items:flex-start; }
-.avatar-circ { width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#4A748F,#284B63);
-               display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:700;flex-shrink:0;overflow:hidden; }
-.avatar-circ img { width:100%;height:100%;object-fit:cover; }
-textarea.post-ta { flex:1;border:none;outline:none;font-family:inherit;font-size:14px;min-height:72px;resize:none;background:transparent;color:#333; }
-.post-footer { padding:10px 18px; background:#f9fafb; border-top:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
-.post-actions { display:flex; gap:14px; align-items:center; font-size:13px; color:#888; }
-.post-actions span { cursor:pointer; display:flex; align-items:center; gap:5px; }
-.post-actions span:hover { color:#4A748F; }
-.post-right { display:flex; gap:10px; align-items:center; }
-select.grp-sel { padding:7px 10px; border:1.5px solid #DDE7EC; border-radius:7px; font-size:12px; color:#555; outline:none; background:white; }
-button.btn-share { padding:9px 24px; border-radius:7px; border:none; background:#4A748F; color:white; cursor:pointer; font-weight:700; font-size:13px; transition:background .2s; }
-button.btn-share:hover { background:#284B63; }
+    .col-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-/* Oylama seçenekleri */
-.pollinp { width:100%; padding:9px 12px; border:1.5px solid #DDE7EC; border-radius:8px; margin-bottom:8px; box-sizing:border-box; font-size:13px; background:white; }
-.btn-addopt { font-size:11px;background:none;border:1px solid #4A748F;color:#4A748F;padding:4px 10px;border-radius:6px;cursor:pointer;margin-bottom:8px; }
+    .col-right {
+      width: 290px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-/* ─── FEED ───────────────────────────────────────────────────────── */
-.feed-item { background:white; border-radius:12px; padding:16px 18px; box-shadow:0 1px 8px rgba(0,0,0,0.05); }
-.feed-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-.feed-av { width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4A748F,#284B63);
-           display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:11px;flex-shrink:0; }
-.feed-info { flex:1; }
-.feed-name { font-weight:700; font-size:13px; color:#284B63; }
-.feed-time { font-size:11px; color:#bbb; }
-.type-pill { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
-.pill-ileti    { background:#fff3cd; color:#856404; }
-.pill-tartisma { background:#d1e7dd; color:#0f5132; }
-.pill-oylama   { background:#cfe2ff; color:#084298; }
-.pill-etkinlik { background:#f8d7da; color:#842029; }
-.feed-body { font-size:14px; color:#444; line-height:1.6; }
-.feed-file-badge { margin-top:8px;padding:5px 10px;background:#EBF5FB;border-radius:6px;font-size:11px;color:#4A748F;display:inline-flex;align-items:center;gap:5px; }
-.feed-target { margin-top:6px;font-size:11px;color:#aaa; }
-.empty-feed { background:white;border-radius:12px;padding:48px 20px;text-align:center;color:#ccc;box-shadow:0 1px 8px rgba(0,0,0,0.05);border:1px dashed #eee; }
-.empty-feed i { font-size:48px;display:block;margin-bottom:14px;opacity:0.4; }
+    /* ─── POST ALANÜ ─────────────────────────────────────────────────── */
+    .post-area {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
 
-/* ─── SAĞ PANEL KUTULARI ─────────────────────────────────────────── */
-.box { background:white;border-radius:14px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06); }
-.box-title { color:#284B63;font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px; }
+    .post-tabs {
+      display: flex;
+      border-bottom: 2px solid #f0f0f0;
+    }
 
-/* Takvim */
-.cal-nav { display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#284B63;font-weight:700;font-size:14px; }
-.cal-nav i { cursor:pointer;color:#f39200;font-size:16px; }
-.cal-table { width:100%;font-size:12px;text-align:center;border-collapse:separate;border-spacing:1px 3px; }
-.cal-table th { color:#aaa;font-size:10px;font-weight:600;padding:3px 0; }
-.cal-day { width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer; }
-.cal-day.today { background:#f39200;color:white;font-weight:700; }
-.cal-day.has-task { color:#e74c3c;font-weight:700; }
-.cal-day.has-holiday { color:#2ecc71;font-weight:700; }
-.cal-day.other-month { color:#ddd; }
+    .tab-btn {
+      flex: 1;
+      border: none;
+      background: white;
+      padding: 13px 6px;
+      color: #999;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
 
-/* Not Girişi */
-.grade-inp { width:100%;padding:9px 12px;border:1.5px solid #DDE7EC;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:13px;outline:none;font-family:inherit; }
-.grade-inp:focus { border-color:#4A748F; }
-.btn-grade { width:100%;padding:10px;border-radius:8px;border:none;background:#4A748F;color:white;cursor:pointer;font-weight:700;font-size:13px;margin-top:2px; }
+    .tab-btn.active {
+      color: #f39200;
+      border-bottom-color: #f39200;
+      background: #fffdf8;
+    }
 
-/* Ödev Gönder */
-.assign-inp { width:100%;padding:9px 12px;border:1.5px solid #DDE7EC;border-radius:8px;margin-bottom:8px;box-sizing:border-box;font-size:13px;outline:none;font-family:inherit; }
-.btn-assign { width:100%;padding:10px;border-radius:8px;border:none;background:#2ecc71;color:white;cursor:pointer;font-weight:700;font-size:13px;margin-top:2px; }
+    .tab-btn:hover:not(.active) {
+      background: #fafafa;
+      color: #555;
+    }
 
-/* Notif badge */
-.notif-badge { background:#e74c3c;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;
-               display:inline-flex;align-items:center;justify-content:center;position:absolute;top:-5px;right:-5px; }
-.notif-panel { display:none;position:fixed;top:64px;right:20px;width:300px;max-height:360px;overflow-y:auto;
-               background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:999; }
-.notif-panel-head { padding:12px 16px;border-bottom:1px solid #eee;font-weight:700;color:#284B63;font-size:13px; }
-.notif-item { padding:10px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5; }
+    .tab-panel {
+      display: none;
+      padding: 16px 18px;
+    }
 
-/* Dark mode overrides for this page */
-body.dark-mode .post-area,
-body.dark-mode .feed-item,
-body.dark-mode .box,
-body.dark-mode .empty-feed { background:#1e2d3d !important; }
-body.dark-mode .tab-btn { background:#1e2d3d !important; color:#7a9cb8; }
-body.dark-mode .tab-btn.active { background:#243447 !important; color:#f39200; }
-body.dark-mode .post-footer { background:#162030 !important; }
-body.dark-mode textarea.post-ta { color:#d0dce8; }
-body.dark-mode .pollinp, body.dark-mode .grade-inp, body.dark-mode .assign-inp { background:#0f1923 !important; border-color:#2d4060 !important; color:#d0dce8 !important; }
-body.dark-mode select.grp-sel { background:#0f1923 !important; border-color:#2d4060 !important; color:#d0dce8 !important; }
-body.dark-mode .feed-name { color:#a8d4f0 !important; }
-body.dark-mode .feed-body { color:#94afc5 !important; }
-body.dark-mode .notif-panel { background:#1e2d3d; }
-/* Modal Styles */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:2000; }
-.modal-box { background:white; padding:20px; border-radius:12px; width:400px; max-width:90%; }
-</style>
-<script src="/socket.io/socket.io.js"></script>
-<script src="auth-utils.js"></script>
-<script>requireAuth();</script>
+    .tab-panel.active {
+      display: block;
+    }
+
+    .post-avatar-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .avatar-circ {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4A748F, #284B63);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .avatar-circ img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    textarea.post-ta {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 14px;
+      min-height: 72px;
+      resize: none;
+      background: transparent;
+      color: #333;
+    }
+
+    .post-footer {
+      padding: 10px 18px;
+      background: #f9fafb;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .post-actions span {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .post-actions span:hover {
+      color: #4A748F;
+    }
+
+    .post-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    select.grp-sel {
+      padding: 7px 10px;
+      border: 1.5px solid #DDE7EC;
+      border-radius: 7px;
+      font-size: 12px;
+      color: #555;
+      outline: none;
+      background: white;
+    }
+
+    button.btn-share {
+      padding: 9px 24px;
+      border-radius: 7px;
+      border: none;
+      background: #4A748F;
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: background .2s;
+    }
+
+    button.btn-share:hover {
+      background: #284B63;
+    }
+
+    /* Oylama seçenekleri */
+    .pollinp {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #DDE7EC;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+      font-size: 13px;
+      background: white;
+    }
+
+    .btn-addopt {
+      font-size: 11px;
+      background: none;
+      border: 1px solid #4A748F;
+      color: #4A748F;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    /* ─── FEED ───────────────────────────────────────────────────────── */
+    .feed-item {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .feed-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .feed-av {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4A748F, #284B63);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .feed-info {
+      flex: 1;
+    }
+
+    .feed-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #284B63;
+    }
+
+    .feed-time {
+      font-size: 11px;
+      color: #bbb;
+    }
+
+    .type-pill {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pill-ileti {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .pill-tartisma {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .pill-oylama {
+      background: #cfe2ff;
+      color: #084298;
+    }
+
+    .pill-etkinlik {
+      background: #f8d7da;
+      color: #842029;
+    }
+
+    .feed-body {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    .feed-file-badge {
+      margin-top: 8px;
+      padding: 5px 10px;
+      background: #EBF5FB;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #4A748F;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .feed-target {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .empty-feed {
+      background: white;
+      border-radius: 12px;
+      padding: 48px 20px;
+      text-align: center;
+      color: #ccc;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+      border: 1px dashed #eee;
+    }
+
+    .empty-feed i {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 14px;
+      opacity: 0.4;
+    }
+
+    /* ─── SAĞ PANEL KUTULARI ─────────────────────────────────────────── */
+    .box {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .box-title {
+      color: #284B63;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Takvim */
+    .cal-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: #284B63;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .cal-nav i {
+      cursor: pointer;
+      color: #f39200;
+      font-size: 16px;
+    }
+
+    .cal-table {
+      width: 100%;
+      font-size: 12px;
+      text-align: center;
+      border-collapse: separate;
+      border-spacing: 1px 3px;
+    }
+
+    .cal-table th {
+      color: #aaa;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 0;
+    }
+
+    .cal-day {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .cal-day.today {
+      background: #f39200;
+      color: white;
+      font-weight: 700;
+    }
+
+    .cal-day.has-task {
+      color: #e74c3c;
+      font-weight: 700;
+    }
+
+    .cal-day.has-holiday {
+      color: #2ecc71;
+      font-weight: 700;
+    }
+
+    .cal-day.other-month {
+      color: #ddd;
+    }
+
+    /* Not Girişi */
+    .grade-inp {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #DDE7EC;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .grade-inp:focus {
+      border-color: #4A748F;
+    }
+
+    .btn-grade {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #4A748F;
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    /* Ödev Gönder */
+    .assign-inp {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #DDE7EC;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .btn-assign {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #2ecc71;
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    /* Notif badge */
+    .notif-badge {
+      background: #e74c3c;
+      color: white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+
+    .notif-panel {
+      display: none;
+      position: fixed;
+      top: 64px;
+      right: 20px;
+      width: 300px;
+      max-height: 360px;
+      overflow-y: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      z-index: 999;
+    }
+
+    .notif-panel-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+      font-weight: 700;
+      color: #284B63;
+      font-size: 13px;
+    }
+
+    .notif-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* Dark mode overrides for this page */
+    body.dark-mode .post-area,
+    body.dark-mode .feed-item,
+    body.dark-mode .box,
+    body.dark-mode .empty-feed {
+      background: #1e2d3d !important;
+    }
+
+    body.dark-mode .tab-btn {
+      background: #1e2d3d !important;
+      color: #7a9cb8;
+    }
+
+    body.dark-mode .tab-btn.active {
+      background: #243447 !important;
+      color: #f39200;
+    }
+
+    body.dark-mode .post-footer {
+      background: #162030 !important;
+    }
+
+    body.dark-mode textarea.post-ta {
+      color: #d0dce8;
+    }
+
+    body.dark-mode .pollinp,
+    body.dark-mode .grade-inp,
+    body.dark-mode .assign-inp {
+      background: #0f1923 !important;
+      border-color: #2d4060 !important;
+      color: #d0dce8 !important;
+    }
+
+    body.dark-mode select.grp-sel {
+      background: #0f1923 !important;
+      border-color: #2d4060 !important;
+      color: #d0dce8 !important;
+    }
+
+    body.dark-mode .feed-name {
+      color: #a8d4f0 !important;
+    }
+
+    body.dark-mode .feed-body {
+      color: #94afc5 !important;
+    }
+
+    body.dark-mode .notif-panel {
+      background: #1e2d3d;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+    }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="auth-utils.js"></script>
+  <script>requireAuth();</script>
 </head>
+
 <body>
 
-<!-- ─── SIDEBAR ─────────────────────────────────────────────────── -->
-<div class="sidebar">
-  <div class="logo">EBA</div>
-  <div class="profile">
-    <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()" title="Fotoğrafı Değiştir">
-      <div style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
-        <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
-        <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
-        <!-- Avatar Overlays -->
-        <img id="sidebar-hat" style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:35px; z-index:3; display:none;">
-        <img id="sidebar-glasses" style="position:absolute; top:30px; left:50%; transform:translateX(-50%); width:30px; z-index:4; display:none;">
-        <img id="sidebar-pet" style="position:absolute; bottom:5px; right:5px; width:25px; z-index:5; display:none;">
-        <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
+  <!-- ─── SIDEBAR ─────────────────────────────────────────────────── -->
+  <div class="sidebar">
+    <div class="logo">EBA</div>
+    <div class="profile">
+      <div class="profile-img-container" onclick="event.stopPropagation(); document.getElementById('picInput').click()"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:80px;height:80px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 10px;position:relative;">
+          <i class="fa fa-user" style="font-size:40px;color:#ccc;" id="default-avatar-icon"></i>
+          <img src="" alt="" id="profile-img-display"
+            style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
+          <!-- Avatar Overlays -->
+          <img id="sidebar-hat"
+            style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:35px; z-index:3; display:none;">
+          <img id="sidebar-glasses"
+            style="position:absolute; top:30px; left:50%; transform:translateX(-50%); width:30px; z-index:4; display:none;">
+          <img id="sidebar-pet" style="position:absolute; bottom:5px; right:5px; width:25px; z-index:5; display:none;">
+          <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
+        </div>
+        <div class="edit-overlay"><i class="fa fa-camera"></i></div>
+        <div class="status-indicator"></div>
       </div>
-      <div class="edit-overlay"><i class="fa fa-camera"></i></div>
-      <div class="status-indicator"></div>
+      <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
+      <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: Öğretmen</p>
+      <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
+      <input id="picInput" type="file" accept="image/*" style="display:none;">
+
+      <div
+        style="margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;">
+        <div
+          style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span
+            id="user-points">0</span> Puan
+        </div>
+        <div
+          style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;"
+          title="Nasıl kazanılır?&#10;• Günlük giriş: 10 Coin&#10;• Paylaşım yapma: 10 Coin&#10;• Ödev gönderme: 20 Coin">
+          <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span
+            id="user-coins">0</span> EBA Coin
+        </div>
+        <div
+          style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span
+            id="user-streak">0</span> Günlük Seri
+        </div>
+      </div>
+
+      <button id="logoutBtn"
+        style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
     </div>
-    <p id="profile-name" style="font-weight:600;font-size:16px;margin-bottom:2px;"></p>
-    <p id="profile-role" style="font-size:12px;opacity:0.8;margin-bottom:4px;">Rol: Öğretmen</p>
-    <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
-    <input id="picInput" type="file" accept="image/*" style="display:none;">
+    <ul>
+      <li><a href="ogretmen-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
+      <li><a href="ogretmen-canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
+      <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
+      <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
 
-    <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;">
-      <div style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-        <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span id="user-points">0</span> Puan
-      </div>
-      <div style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;" title="Nasıl kazanılır?&#10;• Günlük giriş: 10 Coin&#10;• Paylaşım yapma: 10 Coin&#10;• Ödev gönderme: 20 Coin">
-        <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span id="user-coins">0</span> EBA Coin
-      </div>
-      <div style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-        <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span id="user-streak">0</span> Günlük Seri
-      </div>
-    </div>
-
-    <button id="logoutBtn" style="margin-top:14px;padding:6px 14px;background:#fff;color:#4A748F;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
-  </div>
-  <ul>
-    <li><a href="ogretmen-panel.html" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
-    <li><a href="ogretmen-dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
-    <li><a href="ogretmen-canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
-    <li><a href="javascript:void(0)" onclick="openShopModal()"><i class="fa-solid fa-store"></i> EBA Market</a></li>
-
-    <li><a href="kitaplar.html"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
-    <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
-    <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
-    
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
-    <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
-  </ul>
-</div>
-
-<!-- ─── MAIN ─────────────────────────────────────────────────────── -->
-<div class="main">
-  <div class="topbar">
-    <div></div>
-    <div class="icons" style="position:relative;">
-      <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
-        <i class="fa fa-bell"></i>
-        <span id="notifBadge" class="notif-badge" style="display:none;"></span>
-      </span>
-      <a href="chat.html"><i class="fa fa-envelope"></i></a>
-    </div>
+      <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
+    </ul>
   </div>
 
-  <!-- Bildirim paneli -->
-  <div class="notif-panel" id="notifPanel">
-    <div class="notif-panel-head" style="display:flex; justify-content:space-between; align-items:center;">
-      <span>🔔 Bildirimler</span>
-      <button onclick="markAllRead()" style="font-size:11px; background:none; border:none; color:#4A748F; cursor:pointer; font-family:inherit;">Tümünü oku</button>
+  <!-- ─── MAIN ─────────────────────────────────────────────────────── -->
+  <div class="main">
+    <div class="topbar">
+      <div></div>
+      <div class="icons" style="position:relative;">
+        <span style="position:relative;cursor:pointer;" onclick="toggleNotif()">
+          <i class="fa fa-bell"></i>
+          <span id="notifBadge" class="notif-badge" style="display:none;"></span>
+        </span>
+        <a href="chat.html"><i class="fa fa-envelope"></i></a>
+      </div>
     </div>
-    <div id="notifList"></div>
-  </div>
 
-  <div class="page-body">
-    <!-- ─── SOL: PAYLAŞIM + FEED ─────────────────────────────────── -->
-    <div class="col-main">
-      <!-- Paylaşım alanı -->
-      <div class="post-area">
-        <div class="post-tabs">
-          <button class="tab-btn active" onclick="switchTab('ileti',this)"><i class="fa fa-edit"></i> İleti</button>
-          <button class="tab-btn" onclick="switchTab('tartisma',this)"><i class="fa fa-comments"></i> Tartışma</button>
-          <button class="tab-btn" onclick="switchTab('oylama',this)"><i class="fa fa-chart-column"></i> Oylama</button>
-          <button class="tab-btn" onclick="switchTab('etkinlik',this)"><i class="fa fa-calendar-check"></i> Etkinlik</button>
-          <button class="tab-btn" onclick="switchTab('quiz',this)"><i class="fa fa-pen-ruler"></i> Quiz</button>
-          <button class="tab-btn" onclick="switchTab('kaynak',this)"><i class="fa fa-book"></i> Kaynak</button>
-        </div>
+    <!-- Bildirim paneli -->
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel-head" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>🔔 Bildirimler</span>
+        <button onclick="markAllRead()"
+          style="font-size:11px; background:none; border:none; color:#4A748F; cursor:pointer; font-family:inherit;">Tümünü
+          oku</button>
+      </div>
+      <div id="notifList"></div>
+    </div>
 
-        <!-- İLETİ -->
-        <div class="tab-panel active" id="panel-ileti">
-          <div class="post-avatar-row">
-            <div class="avatar-circ" id="pav">
-              <img id="pav-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
-              <i class="fa fa-user" id="pav-icon"></i>
-            </div>
-            <textarea class="post-ta" id="ta-ileti" placeholder="Ne paylaşmak istersin?"></textarea>
-          </div>
-        </div>
-
-        <!-- TARTIŞMA -->
-        <div class="tab-panel" id="panel-tartisma">
-          <div class="post-avatar-row">
-            <div class="avatar-circ"><i class="fa fa-comments"></i></div>
-            <textarea class="post-ta" id="ta-tartisma" placeholder="Tartışmak istediğin konuyu yaz..."></textarea>
-          </div>
-        </div>
-
-        <!-- OYLAMA -->
-        <div class="tab-panel" id="panel-oylama">
-          <textarea class="post-ta" id="ta-oylama" placeholder="Bir soru sor..." style="width:100%;margin-bottom:10px;min-height:50px;box-sizing:border-box;"></textarea>
-          <div id="pollInputs">
-            <input class="pollinp poll-opt" placeholder="Seçenek 1">
-            <input class="pollinp poll-opt" placeholder="Seçenek 2">
-          </div>
-          <button class="btn-addopt" onclick="addPollOpt()">+ Seçenek Ekle</button>
-          <div style="margin-top:8px;">
-            <label style="font-size:12px;color:#888;">Bitiş Tarihi: </label>
-            <input type="date" id="poll-end" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
-          </div>
-        </div>
-
-        <!-- ETKİNLİK -->
-        <div class="tab-panel" id="panel-etkinlik">
-          <input class="pollinp" id="event-title" placeholder="Etkinlik başlığı...">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+    <div class="page-body">
+      <!-- ─── SOL: PAYLAŞIM + FEED ─────────────────────────────────── -->
+      <div class="col-main">
+        <!-- DASHBOARD STATS -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:10px;">
+          <div class="box" style="padding:15px; display:flex; align-items:center; gap:12px;">
+            <div style="width:40px;height:40px;background:#eef2ff;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#4f46e5;font-size:18px;"><i class="fa fa-user-graduate"></i></div>
             <div>
-              <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Başlangıç</label>
-              <input type="datetime-local" class="pollinp" id="event-start" style="margin:0;">
-            </div>
-            <div>
-              <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Bitiş</label>
-              <input type="datetime-local" class="pollinp" id="event-end" style="margin:0;">
+              <div style="font-size:10px;color:#888;font-weight:700;">ÖĞRENCİLERİM</div>
+              <div id="stat-students" style="font-size:18px;font-weight:800;color:#284B63;">0</div>
             </div>
           </div>
-          <textarea class="post-ta" id="ta-etkinlik" placeholder="Etkinlik açıklaması..." style="width:100%;min-height:60px;box-sizing:border-box;"></textarea>
+          <div class="box" style="padding:15px; display:flex; align-items:center; gap:12px;">
+            <div style="width:40px;height:40px;background:#fff7ed;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#f97316;font-size:18px;"><i class="fa fa-book"></i></div>
+            <div>
+              <div style="font-size:10px;color:#888;font-weight:700;">AKTİF ÖDEVLER</div>
+              <div id="stat-assignments" style="font-size:18px;font-weight:800;color:#284B63;">0</div>
+            </div>
+          </div>
+          <div class="box" style="padding:15px; display:flex; align-items:center; gap:12px;">
+            <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#22c55e;font-size:18px;"><i class="fa fa-clock"></i></div>
+            <div>
+              <div style="font-size:10px;color:#888;font-weight:700;">BEKLEYEN CEVAP</div>
+              <div id="stat-pending" style="font-size:18px;font-weight:800;color:#284B63;">0</div>
+            </div>
+          </div>
+          <div class="box" style="padding:15px; display:flex; align-items:center; gap:12px;">
+            <div style="width:40px;height:40px;background:#fdf2f8;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#ec4899;font-size:18px;"><i class="fa fa-chart-line"></i></div>
+            <div>
+              <div style="font-size:10px;color:#888;font-weight:700;">BAŞARI ORANI</div>
+              <div id="stat-success" style="font-size:18px;font-weight:800;color:#284B63;">%0</div>
+            </div>
+          </div>
         </div>
+        <!-- Paylaşım alanı -->
+        <div class="post-area">
+          <div class="post-tabs">
+            <button class="tab-btn active" onclick="switchTab('ileti',this)"><i class="fa fa-edit"></i> İleti</button>
+            <button class="tab-btn" onclick="switchTab('tartisma',this)"><i class="fa fa-comments"></i>
+              Tartışma</button>
+            <button class="tab-btn" onclick="switchTab('oylama',this)"><i class="fa fa-chart-column"></i>
+              Oylama</button>
+            <button class="tab-btn" onclick="switchTab('etkinlik',this)"><i class="fa fa-calendar-check"></i>
+              Etkinlik</button>
+            <button class="tab-btn" onclick="switchTab('quiz',this)"><i class="fa fa-pen-ruler"></i> Quiz</button>
+            <button class="tab-btn" onclick="switchTab('kaynak',this)"><i class="fa fa-book"></i> Kaynak</button>
+          </div>
 
-        <!-- YENİ: QUIZ MODÜLÜ -->
-        <div class="tab-panel" id="panel-quiz">
-           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-             <input class="pollinp" id="quiz-title" placeholder="Sınav Başlığı (örn: Mat-1 Ünite Sonu)">
-             <input class="pollinp" id="quiz-subj" placeholder="Ders (Matematik, vb.)">
-           </div>
-           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-             <input class="pollinp" id="quiz-limit" type="number" placeholder="Süre (dk)" value="20">
-             <select class="grp-sel" id="quiz-cls-sel" style="width:100%; height:38px;">
-               <option value="all">Tüm Sınıflar</option>
-               <option value="9-A">9-A</option><option value="10-A">10-A</option><option value="11-A">11-A</option>
-             </select>
-           </div>
-           <div id="quiz-questions-area" style="max-height:250px; overflow-y:auto; padding-right:5px;">
-              <div class="quiz-q-box" style="background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;">
-                 <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="1. Soru metni..."></textarea>
-                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                   <input class="pollinp" style="font-size:12px;" placeholder="A Şıkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="B Şıkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="C Şıkı">
-                   <input class="pollinp" style="font-size:12px;" placeholder="D Şıkı">
-                 </div>
-                 <select class="grp-sel" style="width:100%; margin-top:5px;">
-                   <option value="">Doğru Cevabı Seçin</option>
-                   <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
-                 </select>
+          <!-- İLETİ -->
+          <div class="tab-panel active" id="panel-ileti">
+            <div class="post-avatar-row">
+              <div class="avatar-circ" id="pav">
+                <img id="pav-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                <i class="fa fa-user" id="pav-icon"></i>
               </div>
-           </div>
-           <button class="btn-addopt" onclick="addQuizQuestion()">+ Soru Ekle</button>
-        </div>
+              <textarea class="post-ta" id="ta-ileti" placeholder="Ne paylaşmak istersin?"></textarea>
+            </div>
+          </div>
 
-        <!-- YENİ: KAYNAK MODÜLÜ -->
-        <div class="tab-panel" id="panel-kaynak">
-          <input class="pollinp" id="lib-title" placeholder="Kaynak Başlığı (örn: Hücre Bölünmesi Özeti)">
-          <textarea class="post-ta" id="lib-desc" placeholder="Kaynak açıklaması..." style="width:100%; min-height:50px; box-sizing:border-box; margin-bottom:10px;"></textarea>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <select class="grp-sel" id="lib-cat" style="width:100%; height:38px;">
-              <option value="Ders Notu">Ders Notu</option>
-              <option value="Video">Video</option>
-              <option value="Çalışma Kağıdı">Çalışma Kağıdı</option>
-              <option value="E-Kitap">E-Kitap</option>
-            </select>
-            <div style="padding:10px; background:#f5f5f5; border-radius:8px; font-size:12px; color:#4A748F; cursor:pointer;" onclick="document.getElementById('lib-file').click()">
-              <i class="fa fa-upload"></i> <span id="lib-fname">Dosya Seç</span>
-              <input type="file" id="lib-file" style="display:none;" onchange="document.getElementById('lib-fname').textContent=this.files[0]?.name||'Dosya Seç'">
+          <!-- TARTIŞMA -->
+          <div class="tab-panel" id="panel-tartisma">
+            <div class="post-avatar-row">
+              <div class="avatar-circ"><i class="fa fa-comments"></i></div>
+              <textarea class="post-ta" id="ta-tartisma" placeholder="Tartışmak istediğin konuyu yaz..."></textarea>
+            </div>
+          </div>
+
+          <!-- OYLAMA -->
+          <div class="tab-panel" id="panel-oylama">
+            <textarea class="post-ta" id="ta-oylama" placeholder="Bir soru sor..."
+              style="width:100%;margin-bottom:10px;min-height:50px;box-sizing:border-box;"></textarea>
+            <div id="pollInputs">
+              <input class="pollinp poll-opt" placeholder="Seçenek 1">
+              <input class="pollinp poll-opt" placeholder="Seçenek 2">
+            </div>
+            <button class="btn-addopt" onclick="addPollOpt()">+ Seçenek Ekle</button>
+            <div style="margin-top:8px;">
+              <label style="font-size:12px;color:#888;">Bitiş Tarihi: </label>
+              <input type="date" id="poll-end"
+                style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+            </div>
+          </div>
+
+          <!-- ETKİNLİK -->
+          <div class="tab-panel" id="panel-etkinlik">
+            <input class="pollinp" id="event-title" placeholder="Etkinlik başlığı...">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div>
+                <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Başlangıç</label>
+                <input type="datetime-local" class="pollinp" id="event-start" style="margin:0;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Bitiş</label>
+                <input type="datetime-local" class="pollinp" id="event-end" style="margin:0;">
+              </div>
+            </div>
+            <textarea class="post-ta" id="ta-etkinlik" placeholder="Etkinlik açıklaması..."
+              style="width:100%;min-height:60px;box-sizing:border-box;"></textarea>
+          </div>
+
+          <!-- YENİ: QUIZ MODÜLÜ -->
+          <div class="tab-panel" id="panel-quiz">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+              <input class="pollinp" id="quiz-title" placeholder="Sınav Başlığı (örn: Mat-1 Ünite Sonu)">
+              <input class="pollinp" id="quiz-subj" placeholder="Ders (Matematik, vb.)">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+              <input class="pollinp" id="quiz-limit" type="number" placeholder="Süre (dk)" value="20">
+              <select class="grp-sel" id="quiz-cls-sel" style="width:100%; height:38px;">
+                <option value="all">Tüm Sınıflar</option>
+                <option value="9-A">9-A</option>
+                <option value="10-A">10-A</option>
+                <option value="11-A">11-A</option>
+              </select>
+            </div>
+            <div id="quiz-questions-area" style="max-height:250px; overflow-y:auto; padding-right:5px;">
+              <div class="quiz-q-box"
+                style="background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;">
+                <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;"
+                  placeholder="1. Soru metni..."></textarea>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                  <input class="pollinp" style="font-size:12px;" placeholder="A Şıkı">
+                  <input class="pollinp" style="font-size:12px;" placeholder="B Şıkı">
+                  <input class="pollinp" style="font-size:12px;" placeholder="C Şıkı">
+                  <input class="pollinp" style="font-size:12px;" placeholder="D Şıkı">
+                </div>
+                <select class="grp-sel" style="width:100%; margin-top:5px;">
+                  <option value="">Doğru Cevabı Seçin</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-addopt" onclick="addQuizQuestion()">+ Soru Ekle</button>
+          </div>
+
+          <!-- YENİ: KAYNAK MODÜLÜ -->
+          <div class="tab-panel" id="panel-kaynak">
+            <input class="pollinp" id="lib-title" placeholder="Kaynak Başlığı (örn: Hücre Bölünmesi Özeti)">
+            <textarea class="post-ta" id="lib-desc" placeholder="Kaynak açıklaması..."
+              style="width:100%; min-height:50px; box-sizing:border-box; margin-bottom:10px;"></textarea>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <select class="grp-sel" id="lib-cat" style="width:100%; height:38px;">
+                <option value="Ders Notu">Ders Notu</option>
+                <option value="Video">Video</option>
+                <option value="Çalışma Kağıdı">Çalışma Kağıdı</option>
+                <option value="E-Kitap">E-Kitap</option>
+              </select>
+              <div
+                style="padding:10px; background:#f5f5f5; border-radius:8px; font-size:12px; color:#4A748F; cursor:pointer;"
+                onclick="document.getElementById('lib-file').click()">
+                <i class="fa fa-upload"></i> <span id="lib-fname">Dosya Seç</span>
+                <input type="file" id="lib-file" style="display:none;"
+                  onchange="document.getElementById('lib-fname').textContent=this.files[0]?.name||'Dosya Seç'">
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="post-footer">
+            <div class="post-actions">
+              <span onclick="document.getElementById('fileInp').click()">
+                <i class="fa fa-paperclip"></i> Dosya Ekle
+                <input type="file" id="fileInp" style="display:none;"
+                  onchange="document.getElementById('fileName').textContent=this.files[0]?.name||''">
+              </span>
+              <span id="fileName"
+                style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4A748F;font-size:11px;"></span>
+              <label style="cursor:pointer;font-size:13px;"><input type="checkbox" id="chkOnem"
+                  style="margin-right:4px;">Önemli</label>
+            </div>
+            <div class="post-right">
+              <select class="grp-sel" id="grpSel">
+                <option value="all">Tüm Gruplar</option>
+                <option value="veliler">Tüm Veliler</option>
+              </select>
+              <button class="btn-share" onclick="doShare()" id="btnMainShare">PAYLAŞ</button>
             </div>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="post-footer">
-          <div class="post-actions">
-            <span onclick="document.getElementById('fileInp').click()">
-              <i class="fa fa-paperclip"></i> Dosya Ekle
-              <input type="file" id="fileInp" style="display:none;" onchange="document.getElementById('fileName').textContent=this.files[0]?.name||''">
-            </span>
-            <span id="fileName" style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4A748F;font-size:11px;"></span>
-            <label style="cursor:pointer;font-size:13px;"><input type="checkbox" id="chkOnem" style="margin-right:4px;">Önemli</label>
-          </div>
-          <div class="post-right">
-            <select class="grp-sel" id="grpSel">
-              <option value="all">Tüm Gruplar</option>
-              <option value="veliler">Tüm Veliler</option>
-            </select>
-            <button class="btn-share" onclick="doShare()" id="btnMainShare">PAYLAŞ</button>
+        <!-- FEED -->
+        <div id="feedContainer">
+          <div class="empty-feed">
+            <i class="fa-regular fa-comments"></i>
+            <p style="font-size:14px;margin:0;">Henüz burada paylaşılan ileti yok.</p>
           </div>
         </div>
       </div>
 
-      <!-- FEED -->
-      <div id="feedContainer">
-        <div class="empty-feed">
-          <i class="fa-regular fa-comments"></i>
-          <p style="font-size:14px;margin:0;">Henüz burada paylaşılan ileti yok.</p>
+      <!-- ─── SAĞ PANEL ───────────────────────────────────────────── -->
+      <div class="col-right">
+
+        <!-- TAKVİM -->
+        <div class="box">
+          <div class="cal-nav">
+            <i class="fa fa-chevron-left" onclick="calPrev()"></i>
+            <span id="calHead"></span>
+            <i class="fa fa-chevron-right" onclick="calNext()"></i>
+          </div>
+          <div id="calGrid"></div>
         </div>
+
+
+
+        
+        <!-- RANDEVULAR -->
+        <div class="box">
+          <div class="box-title"><i class="fa fa-handshake" style="color:#f39200;"></i> Randevu Talepleri</div>
+          <div id="teacherRandevuList" style="max-height:250px; overflow-y:auto; font-size:12px;">
+             <div style="text-align:center;color:#aaa;padding:10px;">Bekleyen randevu yok.</div>
+          </div>
+        </div>
+
+        <!-- ÖDEV GÖNDER -->
+        <div class="box">
+          <div class="box-title"><i class="fa fa-book-open" style="color:#2ecc71;"></i> Ödev Gönder</div>
+
+          <select class="assign-inp" id="aType" onchange="toggleAssignUI()">
+            <option value="Metin">Metin Ödevi</option>
+            <option value="Soru">Soru Gönder</option>
+          </select>
+
+          <input class="assign-inp" id="aTitle" placeholder="Ödev Başlığı">
+          <input class="assign-inp" id="aSubj" placeholder="Ders Adı">
+
+          <div id="assign-content-area">
+            <textarea class="assign-inp" id="aDesc" placeholder="Ödev açıklaması..."
+              style="min-height:60px;resize:none;"></textarea>
+          </div>
+
+          <div style="margin-bottom:8px;">
+            <button type="button" onclick="document.getElementById('aFile').click()"
+              style="width:100%;padding:8px;font-size:12px;background:#f9f9f9;border:1.5px dashed #ccc;border-radius:8px;cursor:pointer;color:#666;">
+              <i class="fa fa-paperclip"></i> <span id="aFileNameDisplay">Dosya Ekle (Opsiyonel)</span>
+            </button>
+            <input type="file" id="aFile" style="display:none;"
+              onchange="document.getElementById('aFileNameDisplay').textContent=this.files[0]?.name||'Dosya Ekle (Opsiyonel)'">
+          </div>
+
+          <div style="margin-bottom:8px;">
+            <label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Son Tarih</label>
+            <input class="assign-inp" type="date" id="aDue" style="margin:0;">
+          </div>
+
+          <select class="assign-inp" id="aCls" style="margin-bottom:8px;">
+            <option value="all">Tüm Sınıflarım</option>
+          </select>
+          <button class="btn-assign" id="btnAssign" onclick="sendAssignment()">Ödev Gönder</button>
+          <p id="assignMsg" style="font-size:12px;text-align:center;margin-top:8px;"></p>
+        </div>
+
+
+        <!-- GELEN CEVAPLAR VE NOT GİRİŞİ -->
+        <div class="box">
+          <div class="box-title" style="color:#284B63;"><i class="fa fa-inbox" style="color:#4A748F;"></i> Cevaplanan
+            Ödevler</div>
+          <div id="submissionsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
+            <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
+          </div>
+        </div>
+
+        <!-- GÖNDERİLEN ÖDEVLER -->
+        <div class="box">
+          <div class="box-title"><i class="fa fa-check-circle" style="color:#4A748F;"></i> Gönderilen Ödevler</div>
+          <div id="sentList" style="font-size:12px;color:#aaa;text-align:center;padding:10px;">Henüz ödev gönderilmedi.
+          </div>
+        </div>
+
+        <!-- SINAV SONUÇLARI -->
+        <div class="box">
+          <div class="box-title" style="color:#284B63;"><i class="fa fa-award" style="color:#f39200;"></i> Sınav
+            Sonuçları</div>
+          <div id="quizResultsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
+            <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
+          </div>
+        </div>
+
       </div>
     </div>
 
-    <!-- ─── SAĞ PANEL ───────────────────────────────────────────── -->
-    <div class="col-right">
-
-      <!-- TAKVİM -->
-      <div class="box">
-        <div class="cal-nav">
-          <i class="fa fa-chevron-left" onclick="calPrev()"></i>
-          <span id="calHead"></span>
-          <i class="fa fa-chevron-right" onclick="calNext()"></i>
-        </div>
-        <div id="calGrid"></div>
-      </div>
-
-
-
-      <!-- ÖDEV GÖNDER -->
-      <div class="box">
-        <div class="box-title"><i class="fa fa-book-open" style="color:#2ecc71;"></i> Ödev Gönder</div>
-        
-        <select class="assign-inp" id="aType" onchange="toggleAssignUI()">
-          <option value="Metin">Metin Ödevi</option>
-          <option value="Soru">Soru Gönder</option>
-        </select>
-
-        <input class="assign-inp" id="aTitle" placeholder="Ödev Başlığı">
-        <input class="assign-inp" id="aSubj" placeholder="Ders Adı">
-        
-        <div id="assign-content-area">
-          <textarea class="assign-inp" id="aDesc" placeholder="Ödev açıklaması..." style="min-height:60px;resize:none;"></textarea>
-        </div>
-
-        <div style="margin-bottom:8px;">
-          <button type="button" onclick="document.getElementById('aFile').click()" style="width:100%;padding:8px;font-size:12px;background:#f9f9f9;border:1.5px dashed #ccc;border-radius:8px;cursor:pointer;color:#666;">
-            <i class="fa fa-paperclip"></i> <span id="aFileNameDisplay">Dosya Ekle (Opsiyonel)</span>
-          </button>
-          <input type="file" id="aFile" style="display:none;" onchange="document.getElementById('aFileNameDisplay').textContent=this.files[0]?.name||'Dosya Ekle (Opsiyonel)'">
-        </div>
-
-        <div style="margin-bottom:8px;">
-          <label style="font-size:11px;color:#888;display:block;margin-bottom:2px;">Son Tarih</label>
-          <input class="assign-inp" type="date" id="aDue" style="margin:0;">
-        </div>
-
-        <select class="assign-inp" id="aCls" style="margin-bottom:8px;">
-          <option value="all">Tüm Sınıflarım</option>
-        </select>
-        <button class="btn-assign" id="btnAssign" onclick="sendAssignment()">Ödev Gönder</button>
-        <p id="assignMsg" style="font-size:12px;text-align:center;margin-top:8px;"></p>
-      </div>
-
-      
-      <!-- GELEN CEVAPLAR VE NOT GİRİŞİ -->
-      <div class="box">
-        <div class="box-title" style="color:#284B63;"><i class="fa fa-inbox" style="color:#4A748F;"></i> Cevaplanan Ödevler</div>
-        <div id="submissionsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
-           <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
-        </div>
-      </div>
-
-      <!-- GÖNDERİLEN ÖDEVLER -->
-      <div class="box">
-        <div class="box-title"><i class="fa fa-check-circle" style="color:#4A748F;"></i> Gönderilen Ödevler</div>
-        <div id="sentList" style="font-size:12px;color:#aaa;text-align:center;padding:10px;">Henüz ödev gönderilmedi.</div>
-      </div>
-
-      <!-- SINAV SONUÇLARI -->
-      <div class="box">
-        <div class="box-title" style="color:#284B63;"><i class="fa fa-award" style="color:#f39200;"></i> Sınav Sonuçları</div>
-        <div id="quizResultsList" style="max-height:300px; overflow-y:auto; font-size:12px;">
-           <div style="text-align:center;color:#aaa;padding:10px;">Yükleniyor...</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- RANDEVU TALEPLERİ -->
+    <!-- RANDEVU TALEPLERİ -->
 
 
 
@@ -415,69 +959,84 @@ body.dark-mode .notif-panel { background:#1e2d3d; }
 
 
 
-<script src="auth-utils.js"></script>
-<script>
-const HOLIDAYS = {'01-01':'Yılbaşı','04-23':'Ulusal Egemenlik','05-01':'İşçi Bayramı','05-19':'Atatürk\'ü Anma','08-30':'Zafer Bayramı','10-29':'Cumhuriyet','03-21':'Nevruz'};
-let calY, calM, cu, notificationCache = [], curTab = 'ileti', attachedFile = null;
+    <script src="auth-utils.js"></script>
+    <script>
+      const HOLIDAYS = { '01-01': 'Yılbaşı', '04-23': '23 Nisan', '05-01': '1 Mayıs', '05-19': '19 Mayıs', '07-15': '15 Temmuz', '08-30': '30 Ağustos', '10-29': '29 Ekim' };
+      let calY, calM, cu, posts = [], notificationCache = [], curTab = 'ileti', attachedFile = null;
 
-// ─── BAŞLATICI ──────────────────────────────────────────────────────
-async function init() {
-  cu = requireAuth();
-  if (!cu || cu.role !== 'ogretmen') { logout(); return; }
+      // ─── BAŞLATICI ──────────────────────────────────────────────────────
+      async function init() {
+        cu = requireAuth();
+        if (!cu || cu.role !== 'ogretmen') { logout(); return; }
 
-  // Sidebar & Profil
-  const pName = document.getElementById('profile-name');
-  if(pName) pName.textContent = cu.name;
-  const pSchool = document.getElementById('profile-school');
-  if(pSchool) pSchool.textContent = cu.school;
-  
-  if (cu.profilePic) {
-    const dIcon = document.getElementById('default-avatar-icon');
-    if(dIcon) dIcon.style.display = 'none';
-    const pavIcon = document.getElementById('pav-icon');
-    if(pavIcon) pavIcon.style.display = 'none';
-    
-    const pImg = document.getElementById('profile-img-display');
-    if(pImg) { pImg.src = cu.profilePic; pImg.style.display = 'block'; }
-    const pavImg = document.getElementById('pav-img');
-    if(pavImg) { pavImg.src = cu.profilePic; pavImg.style.display = 'block'; }
-  }
-  const lBtn = document.getElementById('logoutBtn');
-  if(lBtn) lBtn.onclick = logout;
-  document.getElementById('picInput').addEventListener('change', handlePicChange);
+        // Sidebar & Profil
+        const pName = document.getElementById('profile-name');
+        if (pName) pName.textContent = cu.name;
+        const pSchool = document.getElementById('profile-school');
+        if (pSchool) pSchool.textContent = cu.school;
 
-  // Dinamik Grupları Doldur
-  const classes = (cu.classNum || "").split(",").filter(v=>v);
-  const branches = (cu.branch || "").split(",").filter(v=>v);
-  const grpSel = document.getElementById('grpSel');
-  const aCls = document.getElementById('aCls');
-  classes.forEach(c => {
-    branches.forEach(b => {
-      const val = `${c}-${b}`;
-      const opt1 = document.createElement('option'); opt1.value = val; opt1.textContent = `${val} Sınıfı`;
-      grpSel.appendChild(opt1);
-      const opt2 = document.createElement('option'); opt2.value = val; opt2.textContent = val;
-      aCls.appendChild(opt2);
-    });
-  });
+        if (cu.profilePic) {
+          const dIcon = document.getElementById('default-avatar-icon');
+          if (dIcon) dIcon.style.display = 'none';
+          const pavIcon = document.getElementById('pav-icon');
+          if (pavIcon) pavIcon.style.display = 'none';
 
-  await loadFeed();
-  await loadNotifs();
-  loadSentAssignments();
-  loadSubmissions();
-  loadQuizResults();
-  loadTeacherAppointments();
-  const now = new Date(); calY = now.getFullYear(); calM = now.getMonth();
-  renderCal();
-}
+          const pImg = document.getElementById('profile-img-display');
+          if (pImg) { pImg.src = cu.profilePic; pImg.style.display = 'block'; }
+          const pavImg = document.getElementById('pav-img');
+          if (pavImg) { pavImg.src = cu.profilePic; pavImg.style.display = 'block'; }
+        }
+        const lBtn = document.getElementById('logoutBtn');
+        if (lBtn) lBtn.onclick = logout;
+        document.getElementById('picInput').addEventListener('change', handlePicChange);
 
-async function loadSubmissions() {
-   try {
-      const r = await ebaFetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
-      const d = await r.json();
-      const el = document.getElementById('submissionsList');
-      if (d.success && d.submissions.length) {
-         el.innerHTML = d.submissions.map(s => `
+        // Dinamik Grupları Doldur
+        const classes = (cu.classNum || "").split(",").filter(v => v);
+        const branches = (cu.branch || "").split(",").filter(v => v);
+        const grpSel = document.getElementById('grpSel');
+        const aCls = document.getElementById('aCls');
+        classes.forEach(c => {
+          branches.forEach(b => {
+            const val = `${c}-${b}`;
+            const opt1 = document.createElement('option'); opt1.value = val; opt1.textContent = `${val} Sınıfı`;
+            grpSel.appendChild(opt1);
+            const opt2 = document.createElement('option'); opt2.value = val; opt2.textContent = val;
+            aCls.appendChild(opt2);
+          });
+        });
+
+        await loadFeed();
+        await loadNotifs();
+        loadSentAssignments();
+        loadSubmissions();
+        loadQuizResults();
+        loadTeacherRandevu();
+        loadDashboardStats();
+        loadGamification(cu);
+        const now = new Date(); calY = now.getFullYear(); calM = now.getMonth();
+        renderCal();
+      }
+
+      async function loadDashboardStats() {
+        try {
+          const r = await ebaFetch('/api/teacher-stats');
+          const d = await r.json();
+          if (d.success) {
+            document.getElementById('stat-students').textContent = d.stats.studentCount;
+            document.getElementById('stat-assignments').textContent = d.stats.activeAssignments;
+            document.getElementById('stat-pending').textContent = d.stats.pendingSubmissions;
+            document.getElementById('stat-success').textContent = '%' + d.stats.averageSuccess;
+          }
+        } catch (e) { }
+      }
+
+      async function loadSubmissions() {
+        try {
+          const r = await ebaFetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
+          const d = await r.json();
+          const el = document.getElementById('submissionsList');
+          if (d.success && d.submissions.length) {
+            el.innerHTML = d.submissions.map(s => `
            <div style="border-bottom:1px solid #eee; padding:10px 0;">
              <div style="display:flex; justify-content:space-between;">
                 <strong>${s.student_name} (${s.student_tc})</strong>
@@ -488,198 +1047,200 @@ async function loadSubmissions() {
                ${s.answer_text}
              </div>
              <div style="display:flex; gap:8px; align-items:center;">
-               ${s.isGraded ? 
-                 `<span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>` :
-                 `
+               ${s.isGraded ?
+                `<span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>` :
+                `
                    <input type="number" id="gradeInp_${s.id}" placeholder="Not Gir" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
                    <button onclick="submitGrade(${s.id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Kaydet</button>
                  `
-               }
+              }
              </div>
            </div>
          `).join('');
-      } else {
-         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">Bekleyen cevap yok.</div>';
+          } else {
+            el.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">Bekleyen cevap yok.</div>';
+          }
+        } catch (e) { }
       }
-   } catch(e) {}
-}
 
-async function submitGrade(sub_id) {
-   const gv = document.getElementById('gradeInp_'+sub_id).value;
-   if(!gv) return alert('Lütfen not giriniz!');
-   try {
-     const r = await ebaFetch('/api/assignment-grade', {
-       method: 'PUT',
-       body: JSON.stringify({sub_id, grade: gv, teacher_tc: cu.tc})
-     });
-     if(!r) return;
-     const d = await r.json();
-     if(d.success) {
-       alert('Not kaydedildi.');
-       loadSubmissions();
-       loadNotifs();
-     }
-   } catch(e) {}
-}
+      async function submitGrade(sub_id) {
+        const gv = document.getElementById('gradeInp_' + sub_id).value;
+        if (!gv) return alert('Lütfen not giriniz!');
+        try {
+          const r = await ebaFetch('/api/assignment-grade', {
+            method: 'PUT',
+            body: JSON.stringify({ sub_id, grade: gv, teacher_tc: cu.tc })
+          });
+          if (!r) return;
+          const d = await r.json();
+          if (d.success) {
+            alert('Not kaydedildi.');
+            loadSubmissions();
+            loadNotifs();
+          }
+        } catch (e) { }
+      }
 
-function toggleAssignUI() {
-  const type = document.getElementById('aType').value;
-  const area = document.getElementById('assign-content-area');
-  const title = document.getElementById('aTitle');
-  if (type === 'Soru') {
-    title.placeholder = "Soru Başlığı (Örn: Matematik Sorusu)";
-    area.innerHTML = `<textarea class="assign-inp" id="aDesc" placeholder="Soruyu buraya yazın..." style="min-height:100px;resize:none;"></textarea>`;
-  } else {
-    title.placeholder = "Ödev Başlığı";
-    area.innerHTML = `<textarea class="assign-inp" id="aDesc" placeholder="Ödev açıklaması..." style="min-height:60px;resize:none;"></textarea>`;
-  }
-}
+      function toggleAssignUI() {
+        const type = document.getElementById('aType').value;
+        const area = document.getElementById('assign-content-area');
+        const title = document.getElementById('aTitle');
+        if (type === 'Soru') {
+          title.placeholder = "Soru Başlığı (Örn: Matematik Sorusu)";
+          area.innerHTML = `<textarea class="assign-inp" id="aDesc" placeholder="Soruyu buraya yazın..." style="min-height:100px;resize:none;"></textarea>`;
+        } else {
+          title.placeholder = "Ödev Başlığı";
+          area.innerHTML = `<textarea class="assign-inp" id="aDesc" placeholder="Ödev açıklaması..." style="min-height:60px;resize:none;"></textarea>`;
+        }
+      }
 
-function handlePicChange() {
-  const file = this.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const users = JSON.parse(localStorage.getItem('users')||'[]');
-    const i = users.findIndex(u=>u.tc===cu.tc);
-    if(i>-1){ users[i].profilePic=e.target.result; localStorage.setItem('users',JSON.stringify(users)); }
-    const saved = JSON.parse(localStorage.getItem('currentUser')||'{}');
-    saved.profilePic = e.target.result;
-    localStorage.setItem('currentUser', JSON.stringify(saved));
-    location.reload();
-  };
-  reader.readAsDataURL(file);
-}
+      function handlePicChange() {
+        const file = this.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          const users = JSON.parse(localStorage.getItem('users') || '[]');
+          const i = users.findIndex(u => u.tc === cu.tc);
+          if (i > -1) { users[i].profilePic = e.target.result; localStorage.setItem('users', JSON.stringify(users)); }
+          const saved = JSON.parse(localStorage.getItem('currentUser') || '{}');
+          saved.profilePic = e.target.result;
+          localStorage.setItem('currentUser', JSON.stringify(saved));
+          location.reload();
+        };
+        reader.readAsDataURL(file);
+      }
 
-// ─── SEKME ──────────────────────────────────────────────────────────
-function switchTab(tab, btn) {
-  curTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('panel-'+tab).classList.add('active');
-}
+      // ─── SEKME ──────────────────────────────────────────────────────────
+      function switchTab(tab, btn) {
+        curTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + tab).classList.add('active');
+      }
 
-function addPollOpt() {
-  const cnt = document.querySelectorAll('.poll-opt').length + 1;
-  const inp = document.createElement('input');
-  inp.className='pollinp poll-opt'; inp.placeholder='Seçenek ' + cnt;
-  document.getElementById('pollInputs').appendChild(inp);
-}
+      function addPollOpt() {
+        const cnt = document.querySelectorAll('.poll-opt').length + 1;
+        const inp = document.createElement('input');
+        inp.className = 'pollinp poll-opt'; inp.placeholder = 'Seçenek ' + cnt;
+        document.getElementById('pollInputs').appendChild(inp);
+      }
 
-// ─── PAYLAŞ ─────────────────────────────────────────────────────────
-async function doShare() {
-  if (curTab === 'quiz') return doQuizShare();
-  if (curTab === 'kaynak') return doLibraryUpload();
+      // ─── PAYLAŞ ─────────────────────────────────────────────────────────
+      async function doShare() {
+        if (curTab === 'quiz') return doQuizShare();
+        if (curTab === 'kaynak') return doLibraryUpload();
 
-  const areaMap = { ileti:'ta-ileti', tartisma:'ta-tartisma', oylama:'ta-oylama', etkinlik:'ta-etkinlik' };
-  const content = (document.getElementById(areaMap[curTab])?.value || '').trim();
-  const group   = document.getElementById('grpSel').value;
-  if (!content && curTab !== 'etkinlik') { alert('İçerik giriniz.'); return; }
+        const areaMap = { ileti: 'ta-ileti', tartisma: 'ta-tartisma', oylama: 'ta-oylama', etkinlik: 'ta-etkinlik' };
+        const content = (document.getElementById(areaMap[curTab])?.value || '').trim();
+        const group = document.getElementById('grpSel').value;
+        if (!content && curTab !== 'etkinlik') { alert('İçerik giriniz.'); return; }
 
-  let fileData=null, fileName=null;
-  if (attachedFile) {
-    fileName = attachedFile.name;
-    fileData = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(attachedFile); });
-  }
-  const pollOpts = curTab==='oylama' ? [...document.querySelectorAll('.poll-opt')].map(i=>i.value).filter(v=>v) : [];
-  const typeMap  = { ileti:'İleti', tartisma:'Tartışma', oylama:'Oylama', etkinlik:'Etkinlik' };
+        let fileData = null, fileName = null;
+        if (attachedFile) {
+          fileName = attachedFile.name;
+          fileData = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(attachedFile); });
+        }
+        const pollOpts = curTab === 'oylama' ? [...document.querySelectorAll('.poll-opt')].map(i => i.value).filter(v => v) : [];
+        const typeMap = { ileti: 'İleti', tartisma: 'Tartışma', oylama: 'Oylama', etkinlik: 'Etkinlik' };
 
-  const post = { author_tc:cu.tc, author_name:cu.name, type:typeMap[curTab], content,
-                 file_name:fileName, file_data:fileData, target_group:group, school:cu.school,
-                 poll_options:pollOpts, 
-                 event_title: document.getElementById('event-title').value,
-                 event_start: document.getElementById('event-start').value,
-                 event_end: document.getElementById('event-end').value,
-                 createdAt:new Date().toISOString() };
+        const post = {
+          author_tc: cu.tc, author_name: cu.name, type: typeMap[curTab], content,
+          file_name: fileName, file_data: fileData, target_group: group, school: cu.school,
+          poll_options: pollOpts,
+          event_title: document.getElementById('event-title').value,
+          event_start: document.getElementById('event-start').value,
+          event_end: document.getElementById('event-end').value,
+          createdAt: new Date().toISOString()
+        };
 
-  try {
-    const r = await ebaFetch('/api/posts',{method:'POST',body:JSON.stringify(post)});
-    if(!r) return;
-    const d = await r.json(); 
-    if(d.success) {
-      alert('Başarıyla paylaşıldı.');
-      await sendNotifs(typeMap[curTab], content.slice(0,40), group);
-      // Temizle
-      if (document.getElementById(areaMap[curTab])) document.getElementById(areaMap[curTab]).value='';
-      document.getElementById('fileInp').value=''; document.getElementById('fileName').textContent='';
-      attachedFile=null;
-      document.querySelectorAll('.poll-opt').forEach(i=>i.value='');
-      await loadFeed();
-    }
-  } catch(e) { alert('Hata: ' + e.message); }
-}
+        try {
+          const r = await ebaFetch('/api/posts', { method: 'POST', body: JSON.stringify(post) });
+          if (!r) return;
+          const d = await r.json();
+          if (d.success) {
+            alert('Başarıyla paylaşıldı.');
+            await sendNotifs(typeMap[curTab], content.slice(0, 40), group);
+            // Temizle
+            if (document.getElementById(areaMap[curTab])) document.getElementById(areaMap[curTab]).value = '';
+            document.getElementById('fileInp').value = ''; document.getElementById('fileName').textContent = '';
+            attachedFile = null;
+            document.querySelectorAll('.poll-opt').forEach(i => i.value = '');
+            await loadFeed();
+          }
+        } catch (e) { alert('Hata: ' + e.message); }
+      }
 
-async function doQuizShare() {
-  const title = document.getElementById('quiz-title').value.trim();
-  const subj = document.getElementById('quiz-subj').value.trim();
-  const limit = parseInt(document.getElementById('quiz-limit').value) || 20;
-  const cls = document.getElementById('quiz-cls-sel').value;
-  
-  const qBoxes = document.querySelectorAll('.quiz-q-box');
-  const questions = [];
-  
-  qBoxes.forEach(box => {
-    const txt = box.querySelector('textarea').value.trim();
-    const inps = box.querySelectorAll('input');
-    const correct = box.querySelector('select').value;
-    if(txt && correct) {
-      questions.push({
-        question_text: txt,
-        opt_a: inps[0].value, opt_b: inps[1].value,
-        opt_c: inps[2].value, opt_d: inps[3].value,
-        correct_opt: correct
-      });
-    }
-  });
+      async function doQuizShare() {
+        const title = document.getElementById('quiz-title').value.trim();
+        const subj = document.getElementById('quiz-subj').value.trim();
+        const limit = parseInt(document.getElementById('quiz-limit').value) || 20;
+        const cls = document.getElementById('quiz-cls-sel').value;
 
-  if(!title || !questions.length) return alert('Lütfen başlık ve en az bir geçerli soru girin.');
+        const qBoxes = document.querySelectorAll('.quiz-q-box');
+        const questions = [];
 
-  try {
-    const res = await ebaFetch('/api/quizzes', {
-      method: 'POST',
-      body: JSON.stringify({ title, subject: subj, target_class: cls, school: cu.school, time_limit: limit, questions })
-    });
-    if(!res) return;
-    const d = await res.json();
-    if(d.success) {
-      alert('Sınav başarıyla oluşturuldu!');
-      location.reload();
-    }
-  } catch(e) { alert('Quiz oluşturulamadı.'); }
-}
+        qBoxes.forEach(box => {
+          const txt = box.querySelector('textarea').value.trim();
+          const inps = box.querySelectorAll('input');
+          const correct = box.querySelector('select').value;
+          if (txt && correct) {
+            questions.push({
+              question_text: txt,
+              opt_a: inps[0].value, opt_b: inps[1].value,
+              opt_c: inps[2].value, opt_d: inps[3].value,
+              correct_opt: correct
+            });
+          }
+        });
 
-async function doLibraryUpload() {
-  const title = document.getElementById('lib-title').value.trim();
-  const desc = document.getElementById('lib-desc').value.trim();
-  const cat = document.getElementById('lib-cat').value;
-  const fileInp = document.getElementById('lib-file');
-  
-  if(!title || !fileInp.files[0]) return alert('Başlık ve dosya zorunludur.');
+        if (!title || !questions.length) return alert('Lütfen başlık ve en az bir geçerli soru girin.');
 
-  const file = fileInp.files[0];
-  const fileData = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(file); });
+        try {
+          const res = await ebaFetch('/api/quizzes', {
+            method: 'POST',
+            body: JSON.stringify({ title, subject: subj, target_class: cls, school: cu.school, time_limit: limit, questions })
+          });
+          if (!res) return;
+          const d = await res.json();
+          if (d.success) {
+            alert('Sınav başarıyla oluşturuldu!');
+            location.reload();
+          }
+        } catch (e) { alert('Quiz oluşturulamadı.'); }
+      }
 
-  try {
-    const r = await ebaFetch('/api/library', {
-      method: 'POST',
-      body: JSON.stringify({ title, description: desc, file_name: file.name, file_data: fileData, category: cat, school: cu.school })
-    });
-    if(!r) return;
-    const d = await r.json();
-    if(d.success) {
-      alert('Kaynak kütüphaneye eklendi.');
-      location.reload();
-    }
-  } catch(e) { alert('Yükleme hatası.'); }
-}
+      async function doLibraryUpload() {
+        const title = document.getElementById('lib-title').value.trim();
+        const desc = document.getElementById('lib-desc').value.trim();
+        const cat = document.getElementById('lib-cat').value;
+        const fileInp = document.getElementById('lib-file');
 
-function addQuizQuestion() {
-  const container = document.getElementById('quiz-questions-area');
-  const index = container.querySelectorAll('.quiz-q-box').length + 1;
-  const div = document.createElement('div');
-  div.className = 'quiz-q-box';
-  div.style = 'background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;';
-  div.innerHTML = `
+        if (!title || !fileInp.files[0]) return alert('Başlık ve dosya zorunludur.');
+
+        const file = fileInp.files[0];
+        const fileData = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(file); });
+
+        try {
+          const r = await ebaFetch('/api/library', {
+            method: 'POST',
+            body: JSON.stringify({ title, description: desc, file_name: file.name, file_data: fileData, category: cat, school: cu.school })
+          });
+          if (!r) return;
+          const d = await r.json();
+          if (d.success) {
+            alert('Kaynak kütüphaneye eklendi.');
+            location.reload();
+          }
+        } catch (e) { alert('Yükleme hatası.'); }
+      }
+
+      function addQuizQuestion() {
+        const container = document.getElementById('quiz-questions-area');
+        const index = container.querySelectorAll('.quiz-q-box').length + 1;
+        const div = document.createElement('div');
+        div.className = 'quiz-q-box';
+        div.style = 'background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid #eee;';
+        div.innerHTML = `
      <textarea class="post-ta" style="min-height:40px; margin-bottom:8px;" placeholder="${index}. Soru metni..."></textarea>
      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
        <input class="pollinp" style="font-size:12px;" placeholder="A Şıkı">
@@ -692,417 +1253,444 @@ function addQuizQuestion() {
        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
      </select>
   `;
-  container.appendChild(div);
-  div.scrollIntoView({ behavior: 'smooth' });
-}
+        container.appendChild(div);
+        div.scrollIntoView({ behavior: 'smooth' });
+      }
 
-async function sendNotifs(type, preview, group) {
-  let targets=[];
-  try {
-    const r = await ebaFetch(`/api/users?school=${encodeURIComponent(cu.school)}`);
-    const d = await r.json(); if(d.success) targets=d.users;
-  } catch(e) {
-    targets=JSON.parse(localStorage.getItem('users')||'[]').filter(u=>u.school===cu.school);
-  }
-  const filtered = targets.filter(t => {
-    if(t.tc===cu.tc) return false;
-    if(group==='all') return t.role==='ogrenci'||t.role==='veli';
-    if(group==='veliler') return t.role==='veli';
-    return t.role==='ogrenci' && (t.class===group||t.classNum===group);
-  });
-  const text = `🔔 ${cu.name} yeni ${type} paylaştı: "${preview}..."`;
-  for (const t of filtered) {
-    try {
-      await ebaFetch('/api/notifications', {
-        method: 'POST',
-        body: JSON.stringify({ receiver_tc: t.tc, text })
-      });
-    } catch(e) {
-      const n=JSON.parse(localStorage.getItem('eba_notifications')||'[]');
-      n.unshift({id:Date.now()+Math.random(),receiver_tc:t.tc,text,isRead:false,createdAt:new Date().toISOString()});
-      localStorage.setItem('eba_notifications',JSON.stringify(n));
-    }
-  }
-}
+      async function sendNotifs(type, preview, group) {
+        let targets = [];
+        try {
+          const r = await ebaFetch(`/api/users?school=${encodeURIComponent(cu.school)}`);
+          const d = await r.json(); if (d.success) targets = d.users;
+        } catch (e) {
+          targets = JSON.parse(localStorage.getItem('users') || '[]').filter(u => u.school === cu.school);
+        }
+        const filtered = targets.filter(t => {
+          if (t.tc === cu.tc) return false;
+          if (group === 'all') return t.role === 'ogrenci' || t.role === 'veli';
+          if (group === 'veliler') return t.role === 'veli';
+          return t.role === 'ogrenci' && (t.class === group || t.classNum === group);
+        });
+        const text = `🔔 ${cu.name} yeni ${type} paylaştı: "${preview}..."`;
+        for (const t of filtered) {
+          try {
+            await ebaFetch('/api/notifications', {
+              method: 'POST',
+              body: JSON.stringify({ receiver_tc: t.tc, text })
+            });
+          } catch (e) {
+            const n = JSON.parse(localStorage.getItem('eba_notifications') || '[]');
+            n.unshift({ id: Date.now() + Math.random(), receiver_tc: t.tc, text, isRead: false, createdAt: new Date().toISOString() });
+            localStorage.setItem('eba_notifications', JSON.stringify(n));
+          }
+        }
+      }
 
-// ─── FEED ───────────────────────────────────────────────────────────
-async function loadFeed() {
-  try {
-    const r = await ebaFetch(`/api/posts?school=${encodeURIComponent(cu.school)}`);
-    const d = await r.json();
-    if(d.success) posts = d.posts;
-  } catch(e) { console.error("Feed load error:", e); }
-  const el=document.getElementById('feedContainer');
-  if(!posts.length){
-    el.innerHTML='<div class="empty-feed"><i class="fa-regular fa-comments"></i><p style="font-size:14px;margin:0;">Henüz burada paylaşılan ileti yok.</p></div>';
-    return;
-  }
-  const pillCls={'İleti':'pill-ileti','Tartışma':'pill-tartisma','Oylama':'pill-oylama','Etkinlik':'pill-etkinlik'};
-  el.innerHTML=posts.map(p=>{
-    const init=(p.author_name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    const time=p.createdAt?new Date(p.createdAt).toLocaleString('tr-TR'):'';
-    const pill=pillCls[p.type]||'pill-ileti';
-    const isOwn=p.author_tc===cu.tc;
-    
-    let extraHtml = '';
-    if (p.type === 'Etkinlik') {
-      extraHtml = `
+      // ─── FEED ───────────────────────────────────────────────────────────
+      async function loadFeed() {
+        try {
+          const r = await ebaFetch(`/api/posts?school=${encodeURIComponent(cu.school)}`);
+          const d = await r.json();
+          if (d.success) posts = d.posts;
+        } catch (e) { console.error("Feed load error:", e); }
+        const el = document.getElementById('feedContainer');
+        if (!posts.length) {
+          el.innerHTML = '<div class="empty-feed"><i class="fa-regular fa-comments"></i><p style="font-size:14px;margin:0;">Henüz burada paylaşılan ileti yok.</p></div>';
+          return;
+        }
+        const pillCls = { 'İleti': 'pill-ileti', 'Tartışma': 'pill-tartisma', 'Oylama': 'pill-oylama', 'Etkinlik': 'pill-etkinlik' };
+        el.innerHTML = posts.map(p => {
+          const init = (p.author_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+          const time = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '';
+          const pill = pillCls[p.type] || 'pill-ileti';
+          const isOwn = p.author_tc === cu.tc;
+
+          let extraHtml = '';
+          if (p.type === 'Etkinlik') {
+            extraHtml = `
         <div class="feed-event-box">
           <div class="event-title">📅 ${p.event_title || 'Etkinlik'}</div>
           <div class="event-details">
-            <div><strong>Başlangıç:</strong> ${p.event_start ? p.event_start.replace('T',' ') : '-'}</div>
-            <div><strong>Bitiş:</strong> ${p.event_end ? p.event_end.replace('T',' ') : '-'}</div>
+            <div><strong>Başlangıç:</strong> ${p.event_start ? p.event_start.replace('T', ' ') : '-'}</div>
+            <div><strong>Bitiş:</strong> ${p.event_end ? p.event_end.replace('T', ' ') : '-'}</div>
           </div>
         </div>
       `;
-    }
+          }
 
-    return `<div class="feed-item" style="margin-bottom:12px;${isOwn?'border-left:3px solid #f39200;padding-left:12px;':''}">
+          return `<div class="feed-item" style="margin-bottom:12px;${isOwn ? 'border-left:3px solid #f39200;padding-left:12px;' : ''}">
       <div class="feed-head">
         <div class="feed-av">${init}</div>
         <div class="feed-info">
-          <div class="feed-name">${p.author_name||''} ${isOwn?'<small style="color:#f39200;font-weight:400;">(Siz)</small>':''}</div>
+          <div class="feed-name">${p.author_name || ''} ${isOwn ? '<small style="color:#f39200;font-weight:400;">(Siz)</small>' : ''}</div>
           <div class="feed-time">${time}</div>
         </div>
-        <span class="type-pill ${pill}">${p.type||'İleti'}</span>
+        <span class="type-pill ${pill}">${p.type || 'İleti'}</span>
       </div>
       ${extraHtml}
-      <div class="feed-body">${p.content||''}</div>
-      ${p.file_name?`<span class="feed-file-badge"><i class="fa fa-paperclip"></i>${p.file_name}</span>`:''}
-      <div class="feed-target"><i class="fa fa-users" style="margin-right:4px;"></i>${p.target_group==='all'?'Tüm Gruplar':p.target_group==='veliler'?'Tüm Veliler':p.target_group}</div>
+      <div class="feed-body">${p.content || ''}</div>
+      ${p.file_name ? `<span class="feed-file-badge"><i class="fa fa-paperclip"></i>${p.file_name}</span>` : ''}
+      <div class="feed-target"><i class="fa fa-users" style="margin-right:4px;"></i>${p.target_group === 'all' ? 'Tüm Gruplar' : p.target_group === 'veliler' ? 'Tüm Veliler' : p.target_group}</div>
     </div>`;
-  }).join('');
-}
+        }).join('');
+      }
 
 
 
-// ─── ÖDEV GÖNDER ────────────────────────────────────────────────────
-async function sendAssignment() {
-  const btn=document.getElementById('btnAssign');
-  const type=document.getElementById('aType').value;
-  const title=document.getElementById('aTitle').value.trim();
-  const subj=document.getElementById('aSubj').value.trim();
-  const desc=document.getElementById('aDesc').value.trim();
-  const due=document.getElementById('aDue').value;
-  const cls=document.getElementById('aCls').value;
-  const fileInput=document.getElementById('aFile');
-  const msg=document.getElementById('assignMsg');
+      // ─── ÖDEV GÖNDER ────────────────────────────────────────────────────
+      async function sendAssignment() {
+        const btn = document.getElementById('btnAssign');
+        const type = document.getElementById('aType').value;
+        const title = document.getElementById('aTitle').value.trim();
+        const subj = document.getElementById('aSubj').value.trim();
+        const desc = document.getElementById('aDesc').value.trim();
+        const due = document.getElementById('aDue').value;
+        const cls = document.getElementById('aCls').value;
+        const fileInput = document.getElementById('aFile');
+        const msg = document.getElementById('assignMsg');
 
-  if(!title||!subj){msg.textContent='Başlık ve ders zorunludur.';msg.style.color='#e74c3c';return;}
+        if (!title || !subj) { msg.textContent = 'Başlık ve ders zorunludur.'; msg.style.color = '#e74c3c'; return; }
 
-  btn.disabled=true; btn.textContent='Gönderiliyor...'; msg.textContent='Ödev hazırlanıyor...'; msg.style.color='#284B63';
+        btn.disabled = true; btn.textContent = 'Gönderiliyor...'; msg.textContent = 'Ödev hazırlanıyor...'; msg.style.color = '#284B63';
 
-  let fileData=null, fileName=null;
-  try {
-    if(fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      if(file.size > 40*1024*1024) throw new Error('Dosya boyutu çok büyük (Max 40MB)');
-      fileName = file.name;
-      fileData = await new Promise((resolve, reject) => {
-        const fr=new FileReader();
-        fr.onload=e=>resolve(e.target.result);
-        fr.onerror=e=>reject(new Error('Dosya okunamadı.'));
-        fr.readAsDataURL(file);
-      });
-    }
+        let fileData = null, fileName = null;
+        try {
+          if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 40 * 1024 * 1024) throw new Error('Dosya boyutu çok büyük (Max 40MB)');
+            fileName = file.name;
+            fileData = await new Promise((resolve, reject) => {
+              const fr = new FileReader();
+              fr.onload = e => resolve(e.target.result);
+              fr.onerror = e => reject(new Error('Dosya okunamadı.'));
+              fr.readAsDataURL(file);
+            });
+          }
 
-    const a={
-      teacher_tc:cu.tc, teacher_name:cu.name, title, subject:subj, 
-      description:desc, due_date:due, target_class:cls, school:cu.school,
-      file_name:fileName, file_data:fileData, assignment_type:type,
-      createdAt:new Date().toISOString()
-    };
+          const a = {
+            teacher_tc: cu.tc, teacher_name: cu.name, title, subject: subj,
+            description: desc, due_date: due, target_class: cls, school: cu.school,
+            file_name: fileName, file_data: fileData, assignment_type: type,
+            createdAt: new Date().toISOString()
+          };
 
-    const res = await ebaFetch('/api/assignments',{
-      method:'POST',
-      body:JSON.stringify(a)
-    });
-    
-    if(!res.ok) {
-       const text = await res.text();
-       let errJson; try { errJson=JSON.parse(text); } catch(e){}
-       throw new Error(errJson?.message || `Sunucu hatası: ${res.status}`);
-    }
-    
-    const data = await res.json();
-    msg.textContent='✅ Ödev başarıyla gönderildi!'; msg.style.color='#2ecc71';
-    
-    // Formu temizle
-    ['aTitle','aSubj','aDue','aDesc'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; });
-    fileInput.value=''; document.getElementById('aFileNameDisplay').textContent='Dosya Ekle (Opsiyonel)';
-    loadSentAssignments();
-  } catch(e) {
-    console.error('Gönderim hatası:', e);
-    msg.textContent='❌ Hata: ' + e.message; msg.style.color='#e74c3c';
-  } finally {
-    btn.disabled=false; btn.textContent='Ödev Gönder';
-    setTimeout(()=>msg.textContent='',5000);
-  }
-}
+          const res = await ebaFetch('/api/assignments', {
+            method: 'POST',
+            body: JSON.stringify(a)
+          });
 
-async function loadSentAssignments() {
-  let items=[];
-  try {
-    const r=await ebaFetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu?.tc||'')}`);
-    if(!r) return;
-    const d=await r.json();
-    if(d.success) items=d.assignments;
-  } catch(e) {}
-  const el=document.getElementById('sentList');
-  if(!items.length){el.innerHTML='<div style="font-size:12px;color:#aaa;text-align:center;padding:10px;">Henüz ödev gönderilmedi.</div>';return;}
-  el.innerHTML=items.slice(0,6).map(a=>`
+          if (!res.ok) {
+            const text = await res.text();
+            let errJson; try { errJson = JSON.parse(text); } catch (e) { }
+            throw new Error(errJson?.message || `Sunucu hatası: ${res.status}`);
+          }
+
+          const data = await res.json();
+          msg.textContent = '✅ Ödev başarıyla gönderildi!'; msg.style.color = '#2ecc71';
+
+          // Formu temizle
+          ['aTitle', 'aSubj', 'aDue', 'aDesc'].forEach(id => { if (document.getElementById(id)) document.getElementById(id).value = ''; });
+          fileInput.value = ''; document.getElementById('aFileNameDisplay').textContent = 'Dosya Ekle (Opsiyonel)';
+          loadSentAssignments();
+        } catch (e) {
+          console.error('Gönderim hatası:', e);
+          msg.textContent = '❌ Hata: ' + e.message; msg.style.color = '#e74c3c';
+        } finally {
+          btn.disabled = false; btn.textContent = 'Ödev Gönder';
+          setTimeout(() => msg.textContent = '', 5000);
+        }
+      }
+
+      async function loadSentAssignments() {
+        let items = [];
+        try {
+          const r = await ebaFetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu?.tc || '')}`);
+          if (!r) return;
+          const d = await r.json();
+          if (d.success) items = d.assignments;
+        } catch (e) { }
+        const el = document.getElementById('sentList');
+        if (!items.length) { el.innerHTML = '<div style="font-size:12px;color:#aaa;text-align:center;padding:10px;">Henüz ödev gönderilmedi.</div>'; return; }
+        el.innerHTML = items.slice(0, 6).map(a => `
     <div style="padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">
       <div style="font-weight:700;color:#284B63;">${a.title}</div>
-      <div style="color:#888;">${a.subject||''} · ${a.target_class==='all'?'Tüm':a.target_class}</div>
-      ${a.due_date?`<div style="color:#e74c3c;font-size:11px;"><i class="fa fa-clock"></i> Son: ${a.due_date}</div>`:''}
-      <div style="color:#aaa;font-size:10px;">${a.createdAt?new Date(a.createdAt).toLocaleString('tr-TR'):''}</div>
+      <div style="color:#888;">${a.subject || ''} · ${a.target_class === 'all' ? 'Tüm' : a.target_class}</div>
+      ${a.due_date ? `<div style="color:#e74c3c;font-size:11px;"><i class="fa fa-clock"></i> Son: ${a.due_date}</div>` : ''}
+      <div style="color:#aaa;font-size:10px;">${a.createdAt ? new Date(a.createdAt).toLocaleString('tr-TR') : ''}</div>
     </div>
   `).join('');
-}
-
-// ─── BİLDİRİMLER ────────────────────────────────────────────────────
-function parseNotifText(originalText) {
-  let txt = originalText;
-  let btn = '';
-  // Sınav detayı butonu ayıklama
-  const match = txt.match(/===EXAM_DET:(.*?)===/);
-  if(match) {
-     const parts = match[1].split('|');
-     const title = parts[0];
-     const cor = parts[1];
-     const wro = parts[2];
-     const bla = parts[3];
-     const json = parts[4] || '[]';
-     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-     btn = `<br><button onclick="showExamDetails('${title}','${cor}','${wro}','${bla}','${jsonEscaped}')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>`;
-     txt = txt.replace(match[0], '');
-  }
-  return txt + btn;
-}
-
-
-
-// ─── TAKVİM ─────────────────────────────────────────────────────────
-async function renderCal() {
-  const months=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  document.getElementById('calHead').textContent=`${months[calM]} ${calY}`;
-  const today=new Date();
-  let sd=new Date(calY,calM,1).getDay();if(sd===0)sd=7;sd--;
-  const dim=new Date(calY,calM+1,0).getDate();
-  const pDim=new Date(calY,calM,0).getDate();
-  
-  let asgn = [];
-  try {
-    const r = await ebaFetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu.tc)}`);
-    if(!r) return;
-    const d = await r.json(); if(d.success) asgn = d.assignments;
-  } catch(e) {}
-
-  const taskDates={};asgn.forEach(a=>{if(a.due_date)taskDates[a.due_date]=(taskDates[a.due_date]||[]).concat(a.title);});
-  let h='<table class="cal-table"><thead><tr>';
-  ['PZT','SAL','ÇAR','PER','CUM','CMT','PAZ'].forEach(d=>h+=`<th>${d}</th>`);
-  h+='</tr></thead><tbody><tr>';
-  let col=0;
-  for(let i=sd-1;i>=0;i--){h+=`<td><span class="cal-day other-month">${pDim-i}</span></td>`;col++;}
-  for(let d=1;d<=dim;d++){
-    if(col===7){h+='</tr><tr>';col=0;}
-    const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const mm=`${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isT=today.getFullYear()===calY&&today.getMonth()===calM&&today.getDate()===d;
-    const hol=HOLIDAYS[mm]; const tasks=taskDates[ds]||[];
-    const cls=['cal-day'];
-    if(isT)cls.push('today');else if(hol)cls.push('has-holiday');else if(tasks.length)cls.push('has-task');
-    h+=`<td><span class="${cls.join(' ')}" title="${hol||tasks.join(', ')||''}">${d}</span></td>`;col++;
-  }
-  let nx=1;while(col<7&&col>0){h+=`<td><span class="cal-day other-month">${nx++}</span></td>`;col++;}
-  h+='</tr></tbody></table>';
-  document.getElementById('calGrid').innerHTML=h;
-}
-function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
-function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCal();}
-
-
-function editGrade(sub_id, current_grade) {
-  const box = document.getElementById('gradeBox_'+sub_id);
-  box.innerHTML = `
-    <input type="number" id="gradeInp_${sub_id}" value="${current_grade}" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
-    <button onclick="submitGrade(${sub_id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Güncelle</button>
-    <button onclick="loadSubmissions()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;">İİptal</button>
-  `;
-}
-
-async function loadSubmissions() {
-   try {
-      const r = await ebaFetch('/api/assignment-submissions?teacher_tc=' + cu.tc);
-      if(!r) return;
-      const d = await r.json();
-      const el = document.getElementById('submissionsList');
-      if (d.success && d.submissions.length) {
-         el.innerHTML = d.submissions.map(s => `
-           <div style="border-bottom:1px solid #eee; padding:10px 0;">
-             <div style="display:flex; justify-content:space-between;">
-                <strong>${s.student_name} (${s.student_tc})</strong>
-                <span style="font-size:10px; color:#aaa;">${new Date(s.createdAt).toLocaleDateString('tr-TR')}</span>
-             </div>
-             <div style="font-size:11px; color:#5c8ead; margin-top:3px;">Ödev: ${s.title}</div>
-             <div style="background:#f9f9f9; padding:8px; border-radius:6px; margin:5px 0; color:#444; word-break:break-word; border:1px solid #eee;">
-               ${s.answer_text}
-             </div>
-             <div style="display:flex; gap:8px; align-items:center;" id="gradeBox_${s.id}">
-               ${s.isGraded ? 
-                 `
-                  <span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>
-                  <button onclick="editGrade(${s.id}, ${s.grade})" style="background:none; border:none; color:#4A748F; cursor:pointer; font-size:12px;"><i class="fa fa-edit"></i> Düzenle</button>
-                 ` :
-                 `
-                   <input type="number" id="gradeInp_${s.id}" placeholder="Not Gir" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
-                   <button onclick="submitGrade(${s.id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Kaydet</button>
-                 `
-               }
-             </div>
-           </div>
-         `).join('');
-      } else {
-         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Bekleyen cevap yok.</div>';
       }
-   } catch(e) {}
-}
 
-async function loadQuizResults() {
-   try {
-      const r = await ebaFetch('/api/quizzes/results');
-      const d = await r.json();
-      const el = document.getElementById('quizResultsList');
-      if (d.success && d.results.length) {
-         el.innerHTML = d.results.map(r => `
-           <div style="border-bottom:1px solid #eee; padding:10px 0;">
-              <div style="display:flex; justify-content:space-between;">
-                 <strong>${r.student_name}</strong>
-                 <span style="font-size:10px; color:#aaa;">${new Date(r.takenAt).toLocaleDateString('tr-TR')}</span>
+      // ─── BİLDİRİMLER ────────────────────────────────────────────────────
+      function parseNotifText(originalText) {
+        let txt = originalText;
+        let btn = '';
+        // Sınav detayı butonu ayıklama
+        const match = txt.match(/===EXAM_DET:(.*?)===/);
+        if (match) {
+          const parts = match[1].split('|');
+          const title = parts[0];
+          const cor = parts[1];
+          const wro = parts[2];
+          const bla = parts[3];
+          const json = parts[4] || '[]';
+          const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+          btn = `<br><button onclick="showExamDetails('${title}','${cor}','${wro}','${bla}','${jsonEscaped}')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>`;
+          txt = txt.replace(match[0], '');
+        }
+        return txt + btn;
+      }
+
+
+
+      // ─── TAKVİM ─────────────────────────────────────────────────────────
+
+      async function renderCal() {
+        const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+        document.getElementById('calHead').textContent = `${months[calM]} ${calY}`;
+        const today = new Date();
+        let sd = new Date(calY, calM, 1).getDay(); if (sd === 0) sd = 7; sd--;
+        const dim = new Date(calY, calM + 1, 0).getDate();
+        const pDim = new Date(calY, calM, 0).getDate();
+
+        let asgn = [];
+        try {
+          const r = await fetch(`/api/assignments?teacher_tc=${encodeURIComponent(cu.tc)}`, {
+             headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+          });
+          const d = await r.json(); if (d.success) asgn = d.assignments;
+        } catch (e) { }
+
+        const taskDates = {}; asgn.forEach(a => { if (a.due_date) taskDates[a.due_date] = (taskDates[a.due_date] || []).concat(a.title); });
+        
+        let h = '<table class="cal-table"><thead><tr>';
+        ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'].forEach(d => h += `<th>${d}</th>`);
+        h += '</tr></thead><tbody><tr>';
+        let col = 0;
+        for (let i = sd - 1; i >= 0; i--) { h += `<td><span class="cal-day other-month">${pDim - i}</span></td>`; col++; }
+        for (let d = 1; d <= dim; d++) {
+          if (col === 7) { h += '</tr><tr>'; col = 0; }
+          const ds = `${calY}-${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const isT = today.getFullYear() === calY && today.getMonth() === calM && today.getDate() === d;
+          const hol = HOLIDAYS[`${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`];
+          const tasks = taskDates[ds] || [];
+          const cls = ['cal-day'];
+          if (isT) cls.push('today'); else if (hol) cls.push('has-holiday'); else if (tasks.length) cls.push('has-task');
+          h += `<td><span class="${cls.join(' ')}" title="${hol || tasks.join(', ') || ''}">${d}</span></td>`; col++;
+        }
+        let nx = 1; while (col < 7 && col > 0) { h += `<td><span class="cal-day other-month">${nx++}</span></td>`; col++; }
+        h += '</tr></tbody></table>';
+        document.getElementById('calGrid').innerHTML = h;
+      }
+      function calNext() { calM++; if (calM > 11) { calM = 0; calY++; } renderCal(); }
+      function calPrev() { calM--; if (calM < 0) { calM = 11; calY--; } renderCal(); }
+
+      async function loadTeacherRandevu() {
+        try {
+          const r = await fetch('/api/appointments', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+          const d = await r.json();
+          const list = document.getElementById('teacherRandevuList');
+          if (d.success && d.appointments.length > 0) {
+            list.innerHTML = d.appointments.map(a => `
+              <div style="border-bottom:1px solid #eee; padding:10px 0;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                  <strong>${a.parent_name || 'Veli'} (Öğrenci: ${a.student_name || 'Bilinmiyor'})</strong>
+                  <span style="color:#aaa;">${a.appt_date} ${a.appt_time}</span>
+                </div>
+                ${a.status === 'beklemede' ? `
+                  <div style="display:flex; gap:5px; margin-top:5px;">
+                     <button onclick="updateRandevu(${a.id}, 'onaylandı')" style="background:#2ecc71; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Onayla</button>
+                     <button onclick="updateRandevu(${a.id}, 'reddedildi')" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Reddet</button>
+                  </div>
+                ` : `
+                  <div style="font-weight:bold; color:${a.status === 'onaylandı' ? '#2ecc71' : '#e74c3c'};">${a.status}</div>
+                `}
               </div>
-              <div style="font-size:11px; color:#5c8ead;">Sınav: ${r.quiz_title}</div>
-              <div style="font-weight:700; color:#2ecc71; margin-top:3px;">Puan: ${r.score} / ${r.total_score}</div>
-              <div style="font-size:10px; color:#888;">D: ${r.correct_count} | Y: ${r.wrong_count}</div>
-           </div>
-         `).join('');
-      } else {
-         el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Henüz sınav sonucu yok.</div>';
+            `).join('');
+          } else {
+            list.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">Bekleyen randevu yok.</div>';
+          }
+        } catch (e) { }
       }
-   } catch(e) { console.error("Quiz results error:", e); }
-}
 
-function renderCal() {
-  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-  document.getElementById('calHead').textContent = `${months[calM]} ${calY}`;
-  
-  const today = new Date();
-  let sd = new Date(calY, calM, 1).getDay(); if (sd === 0) sd = 7; sd--;
-  const dim = new Date(calY, calM + 1, 0).getDate();
-  const pDim = new Date(calY, calM, 0).getDate();
-  
-  let html = `<table class="cal-table"><thead><tr>`;
-  ['PZT', 'SAL', 'ÇAR', 'PER', 'CUM', 'CMT', 'PAZ'].forEach(d => html += `<th>${d}</th>`);
-  html += '</tr></thead><tbody><tr>';
-  
-  let col = 0;
-  for (let i = sd - 1; i >= 0; i--) { html += `<td><span class="cal-day other-month">${pDim - i}</span></td>`; col++; }
-  for (let d = 1; d <= dim; d++) {
-    if (col === 7) { html += '</tr><tr>'; col = 0; }
-    const isT = today.getFullYear() === calY && today.getMonth() === calM && today.getDate() === d;
-    const hol = HOLIDAYS[`${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`];
-    let cls = 'cal-day' + (isT ? ' today' : '') + (hol ? ' has-holiday' : '');
-    html += `<td><span class="${cls}" title="${hol || ''}">${d}</span></td>`; col++;
-  }
-  let nx = 1; while (col < 7 && col > 0) { html += `<td><span class="cal-day other-month">${nx++}</span></td>`; col++; }
-  html += '</tr></tbody></table>';
-  document.getElementById('calGrid').innerHTML = html;
-}
+      async function updateRandevu(id, status) {
+        try {
+          const r = await fetch('/api/appointments/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+            body: JSON.stringify({ status })
+          });
+          const d = await r.json();
+          if (d.success) loadTeacherRandevu();
+        } catch (e) { }
+      }
 
-function calNext() { calM++; if (calM > 11) { calM = 0; calY++; } renderCal(); }
-function calPrev() { calM--; if (calM < 0) { calM = 11; calY--; } renderCal(); }
+      function editGrade(sub_id, current_grade) {
+        const box = document.getElementById('gradeBox_' + sub_id);
+        box.innerHTML = `
+          <input type="number" id="gradeInp_${sub_id}" value="${current_grade}" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
+          <button onclick="submitGrade(${sub_id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Güncelle</button>
+          <button onclick="loadSubmissions()" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;">İptal</button>
+        `;
+      }
 
-async function submitGrade(sub_id) {
-   const gv = document.getElementById('gradeInp_'+sub_id).value;
-   if(!gv) return alert('Lütfen not giriniz!');
-   try {
-     const r = await ebaFetch('/api/assignment-grade', {
-       method: 'PUT',
-       body: JSON.stringify({sub_id, grade: gv, teacher_tc: cu.tc})
-     });
-     if(!r) return;
-     const d = await r.json();
-     if(d.success) {
-       alert('Not başarıyla kaydedildi.');
-       loadSubmissions();
-       loadNotifs();
-     }
-   } catch(e) {}
-}
+      async function loadSubmissions() {
+        try {
+          const r = await fetch('/api/assignment-submissions?teacher_tc=' + cu.tc, { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+          const d = await r.json();
+          const el = document.getElementById('submissionsList');
+          if (d.success && d.submissions.length) {
+            el.innerHTML = d.submissions.map(s => `
+             <div style="border-bottom:1px solid #eee; padding:10px 0;">
+               <div style="display:flex; justify-content:space-between;">
+                  <strong>${s.student_name} (${s.student_tc})</strong>
+                  <span style="font-size:10px; color:#aaa;">${new Date(s.createdAt).toLocaleDateString('tr-TR')}</span>
+               </div>
+               <div style="font-size:11px; color:#5c8ead; margin-top:3px;">Ödev: ${s.title}</div>
+               <div style="background:#f9f9f9; padding:8px; border-radius:6px; margin:5px 0; color:#444; word-break:break-word; border:1px solid #eee;">
+                 ${s.answer_text}
+               </div>
+               <div style="display:flex; gap:8px; align-items:center;" id="gradeBox_${s.id}">
+                 ${s.isGraded ?
+                `
+                    <span style="color:#2ecc71; font-weight:bold;">Not: ${s.grade}</span>
+                    <button onclick="editGrade(${s.id}, ${s.grade})" style="background:none; border:none; color:#4A748F; cursor:pointer; font-size:12px;"><i class="fa fa-edit"></i> Düzenle</button>
+                   ` :
+                `
+                     <input type="number" id="gradeInp_${s.id}" placeholder="Not Gir" style="border:1px solid #ccc; border-radius:4px; padding:4px; width:60px;" max="100" min="0">
+                     <button onclick="submitGrade(${s.id})" style="background:#284B63; color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Kaydet</button>
+                   `
+              }
+               </div>
+             </div>
+           `).join('');
+          } else {
+            el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Bekleyen cevap yok.</div>';
+          }
+        } catch (e) { }
+      }
 
-function toggleDarkMode() {
-  document.body.classList.toggle('dark-mode');
-  const isDark = document.body.classList.contains('dark-mode');
-  localStorage.setItem('eba_dark_mode', isDark);
-  // Update icon
-  const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
-  if(icon) {
-    icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-  }
-}
+      async function loadQuizResults() {
+        try {
+          const r = await fetch('/api/quizzes/results', { headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` } });
+          const d = await r.json();
+          const el = document.getElementById('quizResultsList');
+          if (d.success && d.results.length) {
+            el.innerHTML = d.results.map(r => `
+             <div style="border-bottom:1px solid #eee; padding:10px 0;">
+                <div style="display:flex; justify-content:space-between;">
+                   <strong>${r.student_name}</strong>
+                   <span style="font-size:10px; color:#aaa;">${new Date(r.takenAt).toLocaleDateString('tr-TR')}</span>
+                </div>
+                <div style="font-size:11px; color:#5c8ead;">Sınav: ${r.quiz_title}</div>
+                <div style="font-weight:700; color:#2ecc71; margin-top:3px;">Puan: ${r.score} / ${r.total_score}</div>
+                <div style="font-size:10px; color:#888;">D: ${r.correct_count} | Y: ${r.wrong_count}</div>
+             </div>
+           `).join('');
+          } else {
+            el.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">Henüz sınav sonucu yok.</div>';
+          }
+        } catch (e) { console.error("Quiz results error:", e); }
+      }
 
-// Apply saved theme
-if(localStorage.getItem('eba_dark_mode') === 'true') {
-  document.body.classList.add('dark-mode');
-  const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
-  if(icon) icon.className = 'fa-solid fa-sun';
-}
+      async function submitGrade(sub_id) {
+        const gv = document.getElementById('gradeInp_' + sub_id).value;
+        if (!gv) return alert('Lütfen not giriniz!');
+        try {
+          const r = await ebaFetch('/api/assignment-grade', {
+            method: 'PUT',
+            body: JSON.stringify({ sub_id, grade: gv, teacher_tc: cu.tc })
+          });
+          if (!r) return;
+          const d = await r.json();
+          if (d.success) {
+            alert('Not başarıyla kaydedildi.');
+            loadSubmissions();
+            loadNotifs();
+          }
+        } catch (e) { }
+      }
 
-init();
-</script>
-  <!-- SHOP MODAL -->
-  <div id="shopModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center;">
-    <div style="background:white; width:90%; max-width:600px; border-radius:16px; padding:24px; max-height:80vh; overflow-y:auto; position:relative;">
-      <h2 style="color:#284B63; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="fa fa-store"></i> EBA Market</span>
-        <i class="fa fa-times" style="cursor:pointer; font-size:20px; color:#ccc;" onclick="closeShopModal()"></i>
-      </h2>
-      <div id="shop-items-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:15px;"></div>
-    </div>
-  </div>
+      function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('eba_dark_mode', isDark);
+        // Update icon
+        const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
+        if (icon) {
+          icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+      }
 
-  <!-- AVATAR MODAL -->
-  <div id="avatarModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center;">
-    <div style="background:white; width:90%; max-width:500px; border-radius:16px; padding:24px; position:relative; text-align:center;">
-      <h2 style="color:#284B63; margin-bottom:20px;">
-        <span><i class="fa fa-user-ninja"></i> Avatarımı Özelleştir</span>
-        <i class="fa fa-times" style="cursor:pointer; font-size:20px; color:#ccc; float:right;" onclick="closeAvatarModal()"></i>
-      </h2>
-      <div id="avatar-preview-container" style="width:150px; height:150px; margin:0 auto 20px; background:#f4f7fa; border-radius:50%; position:relative; overflow:hidden; border:4px solid #4A748F;">
-        <i class="fa fa-user" style="font-size:80px; color:#ccc; margin-top:30px;"></i>
-        <img id="avatar-preview-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3; width:100%; height:100%; object-fit:cover;">
-        <img id="avatar-preview-hat" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); width:60px; z-index:3;">
-        <img id="avatar-preview-glasses" style="position:absolute; top:55px; left:50%; transform:translateX(-50%); width:50px; z-index:4;">
-        <img id="avatar-preview-pet" style="position:absolute; bottom:10px; right:10px; width:40px; z-index:5; display:none;">
+      // Apply saved theme
+      if (localStorage.getItem('eba_dark_mode') === 'true') {
+        document.body.classList.add('dark-mode');
+        const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
+        if (icon) icon.className = 'fa-solid fa-sun';
+      }
+
+      init();
+      loadTeacherRandevu();
+      renderCal();
+    </script>
+    <!-- SHOP MODAL -->
+    <div id="shopModal" class="modal"
+      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center;">
+      <div
+        style="background:white; width:90%; max-width:600px; border-radius:16px; padding:24px; max-height:80vh; overflow-y:auto; position:relative;">
+        <h2 style="color:#284B63; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <span><i class="fa fa-store"></i> EBA Market</span>
+          <i class="fa fa-times" style="cursor:pointer; font-size:20px; color:#ccc;" onclick="closeShopModal()"></i>
+        </h2>
+        <div id="shop-items-grid"
+          style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:15px;"></div>
       </div>
-      <div id="inventory-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;"></div>
-      <button onclick="saveAvatar()" style="background:#2ecc71; color:white; border:none; padding:10px 30px; border-radius:24px; font-weight:700; cursor:pointer;">Değişiklikleri Kaydet</button>
     </div>
-  </div>
 
-<script>
-    async function openShopModal() {
-      const res = await fetch('/api/shop/items');
-      const data = await res.json();
-      const grid = document.getElementById('shop-items-grid');
-      
-      // Mevcut envanteri al
-      const statusRes = await fetch('/api/user/gamification-status', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
-      const statusData = await statusRes.json();
-      window.userInventory = statusData.avatar_items || [];
-      
-      grid.innerHTML = data.items.map(item => `
+    <!-- AVATAR MODAL -->
+    <div id="avatarModal" class="modal"
+      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center;">
+      <div
+        style="background:white; width:90%; max-width:500px; border-radius:16px; padding:24px; position:relative; text-align:center;">
+        <h2 style="color:#284B63; margin-bottom:20px;">
+          <span><i class="fa fa-user-ninja"></i> Avatarımı Özelleştir</span>
+          <i class="fa fa-times" style="cursor:pointer; font-size:20px; color:#ccc; float:right;"
+            onclick="closeAvatarModal()"></i>
+        </h2>
+        <div id="avatar-preview-container"
+          style="width:150px; height:150px; margin:0 auto 20px; background:#f4f7fa; border-radius:50%; position:relative; overflow:hidden; border:4px solid #4A748F;">
+          <i class="fa fa-user" style="font-size:80px; color:#ccc; margin-top:30px;"></i>
+          <img id="avatar-preview-bg"
+            style="position:absolute; inset:0; z-index:1; opacity:0.3; width:100%; height:100%; object-fit:cover;">
+          <img id="avatar-preview-hat"
+            style="position:absolute; top:10px; left:50%; transform:translateX(-50%); width:60px; z-index:3;">
+          <img id="avatar-preview-glasses"
+            style="position:absolute; top:55px; left:50%; transform:translateX(-50%); width:50px; z-index:4;">
+          <img id="avatar-preview-pet"
+            style="position:absolute; bottom:10px; right:10px; width:40px; z-index:5; display:none;">
+        </div>
+        <div id="inventory-list"
+          style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:20px;"></div>
+        <button onclick="saveAvatar()"
+          style="background:#2ecc71; color:white; border:none; padding:10px 30px; border-radius:24px; font-weight:700; cursor:pointer;">Değişiklikleri
+          Kaydet</button>
+      </div>
+    </div>
+
+    <script>
+      async function openShopModal() {
+        const res = await fetch('/api/shop/items');
+        const data = await res.json();
+        const grid = document.getElementById('shop-items-grid');
+
+        // Mevcut envanteri al
+        const statusRes = await fetch('/api/user/gamification-status', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        const statusData = await statusRes.json();
+        window.userInventory = statusData.avatar_items || [];
+
+        grid.innerHTML = data.items.map(item => `
         <div style="background:#f8fafc; border:1px solid #eee; border-radius:12px; padding:12px; text-align:center;">
           <img src="${item.img}" style="width:50px; height:50px; margin-bottom:8px; object-fit:contain;">
           <div style="font-weight:700; font-size:13px; color:#284B63;">${item.name}</div>
@@ -1112,202 +1700,164 @@ init();
           </button>
         </div>
       `).join('');
-      document.getElementById('shopModal').style.display = 'flex';
-    }
+        document.getElementById('shopModal').style.display = 'flex';
+      }
 
-    function showToast(msg, type = 'info') {
-      let toast = document.getElementById('toast-notif');
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'toast-notif';
-        toast.style.cssText = `
+      function showToast(msg, type = 'info') {
+        let toast = document.getElementById('toast-notif');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'toast-notif';
+          toast.style.cssText = `
           position:fixed; bottom:24px; right:24px; z-index:9999;
           padding:14px 22px; border-radius:12px; font-size:14px; font-weight:600;
           color:white; box-shadow:0 4px 20px rgba(0,0,0,0.2);
           transition:all 0.4s; opacity:0; transform:translateY(20px);
           max-width:320px; line-height:1.4;
         `;
-        document.body.appendChild(toast);
+          document.body.appendChild(toast);
+        }
+        toast.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#4A748F';
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(20px)';
+        }, 3000);
       }
-      toast.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#4A748F';
-      toast.textContent = msg;
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(20px)';
-      }, 3000);
-    }
 
-    async function loadGamification(u) {
-      try {
-        const res = await fetch('/api/user/gamification-status', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+      async function loadGamification(u) {
+        try {
+          const res = await fetch('/api/user/gamification-status', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+          });
+          const data = await res.json();
+          if (data.success) {
+            window.userInventory = data.avatar_items || [];
+            window.selectedAvatar = data.selected_avatar || {};
+            const pointsEl = document.getElementById('user-points');
+            const coinsEl = document.getElementById('user-coins');
+            const streakEl = document.getElementById('user-streak');
+            if (pointsEl) pointsEl.textContent = data.points || 0;
+            if (coinsEl) coinsEl.textContent = data.coins || 0;
+            if (streakEl) streakEl.textContent = data.streak || 0;
+          }
+        } catch (e) { }
+      }
+
+      async function buyItem(id, price) {
+        const res = await fetch('/api/shop/buy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+          body: JSON.stringify({ itemId: id, price })
         });
         const data = await res.json();
         if (data.success) {
-          window.userInventory = data.avatar_items || [];
-          window.selectedAvatar = data.selected_avatar || {};
-          const pointsEl = document.getElementById('user-points');
-          const coinsEl = document.getElementById('user-coins');
-          const streakEl = document.getElementById('user-streak');
-          if (pointsEl) pointsEl.textContent = data.points || 0;
-          if (coinsEl) coinsEl.textContent = data.coins || 0;
-          if (streakEl) streakEl.textContent = data.streak || 0;
+          showToast(data.message, 'success');
+          loadGamification(currentUser);
+          closeShopModal();
+        } else {
+          showToast(data.message, 'error');
         }
-      } catch(e) {}
-    }
-
-    async function buyItem(id, price) {
-      const res = await fetch('/api/shop/buy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-        body: JSON.stringify({ itemId: id, price })
-      });
-      const data = await res.json();
-      if(data.success) {
-        showToast(data.message, 'success');
-        loadGamification(currentUser);
-        closeShopModal();
-      } else {
-        showToast(data.message, 'error');
       }
-    }
 
-    function closeShopModal() { document.getElementById('shopModal').style.display = 'none'; }
+      function closeShopModal() { document.getElementById('shopModal').style.display = 'none'; }
 
-    async function openAvatarModal() {
-      const list = document.getElementById('inventory-list');
-      
-      const statusRes = await fetch('/api/user/gamification-status', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
-      const statusData = await statusRes.json();
-      window.userInventory = statusData.avatar_items || [];
-      window.selectedAvatar = statusData.selected_avatar || {};
+      async function openAvatarModal() {
+        const list = document.getElementById('inventory-list');
 
-      if(!window.userInventory || window.userInventory.length === 0) {
-        list.innerHTML = '<p style="color:#aaa; font-size:12px;">Henüz hiç eşyan yok. Marketten alışveriş yapabilirsin!</p>';
-      } else {
-        const res = await fetch('/api/shop/items');
-        const data = await res.json();
-        const myItems = data.items.filter(it => window.userInventory.includes(it.id));
-        list.innerHTML = myItems.map(it => `
+        const statusRes = await fetch('/api/user/gamification-status', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        const statusData = await statusRes.json();
+        window.userInventory = statusData.avatar_items || [];
+        window.selectedAvatar = statusData.selected_avatar || {};
+
+        if (!window.userInventory || window.userInventory.length === 0) {
+          list.innerHTML = '<p style="color:#aaa; font-size:12px;">Henüz hiç eşyan yok. Marketten alışveriş yapabilirsin!</p>';
+        } else {
+          const res = await fetch('/api/shop/items');
+          const data = await res.json();
+          const myItems = data.items.filter(it => window.userInventory.includes(it.id));
+          list.innerHTML = myItems.map(it => `
           <div onclick="previewAvatarItem('${it.category}', '${it.img}')" style="width:50px; height:50px; border:2px solid #eee; border-radius:8px; cursor:pointer; padding:5px; background:white;">
             <img src="${it.img}" style="width:100%; height:100%; object-fit:contain;">
           </div>
         `).join('');
+        }
+
+        // Mevcut avatarı önizlemede göster
+        applyPreviewAvatar(window.selectedAvatar);
+        document.getElementById('avatarModal').style.display = 'flex';
       }
-      
-      // Mevcut avatarı önizlemede göster
-      applyPreviewAvatar(window.selectedAvatar);
-      document.getElementById('avatarModal').style.display = 'flex';
-    }
 
-    function previewAvatarItem(cat, img) {
-      if(!window.tempAvatar) window.tempAvatar = {...window.selectedAvatar};
-      window.tempAvatar[cat] = img;
-      const previewImg = document.getElementById('avatar-preview-' + (cat === 'background' ? 'bg' : cat));
-      if(previewImg) {
-        previewImg.src = img;
-        previewImg.style.display = 'block';
+      function previewAvatarItem(cat, img) {
+        if (!window.tempAvatar) window.tempAvatar = { ...window.selectedAvatar };
+        window.tempAvatar[cat] = img;
+        const previewImg = document.getElementById('avatar-preview-' + (cat === 'background' ? 'bg' : cat));
+        if (previewImg) {
+          previewImg.src = img;
+          previewImg.style.display = 'block';
+        }
       }
-    }
 
-    function applyPreviewAvatar(av) {
-      if(!av) return;
-      const pHat = document.getElementById('avatar-preview-hat');
-      const pGlasses = document.getElementById('avatar-preview-glasses');
-      const pPet = document.getElementById('avatar-preview-pet');
-      const pBg = document.getElementById('avatar-preview-bg');
-      if(av.hat) { pHat.src = av.hat; pHat.style.display = 'block'; }
-      if(av.glasses) { pGlasses.src = av.glasses; pGlasses.style.display = 'block'; }
-      if(av.pet) { pPet.src = av.pet; pPet.style.display = 'block'; }
-      if(av.background) { pBg.src = av.background; pBg.style.display = 'block'; }
-    }
+      function applyPreviewAvatar(av) {
+        if (!av) return;
+        const pHat = document.getElementById('avatar-preview-hat');
+        const pGlasses = document.getElementById('avatar-preview-glasses');
+        const pPet = document.getElementById('avatar-preview-pet');
+        const pBg = document.getElementById('avatar-preview-bg');
+        if (av.hat) { pHat.src = av.hat; pHat.style.display = 'block'; }
+        if (av.glasses) { pGlasses.src = av.glasses; pGlasses.style.display = 'block'; }
+        if (av.pet) { pPet.src = av.pet; pPet.style.display = 'block'; }
+        if (av.background) { pBg.src = av.background; pBg.style.display = 'block'; }
+      }
 
-    async function saveAvatar() {
-      const res = await fetch('/api/user/update-avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-        body: JSON.stringify({ avatar: window.tempAvatar || window.selectedAvatar })
+      async function saveAvatar() {
+        const res = await fetch('/api/user/update-avatar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+          body: JSON.stringify({ avatar: window.tempAvatar || window.selectedAvatar })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showToast('Avatarın güncellendi!', 'success');
+          window.selectedAvatar = { ...(window.tempAvatar || window.selectedAvatar) };
+          if (typeof applySidebarAvatar === 'function') applySidebarAvatar(window.selectedAvatar);
+          closeAvatarModal();
+        }
+      }
+
+      function closeAvatarModal() { document.getElementById('avatarModal').style.display = 'none'; }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const modal = urlParams.get('modal');
+        if (modal === 'shop') {
+          setTimeout(openShopModal, 500);
+        } else if (modal === 'avatar') {
+          setTimeout(openAvatarModal, 500);
+        }
+
+        // Anında veri yenileme (Socket.io)
+        if (typeof setupRealtimeUpdate === 'function' && typeof init === 'function') {
+          setupRealtimeUpdate(init);
+
+
+
+        }
+
+        // URL'deki modal parametresini temizle
+        if (modal) {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        }
       });
-      const d = await res.json();
-      if(d.success) {
-        showToast('Avatarın güncellendi!', 'success');
-        window.selectedAvatar = {...(window.tempAvatar || window.selectedAvatar)};
-        if(typeof applySidebarAvatar === 'function') applySidebarAvatar(window.selectedAvatar);
-        closeAvatarModal();
-      }
-    }
+    </script>
 
-    function closeAvatarModal() { document.getElementById('avatarModal').style.display = 'none'; }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const modal = urlParams.get('modal');
-      if (modal === 'shop') {
-        setTimeout(openShopModal, 500);
-      } else if (modal === 'avatar') {
-        setTimeout(openAvatarModal, 500);
-      }
-
-      // Anında veri yenileme (Socket.io)
-    if (typeof setupRealtimeUpdate === 'function' && typeof init === 'function') {
-      setupRealtimeUpdate(init);
-
-
-
-    }
-
-      // URL'deki modal parametresini temizle
-      if (modal) {
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
-      }
-    });
-</script>
-
-  <script src="fix-notifications.js"></script>
-  <script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    <script src="fix-notifications.js"></script>
+  <script> setTimeout(() => { if(typeof renderCal === "function") renderCal(); }, 1000); </script>
 </body>
+
 </html>

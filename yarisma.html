@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <title>1v1 Yarışma - EBA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 36px;
+      width: 100%;
+      max-width: 620px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4)
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .subtitle {
+      text-align: center;
+      opacity: 0.6;
+      font-size: 14px;
+      margin-bottom: 28px
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px
+    }
+
+    select,
+    button {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%
+    }
+
+    select {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2)
+    }
+
+    select option {
+      background: #302b63;
+      color: white
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 14px;
+      border-radius: 14px;
+      transition: 0.2s
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4)
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none
+    }
+
+    /* Bekleme */
+    #waitScreen {
+      display: none;
+      text-align: center
+    }
+
+    .spinner {
+      width: 70px;
+      height: 70px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #f59e0b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .vs-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 16px;
+      margin: 10px 0
+    }
+
+    /* Oyun */
+    #gameScreen {
+      display: none
+    }
+
+    .players-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px
+    }
+
+    .player-info {
+      text-align: center
+    }
+
+    .player-name {
+      font-weight: 800;
+      font-size: 15px
+    }
+
+    .player-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: #f59e0b
+    }
+
+    .timer-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #ef4444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: #ef4444;
+      animation: pulse 1s infinite
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1)
+      }
+
+      50% {
+        transform: scale(1.05)
+      }
+    }
+
+    .progress {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      margin-bottom: 20px
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      border-radius: 3px;
+      transition: width 0.3s
+    }
+
+    .question-box {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.6
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    .opt-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.2s;
+      text-align: left
+    }
+
+    .opt-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4)
+    }
+
+    .opt-btn.correct {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #10b981
+    }
+
+    .opt-btn.wrong {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #ef4444
+    }
+
+    .opt-btn:disabled {
+      cursor: not-allowed
+    }
+
+    /* Sonuç */
+    #resultScreen {
+      display: none;
+      text-align: center
+    }
+
+    .result-emoji {
+      font-size: 80px;
+      margin-bottom: 16px
+    }
+
+    .result-title {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 10px
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 20px 0
+    }
+
+    .score-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px 28px;
+      text-align: center
+    }
+
+    .score-num {
+      font-size: 36px;
+      font-weight: 900;
+      color: #f59e0b
+    }
+
+    .score-lbl {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 4px
+    }
+
+    /* Liderlik */
+    #leaderScreen {
+      display: none;
+      margin-top: 24px
+    }
+
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px
+    }
+
+    .lb-rank {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      flex-shrink: 0
+    }
+  </style>
+</head>
+
+<body>
+  <div style="position:absolute;top:16px;left:16px"><a href="ogrenci-panel.html"
+      style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;"><i class="fa fa-arrow-left"></i> Ana
+      Sayfa</a></div>
+
+  <div class="card">
+    <!-- SETUP -->
+    <div id="setupScreen">
+      <h1>⚔️ 1v1 Yarışma</h1>
+      <p class="subtitle">Rastgele bir rakiple eşleş, 5 soruda üstünlüğünü kanıtla!</p>
+      <div class="select-row">
+        <select id="subjectSel">
+          <option value="Karışık">🎲 Karışık</option>
+          <option value="HTML">🌐 HTML</option>
+          <option value="CSS">🎨 CSS</option>
+          <option value="JS">⚡ JavaScript</option>
+          <option value="CSharp">🔷 C#</option>
+          <option value="Cisco">📡 Cisco</option>
+          <option value="Python">🐍 Python</option>
+          <option value="Kriptoloji">🔐 Kriptoloji</option>
+        </select>
+        <select id="difficultySel">
+          <option value="Kolay">🟢 Kolay</option>
+          <option value="Orta">🟡 Orta</option>
+          <option value="Zor">🔴 Zor</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="joinBtn" onclick="joinQueue()"><i class="fa fa-bolt"></i> Eşleşme Bul</button>
+      <div style="margin-top:20px;text-align:center"><button
+          style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;"
+          onclick="loadLeaderboard()"><i class="fa fa-trophy"></i> Liderlik Tablosu</button></div>
+      <div id="leaderScreen"></div>
+    </div>
+
+    <!-- BEKLEME -->
+    <div id="waitScreen">
+      <div class="spinner"></div>
+      <p style="font-size:18px;font-weight:700;margin-bottom:8px;">Rakip Aranıyor...</p>
+      <p style="opacity:0.6;font-size:13px;margin-bottom:16px;">Eşleşme bekleniyor</p>
+      <div class="vs-badge">VS</div>
+      <p style="font-size:13px;opacity:0.5;margin-top:14px;">Rakip bulunana kadar AI ile oynayabilirsiniz</p>
+      <button
+        style="margin-top:16px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px 24px;border-radius:20px;cursor:pointer;font-size:13px;"
+        onclick="startSolo()">🤖 AI ile Oyna</button>
+      <br><button
+        style="margin-top:10px;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:12px;"
+        onclick="cancelQueue()">İptal</button>
+    </div>
+
+    <!-- OYUN -->
+    <div id="gameScreen">
+      <div class="players-bar">
+        <div class="player-info">
+          <div class="player-score" id="p1score">0</div>
+          <div class="player-name" id="p1name">Sen</div>
+        </div>
+        <div class="timer-circle" id="timer">10</div>
+        <div class="player-info">
+          <div class="player-score" id="p2score">0</div>
+          <div class="player-name" id="p2name">Rakip</div>
+        </div>
+      </div>
+      <div class="progress">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div style="text-align:center;font-size:12px;opacity:0.5;margin-bottom:12px">Soru <span id="qNum">1</span> / 5
+      </div>
+      <div class="question-box" id="questionText">Yükleniyor...</div>
+      <div class="options" id="optionsGrid"></div>
+    </div>
+
+    <!-- SONUÇ -->
+    <div id="resultScreen">
+      <div class="result-emoji" id="resultEmoji">🏆</div>
+      <div class="result-title" id="resultTitle">Tebrikler!</div>
+      <div id="resultSubtitle" style="opacity:0.7;font-size:14px;margin-bottom:16px;"></div>
+      <div class="score-row">
+        <div class="score-box">
+          <div class="score-num" id="finalMyScore">0</div>
+          <div class="score-lbl">Senin Puanın</div>
+        </div>
+        <div class="score-box">
+          <div class="score-num" id="finalOppScore">0</div>
+          <div class="score-lbl">Rakip Puanı</div>
+        </div>
+      </div>
+      <div id="pointsEarned"
+        style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;margin:10px 0;font-size:14px;">
+      </div>
+      <button class="btn-primary" onclick="resetGame()" style="margin-top:10px;"><i class="fa fa-redo"></i> Tekrar
+        Oyna</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="auth-utils.js"></script>
+  <script>
+    const user = requireAuth();
+    const socket = io();
+    let myScore = 0, oppScore = 0, currentQ = 0, timer = null, timerVal = 10;
+    let questions = [], subject = 'Karışık', difficulty = 'Kolay';
+    let opponentName = 'AI Rakip', opponentTc = 'ai_bot';
+    let matchMode = 'solo';
+
+    // Soru havuzu
+    const questionBank = {
+      HTML: [
+        { q: 'HTML açılımı nedir?', opts: ['Hyper Text Markup Language', 'Home Tool Markup Language', 'Hyperlinks and Text Markup Language', 'Hyper Tool Multi Language'], ans: 0 },
+        { q: 'En büyük başlık etiketi hangisidir?', opts: ['<heading>', '<h6>', '<h1>', '<head>'], ans: 2 },
+        { q: 'Satır atlamak için hangi etiket kullanılır?', opts: ['<br>', '<break>', '<lb>', '<newline>'], ans: 0 },
+        { q: 'HTML sayfalarında arkaplan rengini tanımlamak için hangi etiket özelliği kullanılır?', opts: ['background', 'bgcolor', 'color', 'bodycolor'], ans: 1 },
+        { q: 'Bir bağlantı (link) oluşturmak için doğru HTML etiketi hangisidir?', opts: ['<a>', '<link>', '<href>', '<url>'], ans: 0 },
+        { q: 'Sıralı liste oluşturmak için hangi etiket kullanılır?', opts: ['<ul>', '<list>', '<ol>', '<li>'], ans: 2 },
+        { q: 'Tablo hücresi oluşturmak için hangi etiket kullanılır?', opts: ['<table>', '<tr>', '<td>', '<th>'], ans: 2 }
+      ],
+      CSS: [
+        { q: 'CSS açılımı nedir?', opts: ['Colorful Style Sheets', 'Cascading Style Sheets', 'Computer Style Sheets', 'Creative Style Sheets'], ans: 1 },
+        { q: 'HTML dosyasında harici bir CSS dosyası nasıl eklenir?', opts: ['<stylesheet>', '<style src="...">', '<css>', '<link rel="stylesheet">'], ans: 3 },
+        { q: 'Tüm p etiketlerinin yazı rengini mavi yapmak için hangi CSS kullanılır?', opts: ['p {color: blue;}', 'p {text-color: blue;}', 'all.p {color: blue;}', 'p.all {color: blue;}'], ans: 0 },
+        { q: 'Arkaplan rengini değiştirmek için hangi CSS özelliği kullanılır?', opts: ['color', 'bg-color', 'background-color', 'background'], ans: 2 },
+        { q: 'Metin kalınlığını (bold) belirleyen özellik hangisidir?', opts: ['font-style', 'font-weight', 'text-bold', 'text-weight'], ans: 1 },
+        { q: 'Tüm <p> öğelerinin kenarlıklarını (margin) sıfırlayan CSS kodu hangisidir?', opts: ['p {padding: 0;}', 'p {margin: 0;}', 'p {border: 0;}', 'p {spacing: 0;}'], ans: 1 },
+        { q: 'Bir öğeyi gizlemek için hangisi kullanılır?', opts: ['display: none;', 'visibility: hidden;', 'opacity: 0;', 'Hepsi'], ans: 3 }
+      ],
+      JS: [
+        { q: 'Ekrana "Hello World" yazdıran JavaScript komutu hangisidir?', opts: ['document.write("Hello World");', 'print("Hello World");', 'echo("Hello World");', 'console.print("Hello World");'], ans: 0 },
+        { q: 'JavaScript kodu HTML\'de hangi etiketler arasına yazılır?', opts: ['<js>', '<script>', '<javascript>', '<code>'], ans: 1 },
+        { q: 'Uyarı kutusu (alert) açmak için hangi fonksiyon kullanılır?', opts: ['msgBox("...")', 'alertBox("...")', 'alert("...")', 'msg("...")'], ans: 2 },
+        { q: 'JavaScript\'te değişken tanımlamak için aşağıdakilerden hangisi kullanılır?', opts: ['var', 'let', 'const', 'Hepsi'], ans: 3 },
+        { q: '"a" değişkeninin türünü öğrenmek için hangi operatör kullanılır?', opts: ['type', 'typeof', 'instanceof', 'class'], ans: 1 },
+        { q: 'Dizi (array) nasıl oluşturulur?', opts: ['var arr = (1, 2, 3)', 'var arr = [1, 2, 3]', 'var arr = {1, 2, 3}', 'var arr = "1, 2, 3"'], ans: 1 },
+        { q: 'JavaScript bir yorumlanmış dil midir derlenmiş dil midir?', opts: ['Yorumlanmış (Interpreted)', 'Derlenmiş (Compiled)', 'İkisi de', 'Hiçbiri'], ans: 0 }
+      ],
+      CSharp: [
+        { q: 'C# hangi platform için geliştirilmiştir?', opts: ['Java Platform', '.NET Framework', 'Node.js', 'Android'], ans: 1 },
+        { q: 'Ekrana yazı yazdırmak için hangi metod kullanılır?', opts: ['Console.WriteLine()', 'System.out.println()', 'printf()', 'print()'], ans: 0 },
+        { q: 'C#\'ta kalıtım (inheritance) hangi sembolle gösterilir?', opts: ['extends', ':', '->', 'inherits'], ans: 1 },
+        { q: 'Aşağıdakilerden hangisi C#\'ta değer tipli (value type) bir değişkendir?', opts: ['string', 'object', 'int', 'class'], ans: 2 },
+        { q: 'Yalnızca sınıf içinden erişilebilen erişim belirleyicisi (access modifier) hangisidir?', opts: ['public', 'private', 'protected', 'internal'], ans: 1 },
+        { q: 'Metotların geri dönüş değeri yoksa hangi anahtar kelime kullanılır?', opts: ['null', 'empty', 'void', 'none'], ans: 2 },
+        { q: 'Hata yakalama (exception handling) blokları hangisidir?', opts: ['try-catch', 'if-else', 'switch-case', 'for-while'], ans: 0 }
+      ],
+      Cisco: [
+        { q: 'Ağ cihazlarını yapılandırmak için kullanılan ana işletim sistemi nedir?', opts: ['Windows Server', 'Linux', 'Cisco IOS', 'macOS'], ans: 2 },
+        { q: 'Switch (Anahtar) hangi OSI katmanında çalışır?', opts: ['Fiziksel', 'Veri Bağlantısı (Data Link)', 'Ağ (Network)', 'Ulaşım (Transport)'], ans: 1 },
+        { q: 'Yönlendirici (Router) hangi OSI katmanında çalışır?', opts: ['Veri Bağlantısı', 'Ağ (Network)', 'Uygulama', 'Fiziksel'], ans: 1 },
+        { q: 'Varsayılan ağ geçidi (Default Gateway) ne işe yarar?', opts: ['Yerel ağları internete/diğer ağlara bağlar', 'IP dağıtır', 'Domain isimlerini çözer', 'Switch arayüzüdür'], ans: 0 },
+        { q: 'Aşağıdakilerden hangisi bir özel (private) IP adresidir?', opts: ['8.8.8.8', '192.168.1.5', '17.5.5.5', '200.200.200.200'], ans: 1 },
+        { q: 'VLAN (Sanal LAN) ne sağlar?', opts: ['Ağı mantıksal olarak böler', 'Ağ hızını artırır', 'Kabloları uzatır', 'Wi-Fi yayını yapar'], ans: 0 },
+        { q: 'IP adresi ile MAC adresi eşleşmesini hangi protokol yapar?', opts: ['DNS', 'ARP', 'DHCP', 'HTTP'], ans: 1 }
+      ],
+      Python: [
+        { q: 'Python\'da yorum satırı hangi karakterle başlar?', opts: ['//', '/*', '#', '<!--'] ,ans : 2},
+        { q: 'Ekrana çıktı vermek için hangi fonksiyon kullanılır?', opts: ['print()', 'echo', 'console.log()', 'write()'], ans: 0 },
+        { q: 'Hangi veri tipi değiştirilemez (immutable)?', opts: ['List', 'Dictionary', 'Set', 'Tuple'], ans: 3 },
+        { q: 'Döngü oluşturmak için hangisi kullanılır?', opts: ['for', 'while', 'İkisi de', 'Hiçbiri'], ans: 2 },
+        { q: 'Python\'da bir fonksiyon nasıl tanımlanır?', opts: ['function myFunc()', 'def myFunc():', 'func myFunc()', 'create myFunc()'], ans: 1 },
+        { q: 'Liste (list) elemanları hangi parantezle gösterilir?', opts: ['{}', '()', '[]', '<>'], ans: 2 },
+        { q: 'Hangi kütüphane Python\'da veri analizi için çok popülerdir?', opts: ['Django', 'Flask', 'Pandas', 'Pygame'], ans: 2 }
+      ],
+      Kriptoloji: [
+        { q: 'Aşağıdakilerden hangisi simetrik bir şifreleme algoritmasıdır?', opts: ['RSA', 'AES', 'ECC', 'DSA'], ans: 1 },
+        { q: 'Şifrelenmiş bir metni okunabilir hale getirme işlemine ne denir?', opts: ['Encryption', 'Hashing', 'Decryption', 'Encoding'], ans: 2 },
+        { q: 'Aşağıdakilerden hangisi bir özet (hash) algoritmasıdır?', opts: ['AES', 'RSA', 'SHA-256', 'DES'], ans: 2 },
+        { q: 'Public (Açık) anahtar ne için kullanılır?', opts: ['Veriyi şifrelemek', 'Veriyi çözmek', 'Silmek', 'Taşımak'], ans: 0 },
+        { q: 'Steganografi nedir?', opts: ['Güçlü bir şifreleme algoritması', 'Veriyi başka bir verinin (örn: resim) içine gizleme bilimi', 'Rastgele sayı üretme', 'Ağ güvenliği'], ans: 1 },
+        { q: 'Dijital imzalar hangi amacı taşır?', opts: ['Verinin gizliliği', 'Verinin kaynağını (kimliğini) ve bütünlüğünü doğrulama', 'Veri boyutunu küçültme', 'Veriyi hızlı aktarma'], ans: 1 },
+        { q: 'İki taraflı anahtar değişimini güvenli hale getiren protokol hangisidir?', opts: ['Diffie-Hellman', 'Caesar Cipher', 'Vigenere', 'MD5'], ans: 0 }
+      ],
+      Karışık: []
+    };
+    // Karışık için tüm soruları birleştir
+    questionBank.Karışık = [...questionBank.HTML, ...questionBank.CSS, ...questionBank.JS, ...questionBank.CSharp, ...questionBank.Cisco, ...questionBank.Python, ...questionBank.Kriptoloji];
+
+    function getQuestions(subj, diff) {
+      let pool = questionBank[subj] || questionBank.Karışık;
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, 5).map(q => JSON.parse(JSON.stringify(q)));
+    }
+
+    function show(id) {
+      ['setupScreen', 'waitScreen', 'gameScreen', 'resultScreen'].forEach(s => document.getElementById(s).style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function joinQueue() {
+      subject = document.getElementById('subjectSel').value;
+      difficulty = document.getElementById('difficultySel').value;
+      document.getElementById('joinBtn').disabled = true;
+      show('waitScreen');
+      socket.emit('join_competition', { tc: user.tc, name: user.name, subject, difficulty });
+
+      // 5 saniye bekle, rakip yoksa AI ile başlat
+      setTimeout(() => { if (document.getElementById('waitScreen').style.display !== 'none') startSolo(); }, 30000);
+    }
+
+    function cancelQueue() {
+      socket.emit('leave_competition');
+      document.getElementById('joinBtn').disabled = false;
+      show('setupScreen');
+    }
+
+    function startSolo() {
+      matchMode = 'solo';
+      document.getElementById('p1name').textContent = user.name.split(' ')[0];
+      document.getElementById('p2name').textContent = '🤖 AI Rakip';
+      opponentName = 'AI Rakip'; opponentTc = 'ai_bot';
+      myScore = 0; oppScore = 0;
+      document.getElementById('p1score').textContent = 0;
+      document.getElementById('p2score').textContent = 0;
+      questions = getQuestions(subject, difficulty);
+      currentQ = 0;
+      show('gameScreen');
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (currentQ >= 5) { endGame(); return; }
+      const q = questions[currentQ];
+
+      if (!q.displayOpts) {
+        let optsWithIndex = q.opts.map((opt, i) => ({ text: opt, isCorrect: i === q.ans }));
+        optsWithIndex.sort(() => Math.random() - 0.5);
+        q.displayOpts = optsWithIndex.map(o => o.text);
+        q.displayAns = optsWithIndex.findIndex(o => o.isCorrect);
+      }
+
+      document.getElementById('qNum').textContent = currentQ + 1;
+      document.getElementById('progressFill').style.width = (currentQ / 5 * 100) + '%';
+      document.getElementById('questionText').textContent = q.q;
+      const grid = document.getElementById('optionsGrid');
+      grid.innerHTML = q.displayOpts.map((o, i) => `<button class="opt-btn" onclick="answer(${i})" id="opt${i}">${String.fromCharCode(65 + i)}) ${o || 'Cevap'}</button>`).join('');
+
+      timerVal = 10;
+      document.getElementById('timer').textContent = 10;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timerVal--;
+        document.getElementById('timer').textContent = timerVal;
+        if (timerVal <= 0) { clearInterval(timer); revealAnswer(-1); }
+      }, 1000);
+
+      // AI rastgele yanıt (2-8 sn)
+      if (matchMode === 'solo') {
+        const delay = 2000 + Math.random() * 6000;
+        setTimeout(() => {
+          if (document.getElementById(`opt0`) && !document.getElementById(`opt0`).disabled) {
+            const actualAns = questions[currentQ].displayAns !== undefined ? questions[currentQ].displayAns : questions[currentQ].ans; const aiAns = Math.random() < (difficulty === 'Kolay' ? 0.5 : difficulty === 'Orta' ? 0.65 : 0.8) ? actualAns : Math.floor(Math.random() * 4);
+            if (aiAns === actualAns) { oppScore++; document.getElementById('p2score').textContent = oppScore; }
+          }
+        }, delay);
+      }
+    }
+
+    function answer(idx) {
+      clearInterval(timer);
+      revealAnswer(idx);
+    }
+
+    function revealAnswer(selected) {
+      const q = questions[currentQ];
+      const btns = document.querySelectorAll('.opt-btn');
+      btns.forEach(b => b.disabled = true);
+      btns.forEach((b, i) => {
+        if (i === (q.displayAns !== undefined ? q.displayAns : q.ans)) b.classList.add('correct');
+        else if (i === selected) b.classList.add('wrong');
+      });
+      if (selected === (q.displayAns !== undefined ? q.displayAns : q.ans)) { myScore++; document.getElementById('p1score').textContent = myScore; }
+      setTimeout(() => { currentQ++; showQuestion(); }, 1500);
+    }
+
+    function endGame() {
+      const won = myScore > oppScore;
+      document.getElementById('resultEmoji').textContent = won ? '🏆' : myScore === oppScore ? '🤝' : '😔';
+      document.getElementById('resultTitle').textContent = won ? 'Tebrikler, Kazandın!' : myScore === oppScore ? 'Berabere!' : 'Kaybettin!';
+      document.getElementById('resultSubtitle').textContent = `${subject} • ${difficulty}`;
+      document.getElementById('finalMyScore').textContent = myScore;
+      document.getElementById('finalOppScore').textContent = oppScore;
+
+      const pts = won ? myScore * 10 : 0;
+      document.getElementById('pointsEarned').innerHTML = won ? `🏆 <strong>+${pts} Puan</strong> kazandınız!` : 'Daha çok çalışarak tekrar dene!';
+
+      if (won && pts > 0) {
+        fetch('/api/competition/result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+          body: JSON.stringify({ winner_tc: user.tc, winner_name: user.name, loser_tc: opponentTc, loser_name: opponentName, subject, difficulty, winner_score: myScore, loser_score: oppScore })
+        }).catch(() => { });
+      }
+      show('resultScreen');
+    }
+
+    function resetGame() {
+      myScore = 0; oppScore = 0; currentQ = 0;
+      document.getElementById('joinBtn').disabled = false;
+      show('setupScreen');
+    }
+
+    async function loadLeaderboard() {
+      const lb = document.getElementById('leaderScreen');
+      lb.style.display = 'block';
+      lb.innerHTML = '<div style="text-align:center;padding:14px;opacity:0.5;">Yükleniyor...</div>';
+      try {
+        const url = user.school ? '/api/competition/leaderboard?school=' + encodeURIComponent(user.school) : '/api/competition/leaderboard';
+        const r = await fetch(url);
+        const d = await r.json();
+        if (!d.leaderboard || !d.leaderboard.length) { lb.innerHTML = '<div style="text-align:center;padding:14px;opacity:0.5;">Henüz yarışma sonucu yok.</div>'; return; }
+        const medals = ['🥇', '🥈', '🥉'];
+        lb.innerHTML = `<div style="font-weight:800;margin-bottom:12px;font-size:15px;">🏆 Yarışma Şampiyonları</div>` + d.leaderboard.map((e, i) => `
+      <div class="lb-row">
+        <div class="lb-rank" style="background:${i < 3 ? ['#f59e0b', '#94a3b8', '#d97706'][i] : 'rgba(255,255,255,0.1)'}">${medals[i] || i + 1}</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:13px">${e.name}</div><div style="font-size:11px;opacity:0.5">${e.wins || 0} galibiyet</div></div>
+        <div style="font-weight:900;color:#f59e0b">${e.total_points || 0} puan</div>
+      </div>`).join('');
+      } catch (e) { lb.innerHTML = '<div style="text-align:center;padding:14px;opacity:0.5;">Yüklenemedi.</div>'; }
+    }
+
+    // Socket eşleşme
+    socket.on('competition_matched', (data) => {
+      matchMode = 'pvp';
+      opponentName = data.opponentName;
+      opponentTc = data.opponentTc;
+      document.getElementById('p1name').textContent = user.name.split(' ')[0];
+      document.getElementById('p2name').textContent = data.opponentName.split(' ')[0];
+      myScore = 0; oppScore = 0;
+      questions = getQuestions(subject, difficulty);
+      currentQ = 0;
+      show('gameScreen');
+      showQuestion();
+    });
+  </script>
+</body>
+
+</html>

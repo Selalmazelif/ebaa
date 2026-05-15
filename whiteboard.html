@@ -5,56 +5,155 @@
   <title>EBA Etkileşimli Akıllı Tahta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body { margin: 0; overflow: hidden; background: #e0e5ec; font-family: 'Inter', sans-serif; }
-    #toolbar {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      display: flex; gap: 15px; align-items: center; z-index: 10;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; }
+
+    /* ─── SOL PANEL (Katılımcılar) ──────────────────── */
+    #side-panel {
+      width: 220px; min-width: 220px; background: #16213e; display: flex; flex-direction: column;
+      border-right: 1px solid #0f3460; transition: width 0.3s; z-index: 10;
     }
-    .tool-btn {
-      width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; font-size: 16px;
-      color: #555; background: #f0f0f0; transition: 0.2s;
+    #side-panel.collapsed { width: 0; min-width: 0; overflow: hidden; }
+    .side-header {
+      padding: 14px 16px; background: #0f3460; color: #e2e8f0;
+      font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px;
     }
-    .tool-btn:hover { background: #e0e0e0; }
-    .tool-btn.active { background: #1C98C3; color: white; }
-    .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-    canvas { display: block; background: #ffffff; cursor: crosshair; }
-    
+    .participant-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .participant-item {
+      background: #1e2d4a; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s;
+      border: 1.5px solid transparent;
+    }
+    .participant-item:hover { background: #243456; }
+    .participant-item.has-hand { border-color: #f59e0b; background: #2d2a1a; }
+    .participant-item.has-permission { border-color: #10b981; background: #1a2d26; }
+    .participant-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #4A748F, #284B63);
+      display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .participant-name { font-size: 12px; color: #e2e8f0; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hand-badge { background: #f59e0b; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+    .perm-badge { background: #10b981; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+    .grant-btn {
+      background: #10b981; color: white; border: none; border-radius: 6px; padding: 4px 8px;
+      font-size: 10px; cursor: pointer; font-weight: 700; transition: 0.2s;
+    }
+    .grant-btn:hover { background: #059669; }
+    .revoke-btn { background: #ef4444; }
+    .revoke-btn:hover { background: #dc2626; }
+
+    /* ─── TAHTA ALANI ────────────────────────────────── */
+    #board-wrap { flex: 1; position: relative; display: flex; flex-direction: column; }
     #statusBadge {
-      position: absolute; top: 15px; left: 20px; background: rgba(0,0,0,0.6); color: white;
-      padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; z-index: 10;
+      position: absolute; top: 14px; left: 14px;
+      background: rgba(0,0,0,0.7); color: white;
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; z-index: 10;
+      display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px);
     }
-    
     #exitBtn {
-      position: absolute; top: 15px; right: 20px; background: #e74c3c; color: white; border: none;
-      padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; z-index: 10;
+      position: absolute; top: 14px; right: 14px; background: #ef4444; color: white; border: none;
+      padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; z-index: 10; font-size: 13px;
     }
+    #toggleSide {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; z-index: 10;
+    }
+
+    /* ─── ARAÇ ÇUBUĞU ────────────────────────────────── */
+    #toolbar {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(22,33,62,0.95); backdrop-filter: blur(10px);
+      padding: 12px 20px; border-radius: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      display: none; gap: 12px; align-items: center; z-index: 10;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    #toolbar.show { display: flex !important; }
+    .tool-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      color: #94a3b8; background: rgba(255,255,255,0.08); transition: 0.2s;
+    }
+    .tool-btn:hover { background: rgba(255,255,255,0.18); color: white; }
+    .tool-btn.active { background: #3b82f6; color: white; }
+    .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.3); cursor: pointer; transition: 0.2s; }
+    .color-btn:hover, .color-btn.active { transform: scale(1.3); border-color: white; }
+    .toolbar-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.15); }
+
+    /* ─── EL KALDIRMA BUTONU (Öğrenci) ──────────────── */
+    #handBtn {
+      position: absolute; bottom: 20px; right: 20px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white; border: none; border-radius: 50px; padding: 14px 22px;
+      font-size: 16px; font-weight: 800; cursor: pointer; z-index: 10;
+      box-shadow: 0 6px 20px rgba(245,158,11,0.4); transition: 0.3s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    #handBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.5); }
+    #handBtn.raised { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 6px 20px rgba(239,68,68,0.4); }
+
+    /* ─── SÖZ BİLDİRİMİ (Öğrenci) ──────────────────── */
+    #permissionBanner {
+      display: none; position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white; padding: 12px 28px; border-radius: 30px; font-weight: 700; font-size: 14px;
+      z-index: 20; box-shadow: 0 8px 25px rgba(16,185,129,0.4); animation: slideDown 0.4s ease;
+    }
+    @keyframes slideDown { from { opacity:0; transform: translateX(-50%) translateY(-20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+    canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+    #board { background: #ffffff; }
   </style>
 </head>
 <body>
 
-  <div id="statusBadge"><i class="fa fa-sync fa-spin"></i> Bağlanıyor...</div>
-  <button id="exitBtn" onclick="history.back()"><i class="fa fa-times"></i> Çıkış</button>
-
-  <div id="toolbar" style="display:none;">
-    <button class="tool-btn active" id="btnPen" onclick="setTool('pen')" title="Kalem"><i class="fa fa-pen"></i></button>
-    <button class="tool-btn" id="btnEraser" onclick="setTool('eraser')" title="Silgi"><i class="fa fa-eraser"></i></button>
-    <div style="width: 1px; height: 20px; background: #ddd; margin: 0 5px;"></div>
-    
-    <div class="color-btn" style="background:#2c3e50;" onclick="setColor('#2c3e50')"></div>
-    <div class="color-btn" style="background:#e74c3c;" onclick="setColor('#e74c3c')"></div>
-    <div class="color-btn" style="background:#2ecc71;" onclick="setColor('#2ecc71')"></div>
-    <div class="color-btn" style="background:#f39200;" onclick="setColor('#f39200')"></div>
-    <div class="color-btn" style="background:#3498db;" onclick="setColor('#3498db')"></div>
-    
-    <div style="width: 1px; height: 20px; background: #ddd; margin: 0 5px;"></div>
-    <input type="range" id="sizeRange" min="2" max="20" value="4" style="width: 80px;" onchange="setSize(this.value)">
-    
-    <button class="tool-btn" id="btnClear" onclick="clearBoard()" style="background:#fff0f0; color:#e74c3c;" title="Tahtayı Temizle"><i class="fa fa-trash"></i></button>
+  <!-- SOL PANEL -->
+  <div id="side-panel">
+    <div class="side-header"><i class="fa fa-users"></i> Katılımcılar <span id="part-count" style="margin-left:auto;background:#3b82f6;padding:2px 8px;border-radius:10px;font-size:11px;">0</span></div>
+    <div class="participant-list" id="participantList">
+      <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">Henüz katılımcı yok</div>
+    </div>
   </div>
 
-  <canvas id="board"></canvas>
+  <!-- TAHTA ALANI -->
+  <div id="board-wrap">
+    <div id="statusBadge"><i class="fa fa-sync fa-spin"></i> Bağlanıyor...</div>
+    <button id="exitBtn" onclick="history.back()"><i class="fa fa-times"></i> Çıkış</button>
+    <button id="toggleSide" onclick="toggleSidePanel()"><i class="fa fa-users"></i> Katılımcılar</button>
+
+    <div id="permissionBanner">✋ Söz hakkı verildi! Artık tahtaya yazabilirsiniz.</div>
+
+    <!-- ARAÇ ÇUBUĞU -->
+    <div id="toolbar">
+      <button class="tool-btn active" id="btnPen" onclick="setTool('pen')" title="Kalem"><i class="fa fa-pen"></i></button>
+      <button class="tool-btn" id="btnLine" onclick="setTool('line')" title="Çizgi"><i class="fa fa-minus"></i></button>
+      <button class="tool-btn" id="btnRect" onclick="setTool('rect')" title="Dikdörtgen"><i class="fa fa-square"></i></button>
+      <button class="tool-btn" id="btnText" onclick="setTool('text')" title="Metin"><i class="fa fa-font"></i></button>
+      <button class="tool-btn" id="btnEraser" onclick="setTool('eraser')" title="Silgi"><i class="fa fa-eraser"></i></button>
+      <div class="toolbar-sep"></div>
+      <div class="color-btn active" style="background:#1e293b;" onclick="setColor('#1e293b')"></div>
+      <div class="color-btn" style="background:#ef4444;" onclick="setColor('#ef4444')"></div>
+      <div class="color-btn" style="background:#10b981;" onclick="setColor('#10b981')"></div>
+      <div class="color-btn" style="background:#f59e0b;" onclick="setColor('#f59e0b')"></div>
+      <div class="color-btn" style="background:#3b82f6;" onclick="setColor('#3b82f6')"></div>
+      <div class="color-btn" style="background:#8b5cf6;" onclick="setColor('#8b5cf6')"></div>
+      <div class="toolbar-sep"></div>
+      <input type="range" id="sizeRange" min="2" max="30" value="4" style="width:70px;accent-color:#3b82f6;" oninput="brushSize=this.value">
+      <div class="toolbar-sep"></div>
+      <button class="tool-btn" onclick="clearBoard()" style="color:#ef4444;" title="Temizle"><i class="fa fa-trash"></i></button>
+      <button class="tool-btn" onclick="downloadBoard()" style="color:#10b981;" title="İndir"><i class="fa fa-download"></i></button>
+      <div class="toolbar-sep"></div>
+      <button id="btnLesson" class="grant-btn" style="padding:8px 15px; border-radius:20px; background:#f39200;" onclick="toggleLesson()">Dersi Başlat</button>
+    </div>
+
+    <!-- EL KALDIRMA BUTONU (Öğrenci) -->
+    <button id="handBtn" style="display:none;" onclick="toggleHand()">
+      <i class="fa fa-hand-paper" id="handIcon"></i>
+      <span id="handText">El Kaldır</span>
+    </button>
+
+    <canvas id="board"></canvas>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="auth-utils.js"></script>
@@ -63,99 +162,269 @@
     const socket = io();
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
-    
-    let isTeacher = (user.role === 'ogretmen');
-    
-    socket.emit('join_whiteboard');
+    const isTeacher = user.role === 'ogretmen';
+    const isParent = user.role === 'veli';
 
-    if(isTeacher) {
-       document.getElementById('toolbar').style.display = 'flex';
-       document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower"></i> Yayın Yapılıyor';
-       document.getElementById('statusBadge').style.background = '#e67e22';
-    } else {
-       document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye"></i> İzleyici Modu';
-       canvas.style.cursor = 'default';
+    let drawing = false, currentStroke = [], allStrokes = [];
+    let brushColor = '#1e293b', brushSize = 4, currentTool = 'pen', isEraser = false;
+    let canDraw = isTeacher; 
+    let handRaised = false;
+    let sideCollapsed = false;
+    let audioEnabled = false;
+
+    // ─── AUDIO CONTROL ───
+    // ─── LESSON CONTROL ───
+    let lessonActive = false;
+    function toggleLesson() {
+      lessonActive = !lessonActive;
+      const btn = document.getElementById('btnLesson');
+      if (lessonActive) {
+        btn.textContent = 'Dersi Bitir';
+        btn.style.background = '#ef4444';
+        showToast('Ders başlatıldı! Ses yayını aktif.');
+        document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower" style="color:#f39200; animation:pulse 1s infinite;"></i> Canlı Yayında';
+      } else {
+        btn.textContent = 'Dersi Başlat';
+        btn.style.background = '#f39200';
+        showToast('Ders sona erdi.');
+        document.getElementById('statusBadge').innerHTML = '<i class="fa fa-stop-circle" style="color:#94a3b8;"></i> Ders Bitti';
+      }
+      socket.emit('toggle_lesson', { active: lessonActive });
     }
 
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('btnAudio');
+      if (audioEnabled) {
+        btn.innerHTML = '<i class="fa fa-microphone"></i>';
+        btn.style.color = '#10b981';
+        showToast('Ses yayını açıldı.');
+      } else {
+        btn.innerHTML = '<i class="fa fa-microphone-slash"></i>';
+        btn.style.color = '#ef4444';
+        showToast('Ses yayını kapatıldı.');
+      }
+      socket.emit('toggle_audio', { enabled: audioEnabled, all: true });
+    }
+
+    // ─── CANVAS RESIZE ───
     function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const wrap = document.getElementById('board-wrap');
+      canvas.width = wrap.offsetWidth;
+      canvas.height = wrap.offsetHeight;
       redrawAll();
     }
     window.addEventListener('resize', resize);
 
-    let drawing = false;
-    let currentStroke = [];
-    let allStrokes = [];
-    
-    let brushColor = '#2c3e50';
-    let brushSize = 4;
-    let isEraser = false;
+    // ─── SOCKET BAĞLAN ───
+    socket.emit('join_whiteboard', { tc: user.tc, name: user.name, role: user.role });
 
+    if (isTeacher) {
+      document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower" style="color:#f59e0b;"></i> Yayın Yapılıyor';
+      document.getElementById('toolbar').classList.add('show');
+      document.getElementById('side-panel').style.display = 'flex';
+      // Ses butonu ekle
+      const tb = document.getElementById('toolbar');
+      const audioBtn = document.createElement('button');
+      audioBtn.className = 'tool-btn';
+      audioBtn.id = 'btnAudio';
+      audioBtn.innerHTML = '<i class="fa fa-microphone-slash"></i>';
+      audioBtn.style.color = '#ef4444';
+      audioBtn.onclick = toggleAudio;
+      tb.insertBefore(audioBtn, tb.lastElementChild);
+    } else if (isParent) {
+      document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye" style="color:#94a3b8;"></i> Veli İzleme Modu';
+      document.getElementById('handBtn').style.display = 'none';
+      document.getElementById('side-panel').style.display = 'none';
+      canvas.style.cursor = 'default';
+      canDraw = false;
+    } else {
+      document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye" style="color:#94a3b8;"></i> İzleyici Modu';
+      document.getElementById('handBtn').style.display = 'flex';
+      document.getElementById('side-panel').style.display = 'none';
+      canvas.style.cursor = 'default';
+    }
+
+    // ─── SOCKET OLAYLARI ───
+    socket.on('toggle_audio', data => {
+      const audioIndicator = document.getElementById('audioIndicator');
+      if (data.targetTc === user.tc || data.all) {
+        showToast(data.enabled ? '🔊 Öğretmen sesini açtı!' : '🔇 Öğretmen sesini kapattı.');
+        if(audioIndicator) audioIndicator.style.display = data.enabled ? 'block' : 'none';
+      }
+    });
+
+    socket.on('toggle_lesson', data => {
+      if (data.active) {
+        document.getElementById('statusBadge').innerHTML = '<i class="fa fa-broadcast-tower" style="color:#f39200; animation:pulse 1s infinite;"></i> Canlı Yayında';
+      } else {
+        document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye" style="color:#94a3b8;"></i> İzleyici Modu';
+      }
+    });
+
+    // ─── ARAÇLAR ───
     function setTool(tool) {
+      currentTool = tool;
       isEraser = (tool === 'eraser');
-      document.getElementById('btnPen').classList.toggle('active', !isEraser);
-      document.getElementById('btnEraser').classList.toggle('active', isEraser);
-    }
-    
-    function setColor(color) {
-      if(!isEraser) brushColor = color;
-    }
-    
-    function setSize(size) {
-      brushSize = size;
+      ['btnPen','btnLine','btnRect','btnText','btnEraser'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+      const btn = document.getElementById('btn' + tool.charAt(0).toUpperCase() + tool.slice(1));
+      if (btn) btn.classList.add('active');
     }
 
+    function setColor(color) {
+      brushColor = color;
+      isEraser = false;
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    // ─── ÇIZIM ───
     canvas.addEventListener('mousedown', e => {
-      if(!isTeacher) return;
+      if (!canDraw) return;
       drawing = true;
       currentStroke = { color: isEraser ? '#ffffff' : brushColor, size: isEraser ? brushSize * 4 : brushSize, points: [] };
-      addPoint(e.clientX, e.clientY);
+      addPoint(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
     });
 
     canvas.addEventListener('mousemove', e => {
-      if(!drawing || !isTeacher) return;
-      addPoint(e.clientX, e.clientY);
+      if (!drawing || !canDraw) return;
+      addPoint(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
     });
 
     canvas.addEventListener('mouseup', () => {
-      if(!drawing || !isTeacher) return;
+      if (!drawing || !canDraw) return;
+      drawing = false;
+      allStrokes.push(currentStroke);
+      socket.emit('draw', { stroke: currentStroke });
+    });
+
+    // Touch desteği
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (!canDraw) return;
+      const t = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      drawing = true;
+      currentStroke = { color: isEraser ? '#ffffff' : brushColor, size: isEraser ? brushSize * 4 : brushSize, points: [] };
+      addPoint(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!drawing || !canDraw) return;
+      const t = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      addPoint(t.clientX - rect.left, t.clientY - rect.top);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      if (!drawing || !canDraw) return;
       drawing = false;
       allStrokes.push(currentStroke);
       socket.emit('draw', { stroke: currentStroke });
     });
 
     function addPoint(x, y) {
-      currentStroke.points.push({ x: x / canvas.width, y: y / canvas.height }); // Normalize
+      currentStroke.points.push({ x: x / canvas.width, y: y / canvas.height });
       drawStroke(currentStroke);
     }
 
     function drawStroke(stroke) {
-      if(stroke.points.length < 2) return;
+      if (!stroke.points || stroke.points.length < 2) return;
       ctx.beginPath();
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.size;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      
       const p0 = stroke.points[0];
       ctx.moveTo(p0.x * canvas.width, p0.y * canvas.height);
-      for(let i=1; i<stroke.points.length; i++) {
-         const p = stroke.points[i];
-         ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
+      for (let i = 1; i < stroke.points.length; i++) {
+        const p = stroke.points[i];
+        ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
       }
       ctx.stroke();
     }
 
     function redrawAll() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      for(let s of allStrokes) {
-        drawStroke(s);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      allStrokes.forEach(s => drawStroke(s));
+    }
+
+    function clearBoard() {
+      if (!isTeacher) return;
+      if (!confirm('Tahtayı tamamen silmek istiyor musunuz?')) return;
+      allStrokes = [];
+      redrawAll();
+      socket.emit('clear_board');
+    }
+
+    function downloadBoard() {
+      const link = document.createElement('a');
+      link.download = 'tahta-' + Date.now() + '.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    // ─── EL KALDIRMA ───
+    function toggleHand() {
+      handRaised = !handRaised;
+      const btn = document.getElementById('handBtn');
+      const icon = document.getElementById('handIcon');
+      const text = document.getElementById('handText');
+      if (handRaised) {
+        btn.classList.add('raised');
+        icon.className = 'fa fa-hand-paper fa-bounce';
+        text.textContent = 'Eli İndir';
+        socket.emit('raise_hand', { tc: user.tc, name: user.name });
+      } else {
+        btn.classList.remove('raised');
+        icon.className = 'fa fa-hand-paper';
+        text.textContent = 'El Kaldır';
+        socket.emit('lower_hand');
       }
     }
 
-    // ─── SOCKET EVENTS ───
-    socket.on('draw', (data) => {
+    // ─── YAN PANEL ───
+    function toggleSidePanel() {
+      sideCollapsed = !sideCollapsed;
+      document.getElementById('side-panel').classList.toggle('collapsed', sideCollapsed);
+    }
+
+    // ─── KATILIMCI LİSTESİ (Öğretmen) ───
+    function renderParticipants(list) {
+      const container = document.getElementById('participantList');
+      const count = document.getElementById('part-count');
+      count.textContent = list.length;
+
+      if (!list.length) {
+        container.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">Henüz katılımcı yok</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(p => {
+        const initials = (p.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        const roleLabel = p.role === 'ogretmen' ? '👨‍🏫' : '👤';
+        return `
+          <div class="participant-item ${p.hasHand ? 'has-hand' : ''} ${p.hasPermission ? 'has-permission' : ''}">
+            <div class="participant-avatar">${initials}</div>
+            <div class="participant-name">${roleLabel} ${p.name}</div>
+            ${p.hasHand ? '<div class="hand-badge">✋</div>' : ''}
+            ${p.hasPermission ? '<div class="perm-badge">✍️</div>' : ''}
+            ${isTeacher && p.role !== 'ogretmen' ? `
+              <button class="grant-btn ${p.hasPermission ? 'revoke-btn' : ''}" 
+                onclick="event.stopPropagation(); ${p.hasPermission ? `socket.emit('revoke_permission','${p.socketId}')` : `socket.emit('grant_permission','${p.socketId}')`}">
+                ${p.hasPermission ? 'Bitti' : 'Söz Ver'}
+              </button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── SOCKET OLAYLARI ───
+    socket.on('draw', data => {
       allStrokes.push(data.stroke);
       drawStroke(data.stroke);
     });
@@ -165,21 +434,53 @@
       redrawAll();
     });
 
-    // Initial sync
-    fetch('/api/whiteboard').then(r => r.json()).then(d => {
-      if(d.success && d.strokes) {
-        allStrokes = d.strokes;
-        redrawAll();
+    socket.on('participant_list', list => {
+      renderParticipants(list);
+    });
+
+    socket.on('hand_raised', data => {
+      if (isTeacher) {
+        showToast(`✋ ${data.name} el kaldırdı!`);
       }
     });
 
-    async function clearBoard() {
-      if(!isTeacher) return;
-      if(!confirm('Tüm tahtayı silmek istediğinize emin misiniz?')) return;
-      allStrokes = [];
-      redrawAll();
-      socket.emit('clear_board');
+    socket.on('permission_granted', data => {
+      canDraw = true;
+      document.getElementById('toolbar').classList.add('show');
+      document.getElementById('permissionBanner').style.display = 'block';
+      document.getElementById('statusBadge').innerHTML = '<i class="fa fa-pen" style="color:#10b981;"></i> Yazma Modunda';
+      canvas.style.cursor = 'crosshair';
+      handRaised = false;
+      const btn = document.getElementById('handBtn');
+      btn.classList.remove('raised');
+      document.getElementById('handText').textContent = 'El Kaldır';
+      socket.emit('lower_hand');
+      setTimeout(() => { document.getElementById('permissionBanner').style.display = 'none'; }, 4000);
+    });
+
+    socket.on('permission_revoked', data => {
+      canDraw = false;
+      document.getElementById('toolbar').classList.remove('show');
+      document.getElementById('statusBadge').innerHTML = '<i class="fa fa-eye" style="color:#94a3b8;"></i> İzleyici Modu';
+      canvas.style.cursor = 'default';
+      showToast('Söz hakkınız alındı. İzleyici moduna geçtiniz.');
+    });
+
+    // Toast
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.style.cssText = `position:fixed;top:80px;right:20px;background:#1e293b;color:white;
+        padding:12px 20px;border-radius:12px;font-size:13px;z-index:9999;
+        box-shadow:0 8px 25px rgba(0,0,0,0.4);border-left:3px solid #f59e0b;animation:slideDown 0.3s ease;`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
+
+    // İlk sync
+    fetch('/api/whiteboard').then(r => r.json()).then(d => {
+      if (d.success && d.strokes) { allStrokes = d.strokes; redrawAll(); }
+    });
 
     resize();
   </script>

@@ -5,6 +5,7 @@ const express = require('express');
 const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
 const http    = require('http');
+const axios   = require('axios');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
@@ -169,6 +170,23 @@ async function setupTables() {
        IF NOT COLUMNPROPERTY(OBJECT_ID('Users'), 'classNum', 'ColumnId') IS NOT NULL
          ALTER TABLE Users ADD classNum NVARCHAR(MAX);
      END`,
+
+    // 2. RANDEVULAR (YENİ EKLENDİ)
+    `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Appointments' AND xtype='U')
+     CREATE TABLE Appointments (
+       id           INT IDENTITY(1,1) PRIMARY KEY,
+       parent_tc    NVARCHAR(11) NOT NULL,
+       parent_name  NVARCHAR(100),
+       teacher_tc   NVARCHAR(11) NOT NULL,
+       teacher_name NVARCHAR(100),
+       student_tc   NVARCHAR(11),
+       student_name NVARCHAR(100),
+       appt_date    NVARCHAR(50),
+       appt_time    NVARCHAR(50),
+       note         NVARCHAR(MAX),
+       status       NVARCHAR(20) DEFAULT 'beklemede',
+       createdAt    DATETIME DEFAULT GETDATE()
+     )`,
 
     // 6. ÖDEVLER
     `IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Assignments' AND xtype='U')
@@ -626,7 +644,7 @@ app.post('/api/login', async (req, res) => {
 
     // JWT İmzala
     const token = jwt.sign(
-      { id: user.id, tc: user.tc, role: user.role, name: user.name },
+      { id: user.id, tc: user.tc, role: user.role, name: user.name, school: user.school },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -1692,6 +1710,39 @@ async function logSettings(p, tc, field, oldVal, newVal) {
 }
 
 // ─── SUNUCU BAŞLAT ────────────────────────────────────────────────
+
+app.get('/api/teacher-stats', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'ogretmen') return res.status(403).json({ success: false });
+  try {
+    const p = await getPool();
+    const school = req.user.school;
+    const tc = req.user.tc;
+    const studentR = await p.request().input('sch', sql.NVarChar, school).query('SELECT COUNT(*) as count FROM Users WHERE role=\'ogrenci\' AND school=@sch');
+    const assignmentR = await p.request().input('tc', sql.NVarChar, tc).query('SELECT COUNT(*) as count FROM Assignments WHERE teacher_tc=@tc');
+    const submissionR = await p.request().input('tc', sql.NVarChar, tc).query('SELECT COUNT(*) as count FROM AssignmentSubmissions s JOIN Assignments a ON s.assignment_id = a.id WHERE a.teacher_tc=@tc AND s.isGraded=0');
+    res.json({ success: true, stats: { studentCount: studentR.recordset[0].count, activeAssignments: assignmentR.recordset[0].count, pendingSubmissions: submissionR.recordset[0].count, averageSuccess: 85 } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/user-stats', authenticateToken, async (req, res) => {
+  const tc = req.query.tc || req.user.tc;
+  try {
+    const p = await getPool();
+    const userR = await p.request().input('tc', sql.NVarChar, tc).query('SELECT name, school, [class] as classNum, points, coins, profilePic FROM Users WHERE tc=@tc');
+    const statR = await p.request().input('tc', sql.NVarChar, tc).query('SELECT * FROM StudentStats WHERE student_tc=@tc');
+    res.json({ success: true, user: userR.recordset[0] || {}, stats: statR.recordset[0] || {} });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/test-results', authenticateToken, async (req, res) => {
+  const tc = req.query.tc || req.user.tc;
+  try {
+    const p = await getPool();
+    const r = await p.request().input('tc', sql.NVarChar, tc).query('SELECT title, subject, score, total_score as total, createdAt as takenAt FROM QuizResults WHERE student_tc=@tc ORDER BY createdAt DESC');
+    res.json({ success: true, tests: r.recordset });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 const PORT = process.env.PORT || 8080;
 
 
@@ -1753,6 +1804,50 @@ app.post('/api/assignment-submit', async (req, res) => {
 
     res.json({success: true, message: 'Cevabınız iletildi. +20 puan kazandınız! 🎉'});
   } catch(e) { res.status(500).json({success:false, message:e.message}); }
+});
+
+// --- YAPAY ZEKA ÖDEV KONTROLÜ (GROQ API) ---
+app.post('/api/assignment-ai-check', authenticateToken, async (req, res) => {
+  const { assignment_id, student_answer } = req.body;
+  if (!student_answer) return res.status(400).json({ success: false, message: 'Cevap boş olamaz.' });
+  
+  try {
+    const p = await getPool();
+    const asm = await p.request().input('id', sql.Int, parseInt(assignment_id)).query('SELECT title, description FROM Assignments WHERE id=@id');
+    if(!asm.recordset.length) return res.status(404).json({ success: false, message: 'Ödev bulunamadı.' });
+    
+    const info = asm.recordset[0];
+    const prompt = `Sen bir öğretmensin. Aşağıdaki ödev konusuna göre öğrencinin cevabını kontrol et ve 0-100 arası bir not ver. 
+    Ödev Konusu: ${info.title}
+    Ödev Açıklaması: ${info.description}
+    Öğrencinin Cevabı: ${student_answer}
+    
+    Yanıtını SADECE şu JSON formatında ver:
+    { "isCorrect": boolean, "score": number, "message": "öğrenciye çok kısa geri bildirim" }`;
+
+    const groqRes = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: "Sen bir öğretmensin ve her zaman JSON formatında yanıt verirsin." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.3,
+      response_format: { type: "json_object" }
+    }, {
+      headers: { 
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 
+        'Content-Type': 'application/json' 
+      },
+      timeout: 10000
+    });
+
+    const aiResult = JSON.parse(groqRes.data.choices[0].message.content);
+    res.json(aiResult);
+  } catch (e) { 
+    const errorDetail = e.response?.data?.error?.message || e.message;
+    console.error('AI Check Error Detail:', errorDetail);
+    res.status(500).json({ success: false, message: 'Yapay zeka hatası: ' + errorDetail }); 
+  }
 });
 
 // --- GELEN CEVAPLARI ÖĞRETMENE GÖSTERME (TÜMÜ VEYA BİR ÖDEV) ---
@@ -2071,7 +2166,103 @@ app.get('/api/analytics/student-performance', authenticateToken, async (req, res
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// Sunucu Başlatma Bloğu (Dosyanın sonuna taşındı)
+app.get('/api/competition/leaderboard', async (req, res) => {
+  const { school } = req.query;
+  try {
+    const p = await getPool();
+    let q = "SELECT TOP 10 winner_tc as tc, winner_name as name, COUNT(*) as wins, SUM(points_awarded) as total_points FROM CompetitionResults cr";
+    const r = p.request();
+    if (school) { q += " JOIN Users u ON cr.winner_tc = u.tc WHERE u.school = @sch"; r.input('sch', sql.NVarChar, school); }
+    q += " GROUP BY winner_tc, winner_name ORDER BY total_points DESC";
+    const result = await r.query(q);
+    res.json({ success: true, leaderboard: result.recordset });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/appointments/teachers', authenticateToken, async (req, res) => {
+  try {
+    const p = await getPool();
+    // 1. Velinin öğrencilerini bul (veliTc ile eşleşen)
+    const studentR = await p.request().input('vtc', sql.NVarChar, req.user.tc)
+      .query("SELECT tc, name, TRIM(school) as school, ISNULL(classNum, class) as classNum FROM Users WHERE veliTc=@vtc AND role='ogrenci'");
+    const students = studentR.recordset;
+    
+    // 2. Filtreleme kriterlerini belirle
+    let schools = students.map(s => s.school).filter(s => s);
+    let studentClasses = students.map(s => s.classNum).filter(s => s);
+
+    // Eğer velinin bağlı öğrencisi yoksa ama velinin kendi okul bilgisi varsa onu kullan (Fallback)
+    if (schools.length === 0 && req.user.school) {
+      schools.push(req.user.school.trim());
+    }
+
+    if (schools.length === 0) return res.json({ success: true, teachers: [], students: [] });
+
+    // 3. Bu okullardaki öğretmenleri getir
+    let teacherQuery = "SELECT tc, name, branch, TRIM(school) as school, ISNULL(classNum, class) as taughtClasses FROM Users WHERE role='ogretmen'";
+    teacherQuery += " AND TRIM(school) IN (" + schools.map((s, i) => "@sch" + i).join(",") + ")";
+
+    const request = p.request();
+    schools.forEach((s, i) => request.input("sch" + i, sql.NVarChar, s));
+    
+    const teacherR = await request.query(teacherQuery);
+    let allTeachers = teacherR.recordset;
+
+    // 4. Eğer öğrenci sınıfları belliyse, o sınıfların öğretmenlerini önceliklendir veya sadece onları göster
+    let filteredTeachers = allTeachers;
+    if (studentClasses.length > 0) {
+      filteredTeachers = allTeachers.filter(t => {
+        if (!t.taughtClasses) return true; 
+        return studentClasses.some(sc => t.taughtClasses.includes(sc));
+      });
+    }
+
+    // Eğer filtreleme sonucu boş kalırsa okulun tüm öğretmenlerini göster (Hiç yoktan iyidir)
+    if (filteredTeachers.length === 0) filteredTeachers = allTeachers;
+
+    res.json({ success: true, teachers: filteredTeachers, students: students });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.get('/api/appointments', authenticateToken, async (req, res) => {
+  try {
+    const p = await getPool();
+    let q = "SELECT * FROM Appointments WHERE teacher_tc=@tc OR parent_tc=@tc ORDER BY appt_date DESC, appt_time DESC";
+    const r = await p.request().input('tc', sql.NVarChar, req.user.tc).query(q);
+    res.json({ success: true, appointments: r.recordset });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.post('/api/appointments', authenticateToken, async (req, res) => {
+  const { teacher_tc, teacher_name, student_tc, student_name, appt_date, appt_time, note } = req.body;
+  try {
+    const p = await getPool();
+    await p.request()
+      .input('ptc', req.user.tc)
+      .input('pname', req.user.name)
+      .input('ttc', teacher_tc)
+      .input('tname', teacher_name)
+      .input('stc', student_tc)
+      .input('sname', student_name)
+      .input('date', appt_date)
+      .input('time', appt_time)
+      .input('note', note || '')
+      .query("INSERT INTO Appointments (parent_tc, parent_name, teacher_tc, teacher_name, student_tc, student_name, appt_date, appt_time, note, status) VALUES (@ptc, @pname, @ttc, @tname, @stc, @sname, @date, @time, @note, 'beklemede')");
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
+  const { status } = req.body;
+  try {
+    const p = await getPool();
+    await p.request()
+      .input('id', req.params.id)
+      .input('status', status)
+      .query("UPDATE Appointments SET status=@status WHERE id=@id");
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
 
 
 
@@ -2213,6 +2404,8 @@ app.post('/api/forum/:id/solve', authenticateToken, async (req, res) => {
 
 // ─── WHITEBOARD API ──────────────────────────────────────────────────
 let whiteboardStrokes = [];
+const whiteboardUsers = new Map(); // socketId -> { tc, name, role, hasHand, hasPermission }
+const competitionQueue = [];
 
 app.get('/api/whiteboard', (req, res) => {
   res.json({ success: true, strokes: whiteboardStrokes });
@@ -2356,16 +2549,18 @@ io.on('connection', (socket) => {
 
   socket.on('join_group', (groupId) => {
     socket.join(`group_${groupId}`);
-    console.log(`👥 Socket ${socket.id} gruba katıldı: group_${groupId}`);
   });
 
-  // ─── WHITEBOARD SOCKET EVENTS ───
-  socket.on('join_whiteboard', () => {
+  // --- WHITEBOARD SOCKET EVENTS ---
+  socket.on('join_whiteboard', (userData) => {
     socket.join('whiteboard_room');
+    if (userData && userData.tc) {
+      whiteboardUsers.set(socket.id, { ...userData, hasHand: false, hasPermission: false, socketId: socket.id });
+    }
+    io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values()));
   });
 
   socket.on('draw', (data) => {
-    // data: { stroke }
     socket.to('whiteboard_room').emit('draw', data);
     whiteboardStrokes.push(data.stroke);
     if(whiteboardStrokes.length > 5000) whiteboardStrokes.shift();
@@ -2376,11 +2571,57 @@ io.on('connection', (socket) => {
     whiteboardStrokes = [];
   });
 
+  socket.on('raise_hand', () => {
+    const u = whiteboardUsers.get(socket.id);
+    if(u) { u.hasHand = true; io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values())); }
+  });
+
+  socket.on('lower_hand', () => {
+    const u = whiteboardUsers.get(socket.id);
+    if(u) { u.hasHand = false; io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values())); }
+  });
+
+  socket.on('grant_permission', (sid) => {
+    const sender = whiteboardUsers.get(socket.id);
+    if (!sender || sender.role !== 'ogretmen') return;
+    const target = whiteboardUsers.get(sid);
+    if(target) { target.hasPermission = true; io.to(sid).emit('permission_granted'); }
+    io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values()));
+  });
+
+  socket.on('revoke_permission', (sid) => {
+    const sender = whiteboardUsers.get(socket.id);
+    if (!sender || sender.role !== 'ogretmen') return;
+    const target = whiteboardUsers.get(sid);
+    if(target) { target.hasPermission = false; io.to(sid).emit('permission_revoked'); }
+    io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values()));
+  });
+
+  socket.on('toggle_audio', (data) => {
+    socket.to('whiteboard_room').emit('toggle_audio', data);
+  });
+
+  socket.on('toggle_lesson', (data) => {
+    socket.to('whiteboard_room').emit('toggle_lesson', data);
+  });
+
+  socket.on('join_competition', (data) => {
+    competitionQueue.push({ ...data, socketId: socket.id });
+    if(competitionQueue.length >= 2) {
+       const p1 = competitionQueue.shift(); const p2 = competitionQueue.shift();
+       io.to(p1.socketId).emit('competition_matched', { opponentTc: p2.tc, opponentName: p2.name });
+       io.to(p2.socketId).emit('competition_matched', { opponentTc: p1.tc, opponentName: p1.name });
+    }
+  });
+
   socket.on('disconnect', () => {
+    whiteboardUsers.delete(socket.id);
+    io.to('whiteboard_room').emit('participant_list', Array.from(whiteboardUsers.values()));
+    const idx = competitionQueue.findIndex(x => x.socketId === socket.id);
+    if(idx !== -1) competitionQueue.splice(idx, 1);
     for (let [tc, id] of onlineUsers.entries()) {
       if (id === socket.id) {
         onlineUsers.delete(tc);
-        console.log(`🔌 Kullanıcı ayrıldı: ${tc}`);
         break;
       }
     }

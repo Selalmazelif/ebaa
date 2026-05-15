@@ -12,17 +12,23 @@
 
 <body>
 
-    <div class="sidebar">
+  <div class="sidebar">
     <div class="logo">EBA</div>
     <div class="profile">
-      <div class="profile-img-container" onclick="document.getElementById('profilePicInput') ? document.getElementById('profilePicInput').click() : null" title="Fotoğrafı Değiştir">
-        <div style="width:70px;height:70px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 8px;position:relative;">
+      <div class="profile-img-container"
+        onclick="document.getElementById('profilePicInput') ? document.getElementById('profilePicInput').click() : null"
+        title="Fotoğrafı Değiştir">
+        <div
+          style="width:70px;height:70px;background:#fff;border-radius:50%;border:3px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto 8px;position:relative;">
           <i class="fa fa-user" style="font-size:35px;color:#ccc;" id="default-avatar-icon"></i>
-          <img src="" alt="" id="profile-img-display" style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
-          
+          <img src="" alt="" id="profile-img-display"
+            style="display:none;width:100%;height:100%;object-fit:cover;z-index:2;position:relative;">
+
           <!-- Avatar Overlays -->
-          <img id="sidebar-hat" style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:30px; z-index:3; display:none;">
-          <img id="sidebar-glasses" style="position:absolute; top:25px; left:50%; transform:translateX(-50%); width:25px; z-index:4; display:none;">
+          <img id="sidebar-hat"
+            style="position:absolute; top:5px; left:50%; transform:translateX(-50%); width:30px; z-index:3; display:none;">
+          <img id="sidebar-glasses"
+            style="position:absolute; top:25px; left:50%; transform:translateX(-50%); width:25px; z-index:4; display:none;">
           <img id="sidebar-pet" style="position:absolute; bottom:5px; right:5px; width:20px; z-index:5; display:none;">
           <div id="sidebar-bg" style="position:absolute; inset:0; z-index:1; opacity:0.3;"></div>
         </div>
@@ -34,38 +40,54 @@
       <p id="profile-school" style="font-size:12px;opacity:0.7;">–</p>
       <input id="profilePicInput" type="file" accept="image/*" style="display:none;">
 
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;">
-        <div style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-          <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span id="user-points">0</span> Puan
+      <div
+        style="margin-top:10px; display:flex; flex-direction:column; gap:5px; color:white; align-items:center; width:100%; padding:0 20px; box-sizing:border-box;">
+        <div
+          style="background:rgba(255,147,0,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-gem" style="color:#f39200; width:16px; text-align:center;"></i> <span
+            id="user-points">0</span> Puan
         </div>
-        <div style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;" title="Nasıl kazanılır?&#10;• Günlük giriş: 10 Coin&#10;• Ödev tamamlama: 15 Coin&#10;• Sınav çözme: 20 Coin&#10;• Forum katılımı: 5 Coin">
-          <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span id="user-coins">0</span> EBA Coin
+        <div
+          style="background:rgba(0,201,255,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px; cursor:help;"
+          title="Nasıl kazanılır?&#10;• Günlük giriş: 10 Coin&#10;• Ödev tamamlama: 15 Coin&#10;• Sınav çözme: 20 Coin&#10;• Forum katılımı: 5 Coin">
+          <i class="fa fa-coins" style="color:#00C9FF; width:16px; text-align:center;"></i> <span
+            id="user-coins">0</span> EBA Coin
         </div>
-        <div style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
-          <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span id="user-streak">0</span> Günlük Seri
+        <div
+          style="background:rgba(146,254,157,0.2); padding:5px 10px; border-radius:10px; font-size:12px; width:100%; display:flex; justify-content:flex-start; align-items:center; gap:8px; white-space:nowrap; padding-left:18px;">
+          <i class="fa fa-fire" style="color:#92FE9D; width:16px; text-align:center;"></i> <span
+            id="user-streak">0</span> Günlük Seri
         </div>
       </div>
 
-      <div id="cert-btn-container" style="text-align:center; margin-top:10px; display:none; width:100%; padding:0 20px; box-sizing:border-box;">
-        <button onclick="downloadCertificate()" style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
+      <div id="cert-btn-container"
+        style="text-align:center; margin-top:10px; display:none; width:100%; padding:0 20px; box-sizing:border-box;">
+        <button onclick="downloadCertificate()"
+          style="background:linear-gradient(135deg, #f39200, #d35400); color:white; border:none; padding:8px 0; white-space:nowrap; width:100%; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(243,146,0,0.3);"><i
+            class="fa-solid fa-award"></i> Başarı Belgesi İndir</button>
       </div>
 
-      <div id="user-badges-container" style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+      <div id="user-badges-container"
+        style="margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
         <!-- Rozetler buraya gelecek -->
       </div>
-      
+
       <div style="width:100%; padding:0 20px; box-sizing:border-box;">
-        <button id="logoutBtn" style="width:100%; margin-top:15px;padding:6px 12px;background:#fff;color:#284B63;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
+        <button id="logoutBtn"
+          style="width:100%; margin-top:15px;padding:6px 12px;background:#fff;color:#284B63;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:12px;">Çıkış</button>
       </div>
     </div>
-    
+
     <ul id="sidebar-menu">
-      <li><a href="ogrenci-panel.html" ><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
+      <li><a href="ogrenci-panel.html"><i class="fa-solid fa-house"></i> Ana Sayfa</a></li>
       <li><a href="dersler.html"><i class="fa-solid fa-book"></i> Dersler</a></li>
       <li><a href="canli-ders.html"><i class="fa-solid fa-video"></i> Canlı Ders</a></li>
       <li><a href="kitaplar.html" class="active"><i class="fa-solid fa-file"></i> Kitaplar</a></li>
       <li><a href="sinavlar.html"><i class="fa-solid fa-pen"></i> Sınavlar</a></li>
+      <li><a href="portfolyo.html"><i class="fa-solid fa-id-card"></i> Portfolyo</a></li>
       <li><a href="kütüphane.html"><i class="fa-solid fa-building-columns"></i> Kütüphane</a></li>
+      <li><a href="whiteboard.html"><i class="fa-solid fa-chalkboard"></i> Akıllı Tahta</a></li>
+      <li><a href="yarisma.html"><i class="fa-solid fa-bolt"></i> 1v1 Yarışma</a></li>
       <li><a href="ogrenci-panel.html?modal=shop"><i class="fa-solid fa-store"></i> EBA Market</a></li>
       <li><a href="ogrenci-panel.html?modal=avatar"><i class="fa-solid fa-user-ninja"></i> Avatarım</a></li>
       <li><a href="ayarlar.html"><i class="fa-solid fa-gear"></i> Ayarlar</a></li>
@@ -132,12 +154,12 @@
       }
 
       const kitaplar = [
-        { title: "Sefiller", author: "Victor Hugo", img: "https://m.media-amazon.com/images/I/51rY8Z+8T1L._SY344_BO1,204,203,200_.jpg", type: "Roman" },
-        { title: "Suç ve Ceza", author: "Dostoyevski", img: "https://m.media-amazon.com/images/I/41Z-mndfVzL._SY344_BO1,204,203,200_.jpg", type: "Roman" },
-        { title: "1984", author: "George Orwell", img: "https://m.media-amazon.com/images/I/41aM4xOZxaL._SY344_BO1,204,203,200_.jpg", type: "Bilim Kurgu" },
-        { title: "Simyacı", author: "Paulo Coelho", img: "https://m.media-amazon.com/images/I/51y1Ww1yC0L._SY344_BO1,204,203,200_.jpg", type: "Fantastik" },
-        { title: "Nutuk", author: "Mustafa Kemal Atatürk", img: "https://m.media-amazon.com/images/I/41O+nQkI9TL._SY344_BO1,204,203,200_.jpg", type: "Tarih" },
-        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", img: "https://m.media-amazon.com/images/I/41SgR7-oO3L._SY344_BO1,204,203,200_.jpg", type: "Hikaye" },
+        { title: "Sefiller", author: "Victor Hugo", img: "img/sefiller.jpg", type: "Roman" },
+        { title: "Suç ve Ceza", author: "Dostoyevski", img: "img/sucveceza.jpg", type: "Roman" },
+        { title: "1984", author: "George Orwell", img: "img/1984.jpg", type: "Bilim Kurgu" },
+        { title: "Simyacı", author: "Paulo Coelho", img: "img/simyaci.jpg", type: "Fantastik" },
+        { title: "Nutuk", author: "Mustafa Kemal Atatürk", img: "img/nutuk.jpg", type: "Tarih" },
+        { title: "Küçük Prens", author: "Antoine de Saint-Exupéry", img: "img/kucuk-prens.jpg", type: "Hikaye" },
       ];
 
       const grid = document.getElementById('kitaplar-grid');
@@ -145,7 +167,7 @@
     <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;" onclick="readBook('${kitap.title}')">
       <div>
         <div style="background:#eee; height:150px; border-radius:8px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-            ${kitap.img ?`<img src="${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">` : `<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>`}
+            ${kitap.img ? `<img src="${kitap.img}" style="width:100%; height:100%; object-fit:cover; margin:0; border-radius:0;">` : `<i class="fa fa-book" style="font-size:40px; color:#aaa; margin:0;"></i>`}
         </div>
         <h3 style="font-size:16px; margin-bottom:5px;">${kitap.title}</h3>
         <p style="font-size:13px; color:#666;">${kitap.author}</p>
@@ -158,63 +180,68 @@
       document.getElementById('logoutBtn').addEventListener('click', logout);
     }
   </script>
-
- " Sınav Yanlışları Modalı"
-  <div id="examDetailModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span id="examTitleSpan"></span></h3>
+  <div id="examDetailModal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+    <div
+      style="background:white; width:450px; max-width:90%; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+      <h3 style="margin-top:0; color:#284B63; border-bottom:1px solid #eee; padding-bottom:10px;">Sınav Detayı: <span
+          id="examTitleSpan"></span></h3>
       <div style="display:flex; justify-content:space-around; margin-bottom:15px; text-align:center;">
-         <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span style="font-size:12px; font-weight:normal;">Doğru</span></div>
-         <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span style="font-size:12px; font-weight:normal;">Yanlış</span></div>
-         <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span style="font-size:12px; font-weight:normal;">Boş</span></div>
+        <div style="color:#2ecc71; font-weight:bold; font-size:18px;"><span id="exCor">0</span><br><span
+            style="font-size:12px; font-weight:normal;">Doğru</span></div>
+        <div style="color:#e74c3c; font-weight:bold; font-size:18px;"><span id="exWro">0</span><br><span
+            style="font-size:12px; font-weight:normal;">Yanlış</span></div>
+        <div style="color:#f39200; font-weight:bold; font-size:18px;"><span id="exBla">0</span><br><span
+            style="font-size:12px; font-weight:normal;">Boş</span></div>
       </div>
       <div id="wrongQuestionsList" style="max-height:200px; overflow-y:auto; font-size:13px; color:#444;"></div>
       <div style="text-align:right; margin-top:20px;">
-        <button onclick="document.getElementById('examDetailModal').style.display='none'" style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
+        <button onclick="document.getElementById('examDetailModal').style.display='none'"
+          style="padding:8px 16px; background:#4A748F; color:white; border:none; border-radius:6px; cursor:pointer;">Kapat</button>
       </div>
     </div>
   </div>
 
 
-<script>
-function showExamDetails(t,c,w,b,sJson) {
-  document.getElementById('examTitleSpan').textContent=t;
-  document.getElementById('exCor').textContent=c;
-  document.getElementById('exWro').textContent=w;
-  document.getElementById('exBla').textContent=b;
-  const el = document.getElementById('wrongQuestionsList');
-  if(!sJson || sJson==='[]' || sJson==='null') {
-    el.innerHTML='<div style="text-align:center;color:#aaa;padding:10px;">Yanlış soru detayı yok.</div>';
-  } else {
-    try {
-      const arr = JSON.parse(sJson);
-      el.innerHTML = arr.map(q => '<div style="border:1px solid #ffcccc;background:#fff5f5;padding:10px;border-radius:6px;margin-top:10px;"><b>Soru:</b> '+q.q+'<br><span style="color:#e74c3c">Cevabınız: '+(q.ans||'Boş')+'</span><br><span style="color:#2ecc71">Doğru: '+q.corr+'</span></div>').join('');
-    } catch(e){ el.innerHTML='Hata: '+e.message; }
-  }
-  document.getElementById('examDetailModal').style.display='flex';
-}
+  <script>
+    function showExamDetails(t, c, w, b, sJson) {
+      document.getElementById('examTitleSpan').textContent = t;
+      document.getElementById('exCor').textContent = c;
+      document.getElementById('exWro').textContent = w;
+      document.getElementById('exBla').textContent = b;
+      const el = document.getElementById('wrongQuestionsList');
+      if (!sJson || sJson === '[]' || sJson === 'null') {
+        el.innerHTML = '<div style="text-align:center;color:#aaa;padding:10px;">Yanlış soru detayı yok.</div>';
+      } else {
+        try {
+          const arr = JSON.parse(sJson);
+          el.innerHTML = arr.map(q => '<div style="border:1px solid #ffcccc;background:#fff5f5;padding:10px;border-radius:6px;margin-top:10px;"><b>Soru:</b> ' + q.q + '<br><span style="color:#e74c3c">Cevabınız: ' + (q.ans || 'Boş') + '</span><br><span style="color:#2ecc71">Doğru: ' + q.corr + '</span></div>').join('');
+        } catch (e) { el.innerHTML = 'Hata: ' + e.message; }
+      }
+      document.getElementById('examDetailModal').style.display = 'flex';
+    }
 
-function parseNotifText(originalText) {
-  let txt = originalText;
-  let btn = '';
-  const match = txt.match(/===EXAM_DET:(.*?)===/);
-  if(match) {
-     const parts = match[1].split('|');
-     const title = parts[0];
-     const cor = parts[1];
-     const wro = parts[2];
-     const bla = parts[3];
-     const json = parts[4] || '[]';
-     const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-     btn = '<br><button onclick="showExamDetails(\''+title+'\',\''+cor+'\',\''+wro+'\',\''+bla+'\',\''+jsonEscaped+'\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
-     txt = txt.replace(match[0], '');
-  }
-  return txt + btn;
-}
+    function parseNotifText(originalText) {
+      let txt = originalText;
+      let btn = '';
+      const match = txt.match(/===EXAM_DET:(.*?)===/);
+      if (match) {
+        const parts = match[1].split('|');
+        const title = parts[0];
+        const cor = parts[1];
+        const wro = parts[2];
+        const bla = parts[3];
+        const json = parts[4] || '[]';
+        const jsonEscaped = json.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        btn = '<br><button onclick="showExamDetails(\'' + title + '\',\'' + cor + '\',\'' + wro + '\',\'' + bla + '\',\'' + jsonEscaped + '\')" style="margin-top:5px;background:#4A748F;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">Hatalı Soruları Gör</button>';
+        txt = txt.replace(match[0], '');
+      }
+      return txt + btn;
+    }
 
 
-setTimeout(() => { loadNotifs(); }, 1000);
-</script>
+    setTimeout(() => { loadNotifs(); }, 1000);
+  </script>
 
 
   <script src="fix-notifications.js"></script>
